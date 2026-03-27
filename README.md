@@ -23,12 +23,12 @@ SaleManagerSys
 - Redis
 
 ### 前端 (Fronted)
-- Vue 3.x + TypeScript
-- Element Plus
-- Vite
-- Pinia
-- Axios
-- ECharts
+- Vue 3.5.x + TypeScript
+- Vue Router 5
+- Pinia 3 (状态管理)
+- Vite 7 (构建工具)
+- Tailwind CSS (UI 样式)
+- ESLint + Prettier (代码规范)
 
 ### 小程序 (Uniapp)
 - uni-app
@@ -47,17 +47,13 @@ SaleManagerSys
 ## 开发
 
 ```bash
-# 后端
-cd Backed/salemanager-server
-mvn spring-boot:run
-
-# 前端
-cd Fronted/salemanager-web
+# 前端依赖安装
+cd Fronted
 npm install
+
+# 前端开发
 npm run dev
 
-# 小程序
-cd Uniapp/salemanager-mini
-npm install
-npm run dev:mp-weixin
+# 前端构建生产
+npm run build
 ```
