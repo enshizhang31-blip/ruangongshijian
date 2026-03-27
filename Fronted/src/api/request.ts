@@ -9,7 +9,6 @@ const request = axios.create({
   timeout: 10000,
 })
 
-// 请求拦截器
 request.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = getToken()
   if (token && config.headers) {
@@ -18,23 +17,24 @@ request.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config
 })
 
-// 响应拦截器
-request.interceptors.response.use(
-  (response: AxiosResponse<Result>) => {
-    if (response.data.code === 200) {
-      return response.data as unknown as AxiosResponse
-    }
-    // 401 未授权
-    if (response.data.code === 401) {
-      removeToken()
-      router.push('/login')
-      return Promise.reject(new Error(response.data.message || '未登录'))
-    }
-    return Promise.reject(new Error(response.data.message || '请求失败'))
-  },
-  (error) => {
-    return Promise.reject(error)
-  },
-)
+// 分离响应拦截器函数，避免类型推导冲突
+function onResponseSuccess(response: AxiosResponse<Result>): unknown {
+  const res = response.data
+  if (res.code === 200) {
+    return res.data
+  }
+  if (res.code === 401) {
+    removeToken()
+    router.push('/login')
+    return Promise.reject(new Error(res.message || '未登录'))
+  }
+  return Promise.reject(new Error(res.message || '请求失败'))
+}
+
+function onResponseError(error: unknown): Promise<never> {
+  return Promise.reject(error)
+}
+
+request.interceptors.response.use(onResponseSuccess as any, onResponseError as any)
 
 export default request

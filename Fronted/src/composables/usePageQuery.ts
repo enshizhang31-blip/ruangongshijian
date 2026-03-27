@@ -1,11 +1,11 @@
-import { ref, computed } from 'vue'
+import { ref, computed, type Ref } from 'vue'
 import type { PageQuery, PageResult } from '@/types'
 
 export function usePageQuery<T>(
   fetchFn: (params: PageQuery) => Promise<PageResult<T>>,
 ) {
   const loading = ref(false)
-  const list = ref<T[]>([]) as { value: T[] }
+  const list: Ref<T[]> = ref([]) as Ref<T[]>
   const total = ref(0)
   const query = ref<PageQuery>({
     page: 1,

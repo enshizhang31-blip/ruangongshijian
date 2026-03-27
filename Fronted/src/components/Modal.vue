@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { XMarkIcon } from '@heroicons/vue/24/outline'
 interface Props {
     title?: string
     width?: string
@@ -25,7 +26,7 @@ const emit = defineEmits<{
                     <h3 class="text-lg font-semibold">{{ title }}</h3>
                     <button class="w-8 h-8 flex items-center justify-center rounded-full
                    hover:bg-gray-100 transition-colors" @click="emit('close')">
-                        <i class="fas fa-times" />
+                        <XMarkIcon class="w-5 h-5" />
                     </button>
                 </div>
                 <!-- 内容 -->

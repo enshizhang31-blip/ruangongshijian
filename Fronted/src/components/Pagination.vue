@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 interface Props {
     modelValue: number
     pageSize: number
@@ -19,14 +20,14 @@ const totalPages = () => Math.ceil(props.total / props.pageSize)
              disabled:opacity-50 disabled:cursor-not-allowed
              hover:bg-gray-50 transition-colors" :disabled="modelValue <= 1"
             @click="emit('update:modelValue', modelValue - 1)">
-            <i class="fas fa-chevron-left" />
+            <ChevronLeftIcon class="w-4 h-4" />
         </button>
         <span class="text-sm">{{ modelValue }} / {{ totalPages() }}</span>
         <button class="px-3 py-1 rounded-lg border border-gray-300 text-sm
              disabled:opacity-50 disabled:cursor-not-allowed
              hover:bg-gray-50 transition-colors" :disabled="modelValue >= totalPages()"
             @click="emit('update:modelValue', modelValue + 1)">
-            <i class="fas fa-chevron-right" />
+            <ChevronRightIcon class="w-4 h-4" />
         </button>
     </div>
 </template>
