@@ -1,11 +1,6 @@
 {
   "version": 1,
   "skills": {
-    "ckm:ui-styling": {
-      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
-      "sourceType": "github",
-      "computedHash": "b5f892864e479f969820c353f44faeedc61981bf2d7a854367069a80e0a264e1"
-    },
     "create-adaptable-composable": {
       "source": "vuejs-ai/skills",
       "sourceType": "github",
@@ -20,6 +15,11 @@
       "source": "affaan-m/everything-claude-code",
       "sourceType": "github",
       "computedHash": "15fe91e6fdca18ec9a4322c78010fc6788ee2df0f6828b5fd07a05c869c8b79f"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "6337038fe1fe6bbe1b9f252ab678ee575859190bab6f0f246f4061824eb40875"
     },
     "vue-best-practices": {
       "source": "vuejs-ai/skills",
