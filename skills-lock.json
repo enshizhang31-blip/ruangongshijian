@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "ckm:ui-styling": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "b5f892864e479f969820c353f44faeedc61981bf2d7a854367069a80e0a264e1"
+    },
     "create-adaptable-composable": {
       "source": "vuejs-ai/skills",
       "sourceType": "github",
