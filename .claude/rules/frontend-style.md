@@ -1,248 +1,261 @@
 # SaleManager Web 前端 UI 设计规范
 
-本文档记录销售管理系统前端项目的 UI 风格，基于 Tailwind CSS。
+本文档记录销售管理系统前端项目的 UI 风格，基于 **Arco Design Web Vue** + **Tailwind CSS** 混合使用。
 
 ---
 
 ## 一、配色系统
 
-### 主题色
+### Arco Design 主题色
 
-```css
---color-primary: #6366f1; /* 品牌紫 */
---color-primary-light: #818cf8; /* 浅紫 */
---color-primary-dark: #4f46e5; /* 深紫 */
-```
+| 用途 | 颜色名   | Hex       | Tailwind     |
+| ---- | -------- | --------- | ------------ |
+| 主色 | Arcoblue | `#0f62fe` | `blue-500`   |
+| 成功 | Green    | `#00b42a` | `green-500`  |
+| 警告 | Orange   | `#ff7d00` | `orange-500` |
+| 危险 | Red      | `#f53f2c` | `red-500`    |
+| 信息 | Purple   | `#722ed1` | `purple-500` |
 
-### 功能色
+### 功能色使用
 
-```css
---color-success: #10b981; /* 绿色-成功 */
---color-warning: #f59e0b; /* 黄色-警告 */
---color-danger: #ef4444; /* 红色-危险 */
---color-info: #3b82f6; /* 蓝色-信息 */
-```
+```vue
+<!-- Arco Tag 组件 -->
+<Tag color="green">成功</Tag>
+<Tag color="red">危险</Tag>
 
-### Tailwind CSS 使用方式
-
-```html
-<!-- 主题色 -->
-<button class="bg-primary text-white hover:bg-primary-dark">按钮</button>
-
-<!-- 功能色 -->
-<span class="text-success">成功</span>
-<span class="text-danger">危险</span>
+<!-- 或 Tailwind 工具类 -->
+<span class="text-green-500">成功</span>
+<span class="text-red-500">危险</span>
 ```
 
 ---
 
 ## 二、布局结构
 
-### 侧边栏
+### Desktop 布局 (≥768px)
 
-```html
-<!-- 宽度: 260px 展开 / 72px 折叠 -->
-<aside class="w-[260px]">...</aside>
-
-<!-- 白色背景 + 阴影 -->
-<div class="bg-white shadow-sm">...</div>
-
-<!-- Logo区渐变 -->
-<div class="bg-gradient-to-br from-primary to-primary-dark">...</div>
+```
+┌─────────────────────────────────────┐
+│ Header (h-14)                       │
+├──────────┬──────────────────────────┤
+│          │                          │
+│ Sidebar  │     Main Content         │
+│ (w-60)   │     (p-4 lg:p-6)        │
+│          │                          │
+│          │                          │
+└──────────┴──────────────────────────┘
 ```
 
-### 顶部导航
+### Mobile 布局 (<768px)
 
-```html
-<!-- 高度 56px -->
-<header class="h-14 bg-white shadow-sm">...</header>
+```
+┌─────────────────────┐
+│                     │
+│   Main Content      │
+│   (p-4)             │
+│                     │
+│                     │
+├─────────────────────┤
+│   BottomNav (h-14)  │
+└─────────────────────┘
+```
 
-<!-- 用户头像: 渐变 + 圆角 -->
-<div class="bg-gradient-to-br from-primary to-primary-dark rounded-full">
-  ...
+### 响应式断点
+
+| 断点 | 宽度     | Tailwind | 用途          |
+| ---- | -------- | -------- | ------------- |
+| xs   | < 576px  | `xs:`    | 超小屏手机    |
+| sm   | ≥ 576px  | `sm:`    | 小屏平板      |
+| md   | ≥ 768px  | `md:`    | 中屏/桌面分界 |
+| lg   | ≥ 992px  | `lg:`    | 小屏桌面      |
+| xl   | ≥ 1200px | `xl:`    | 大屏桌面      |
+
+---
+
+## 三、Arco Design 组件使用
+
+### 布局组件
+
+| 组件      | 用途         | 使用位置                 |
+| --------- | ------------ | ------------------------ |
+| `Card`    | 页面卡片容器 | 所有列表页搜索区、数据区 |
+| `Row/Col` | 栅格布局     | Dashboard 统计卡片       |
+| `Space`   | 元素间距     | 按钮组、表单项           |
+
+### 数据组件
+
+| 组件         | 用途     | 使用位置                   |
+| ------------ | -------- | -------------------------- |
+| `Table`      | 数据表格 | Product/Customer/Sale 列表 |
+| `Pagination` | 分页     | 列表页底部                 |
+
+### 表单组件
+
+| 组件            | 用途     | 使用位置             |
+| --------------- | -------- | -------------------- |
+| `Form/FormItem` | 表单容器 | Login、新增/编辑弹窗 |
+| `Input`         | 输入框   | 搜索、表单           |
+| `Select`        | 下拉选择 | 表单筛选             |
+
+### 反馈组件
+
+| 组件         | 用途     | 使用位置   |
+| ------------ | -------- | ---------- |
+| `Button`     | 按钮     | 全局       |
+| `Tag`        | 状态标签 | 表格行状态 |
+| `Message`    | 消息提示 | 操作反馈   |
+| `Popconfirm` | 确认弹窗 | 删除确认   |
+| `Modal`      | 弹窗     | 详情/编辑  |
+
+### 导航组件
+
+| 组件            | 用途       | 使用位置        |
+| --------------- | ---------- | --------------- |
+| `Menu/MenuItem` | 侧边栏导航 | Sidebar         |
+| `Avatar`        | 用户头像   | Header          |
+| `Dropdown`      | 下拉菜单   | Header 用户菜单 |
+
+### 数据展示
+
+| 组件        | 用途     | 使用位置       |
+| ----------- | -------- | -------------- |
+| `Statistic` | 统计数字 | Dashboard 卡片 |
+| `Skeleton`  | 骨架屏   | 加载占位       |
+
+---
+
+## 四、Tailwind CSS 使用规范
+
+### 使用场景
+
+- 响应式工具类：`hidden md:block`、`flex-col md:flex-row`
+- 自定义间距：margin/padding 调整
+- 文本颜色：`text-gray-500`、`text-blue-600`
+- 背景颜色：`bg-white`、`bg-gray-50`
+- 阴影：`shadow-sm hover:shadow-lg`
+- 圆角：`rounded-lg`、`rounded-xl`
+
+### Arco + Tailwind 优先级
+
+```
+Arco Design 组件属性 > Tailwind 工具类
+```
+
+```vue
+<!-- ✅ 正确：Arco 属性优先 -->
+<Button type="primary" class="ml-4">
+
+<!-- ⚠️ 避免：重复样式 -->
+<Button class="bg-blue-500 hover:bg-blue-600">
+```
+
+---
+
+## 五、组件样式规范
+
+### 页面标题区
+
+```vue
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-xl lg:text-2xl font-bold text-gray-800">商品管理</h1>
+        <p class="text-sm text-gray-500 mt-1">管理商品信息</p>
+    </div>
+    <Button type="primary">新增商品</Button>
 </div>
 ```
 
----
+### 搜索区域
 
-## 三、组件样式
-
-### 按钮
-
-```html
-<!-- 主按钮: 渐变 + 悬停阴影 -->
-<button
-  class="bg-gradient-to-r from-primary to-primary-dark 
-                hover:shadow-lg transition-shadow"
->
-  主按钮
-</button>
-
-<!-- 次要按钮 -->
-<button class="bg-gray-100 hover:bg-gray-200 rounded-lg">次要</button>
-
-<!-- 危险按钮 -->
-<button class="bg-danger text-white rounded-lg hover:bg-red-600">删除</button>
+```vue
+<Card class="mb-4">
+    <Space direction="horizontal" :size="12" wrap>
+        <Input v-model="keyword" placeholder="搜索..." class="!w-64" />
+        <Button type="primary" @click="handleSearch">搜索</Button>
+        <Button @click="handleReset">重置</Button>
+    </Space>
+</Card>
 ```
 
-### 输入框
+### 数据表格
 
-```html
-<input
-  class="rounded-xl border border-gray-300 
-               focus:border-primary focus:ring-2 
-               focus:ring-primary/15 px-4 py-2"
-/>
+```vue
+<Card>
+    <Table :columns="columns" :data="list" :pagination="false" :scroll="{ x: 800 }">
+        <template #actions="{ record }">
+            <Space>
+                <Button type="text" size="small">编辑</Button>
+                <Popconfirm title="确定删除？" @ok="handleDelete(record.id)">
+                    <Button type="text" status="danger" size="small">删除</Button>
+                </Popconfirm>
+            </Space>
+        </template>
+    </Table>
+</Card>
 ```
 
-### 表格
+### 统计卡片 (Dashboard)
 
-```html
-<table class="w-full bg-white rounded-xl overflow-hidden">
-  <thead class="bg-bg-subtle">
-  <tr class="hover:bg-bg-hover transition-colors">
-  <tr class="odd:bg-white even:bg-gray-50">
-</table>
-```
-
-### 卡片
-
-```html
-<div
-  class="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow"
-></div>
+```vue
+<Row :gutter="[16, 16]">
+    <Col :xs="24" :sm="12" :xl="6">
+        <Card class="hover:shadow-lg transition-all cursor-pointer">
+            <Statistic title="今日销售额" :value="1000" prefix="¥" />
+        </Card>
+    </Col>
+</Row>
 ```
 
 ---
 
-## 四、阴影系统
+## 六、图标规范
 
-| 级别 | Tailwind    | 用途        |
-| ---- | ----------- | ----------- |
-| sm   | `shadow-sm` | 基础阴影    |
-| md   | `shadow-md` | 卡片阴影    |
-| lg   | `shadow-lg` | 悬停/对话框 |
-| xl   | `shadow-xl` | 模态框      |
+使用 **Heroicons** (Outline 风格)
+
+```vue
+import { PlusIcon, PencilIcon } from '@heroicons/vue/24/outline'
+
+<Button>
+    <template #icon><PlusIcon class="w-4 h-4" /></template>
+    新增
+</Button>
+```
+
+### 常用图标
+
+| 用途 | 图标               |
+| ---- | ------------------ |
+| 首页 | `ViewColumnsIcon`  |
+| 商品 | `CubeIcon`         |
+| 客户 | `UsersIcon`        |
+| 订单 | `ShoppingCartIcon` |
+| 统计 | `ChartBarIcon`     |
+| 设置 | `Cog6ToothIcon`    |
+| 新增 | `PlusIcon`         |
+| 编辑 | `PencilIcon`       |
+| 删除 | `TrashIcon`        |
+| 查看 | `EyeIcon`          |
 
 ---
 
-## 五、圆角系统
+## 七、圆角规范
 
-| 用途        | Tailwind      | 像素 |
-| ----------- | ------------- | ---- |
-| 按钮/输入框 | `rounded-lg`  | 8px  |
-| 卡片        | `rounded-xl`  | 12px |
-| 对话框      | `rounded-2xl` | 16px |
-
----
-
-## 六、动画过渡
-
-```html
-<!-- 基础过渡 -->
-<div class="transition-all duration-200">
-  <!-- 卡片悬停: 上浮 + 阴影 -->
-  <div class="hover:-translate-y-0.5 hover:shadow-lg"></div>
-</div>
-```
+| 用途   | Arco          | Tailwind       |
+| ------ | ------------- | -------------- |
+| 按钮   | 默认          | `rounded-lg`   |
+| 输入框 | 默认          | `rounded-lg`   |
+| 卡片   | 默认          | `rounded-xl`   |
+| 弹窗   | `rounded-2xl` | `rounded-2xl`  |
+| 头像   | `circle`      | `rounded-full` |
 
 ---
 
-## 七、菜单样式
+## 八、开发注意事项
 
-```html
-<nav class="space-y-1">
-  <a
-    href="#"
-    class="flex items-center gap-3 px-3 py-2 
-                     rounded-lg hover:bg-gray-100"
-  >
-    <i class="fas fa-th-large w-5"></i>
-  </a>
-
-  <!-- 选中项 -->
-  <a
-    href="#"
-    class="flex items-center gap-3 px-3 py-2 
-                     rounded-lg bg-primary/10 text-primary"
-  >
-  </a>
-</nav>
-```
-
-### 菜单图标
-
-```
-仪表盘: fa-th-large
-商品管理: fa-box
-客户管理: fa-users
-销售管理: fa-shopping-cart
-数据统计: fa-chart-bar
-系统设置: fa-cog
-```
-
----
-
-## 八、页面结构
-
-```html
-<!-- 页面标题区 -->
-<div class="flex items-center justify-between mb-6">
-  <div>
-    <h1 class="text-2xl font-bold">商品管理</h1>
-    <p class="text-gray-500 mt-1">管理商品信息</p>
-  </div>
-  <button class="bg-primary text-white px-4 py-2 rounded-lg">新增</button>
-</div>
-
-<!-- 搜索区域 -->
-<div class="bg-white rounded-xl shadow-sm p-4 mb-6">
-  <div class="flex gap-4">
-    <input class="flex-1 rounded-xl border px-4" />
-    <button class="bg-primary text-white px-6 rounded-xl">搜索</button>
-  </div>
-</div>
-
-<!-- 表格 -->
-<div class="bg-white rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full">
-    ...
-  </table>
-</div>
-```
-
----
-
-## 九、图标
-
-使用 Font Awesome 6.4.0
-
-```html
-<link
-  rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-/>
-<i class="fas fa-user"></i>
-```
-
----
-
-## 十、响应式
-
-### Dashboard 统计卡片
-
-```html
-<!-- 大屏 4列, 中屏 2列, 小屏 1列 -->
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"></div>
-```
-
----
-
-## 十一、开发注意事项
-
-1. **动画**: 使用 `transition-all duration-200`
-2. **卡片悬停**: `hover:-translate-y-0.5 hover:shadow-lg`
-3. **按钮悬停**: 渐变 + 阴影变化
-4. **输入框 Focus**: `focus:ring-2 focus:ring-primary/15`
-5. **表格**: 使用 `divide-y` 分隔行，斑马纹用 `odd:`/`even:`
-6. **布局**: 不使用 `max-width` 限制内容区宽度
+1. **Arco + Tailwind 混合**：Arco 负责复杂组件，Tailwind 负责布局和微调
+2. **响应式优先**：移动端布局先行，使用 `flex-col`、`gap-4` 等
+3. **Arco 栅格**：`Row/Col` 用于需要等分布置的区域
+4. **Tailwind 响应式**：`xs:` `sm:` `md:` `lg:` `xl:` 分断点
+5. **表格滚动**：`Table` 设置 `:scroll="{ x: 800 }"` 启用水平滚动
+6. **卡片悬停**：`hover:shadow-lg transition-all`
+7. **表单验证**：使用 Arco `Form` 组件的校验功能
