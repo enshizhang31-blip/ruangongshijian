@@ -1,0 +1,6 @@
+{
+  "preferredLanguage": "zh-CN",
+  "completion": {
+    "additionalInstructions": "请使用中文输出。所有回复、代码注释、文档等均使用中文。"
+  }
+}
