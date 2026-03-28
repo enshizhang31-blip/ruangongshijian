@@ -6,10 +6,10 @@
       "sourceType": "github",
       "computedHash": "3d044f8c43ddaee6a58ab28acc9d6315775aed150c3a9ab059d2714768be5bec"
     },
-    "skill-lookup": {
-      "source": "f/prompts.chat",
+    "find-skills": {
+      "source": "bytedance/deer-flow",
       "sourceType": "github",
-      "computedHash": "35a7e7739c4be64f27bfee72ba304c50c3dfaa8f480b4d0569537d5e8d124d17"
+      "computedHash": "202da6ad9e3c65949fa70371e89b1f55a1f5bd6d11b20b4491af17de495a0caf"
     },
     "springboot-patterns": {
       "source": "affaan-m/everything-claude-code",
