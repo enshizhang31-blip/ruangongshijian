@@ -50,13 +50,17 @@ SaleManagerSys
 - Redis（汇率缓存）
 
 ### Web管理端 (Fronted)
-- Vue 3.5.x + TypeScript
-- Vue Router 5 (动态路由)
-- Pinia 3 (状态管理)
-- Vite 7 (构建工具)
-- Arco Design Web Vue
-- Tailwind CSS
-- ESLint + Prettier (代码规范)
+| 类别 | 技术 | 版本 |
+|------|------|------|
+| 框架 | Vue | 3.5.30 |
+| 构建 | Vite | 7.3.1 |
+| 状态管理 | Pinia | 3.0.4 |
+| 路由 | Vue Router | 5.0.3 |
+| UI框架 | Arco Design Web Vue | 2.57.0 |
+| CSS | Tailwind CSS | 4.2.2 |
+| HTTP | Axios | 1.13.6 |
+| 图标 | Heroicons | 2.2.0 |
+| 图表 | ECharts | 6.0.0 |
 
 ### 小程序端 (Uniapp)
 - uni-app
