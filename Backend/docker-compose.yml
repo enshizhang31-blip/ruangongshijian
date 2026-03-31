@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: salemanager-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: sale_manager
+      MYSQL_USER: salemanager
+      MYSQL_PASSWORD: salemanager123
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-auth-plugin=mysql_native_password
+    networks:
+      - salemanager-network
+
+  # MongoDB 数据库
+  mongodb:
+    image: mongo:7.0
+    container_name: salemanager-mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: salemanager
+      MONGO_INITDB_ROOT_PASSWORD: salemanager123
+      MONGO_INITDB_DATABASE: sale_manager
+      TZ: Asia/Shanghai
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - salemanager-network
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: salemanager-redis
+    restart: always
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - salemanager-network
+
+volumes:
+  mysql-data:
+  mongo-data:
+  redis-data:
+
+networks:
+  salemanager-network:
+    driver: bridge
