@@ -294,14 +294,14 @@ CREATE TABLE IF NOT EXISTS admin_user (
     real_name VARCHAR(64) COMMENT '真实姓名',
     phone VARCHAR(20) COMMENT '手机号',
     email VARCHAR(128) COMMENT '邮箱',
-    role_id BIGINT COMMENT '角色ID',
+    permissions JSON COMMENT '权限数组(创建时从角色复制,之后独立)',
+    routes JSON COMMENT '路由数组(创建时从角色复制,之后独立)',
     department_id BIGINT COMMENT '部门ID',
     status TINYINT DEFAULT 1 COMMENT '状态: 0禁用 1启用',
     last_login_at DATETIME COMMENT '最后登录时间',
     created_at DATETIME COMMENT '创建时间',
     updated_at DATETIME COMMENT '更新时间',
-    INDEX idx_username (username),
-    INDEX idx_role (role_id)
+    INDEX idx_username (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工表';
 
 -- 4.2 角色表
@@ -510,8 +510,9 @@ INSERT INTO spec_value (spec_id, value, sort, status) VALUES
 
 -- 6.5 超级管理员
 -- 密码: 123456 (BCrypt加密)
-INSERT INTO admin_user (username, password, real_name, role_id, status, created_at, updated_at) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '超级管理员', 1, 1, NOW(), NOW());
+-- 超级管理员拥有所有权限 ["*"]
+INSERT INTO admin_user (username, password, real_name, permissions, status, created_at, updated_at) VALUES
+('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '超级管理员', '["*"]', 1, NOW(), NOW());
 
 -- 6.6 预设商品分类
 INSERT INTO goods_category (name, parent_id, sort, status, created_at, updated_at) VALUES
