@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, reactive } from 'vue'
+import { onMounted, ref, reactive, h } from 'vue'
 import { adminApi, departmentApi, roleApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { formatDate } from '@/utils/format'
@@ -32,7 +32,7 @@ const columns = [
     {
         title: '状态',
         dataIndex: 'status',
-        render: (status: number) => Tag.color(status === 1 ? 'green' : 'red')(status === 1 ? '正常' : '禁用')
+        render: (status: number) => h(Tag, { color: status === 1 ? 'green' : 'red' }, () => status === 1 ? '正常' : '禁用')
     },
     { title: '最后登录', dataIndex: 'lastLoginAt', render: (t: string) => t ? formatDate(t) : '-' },
     { title: '创建时间', dataIndex: 'createTime', render: (t: string) => formatDate(t) },
@@ -131,7 +131,9 @@ async function handleResetPassword(id: number) {
                 <p class="text-sm text-gray-500 mt-1">管理系统员工账号</p>
             </div>
             <Button type="primary" @click="handleAdd">
-                <template #icon><PlusIcon class="w-4 h-4" /></template>
+                <template #icon>
+                    <PlusIcon class="w-4 h-4" />
+                </template>
                 新增员工
             </Button>
         </div>
@@ -169,8 +171,10 @@ async function handleResetPassword(id: number) {
                 <Space direction="horizontal">
                     <span class="text-sm text-gray-500">共 {{ total }} 条</span>
                     <Button :disabled="query.page <= 1" @click="setPage(query.page - 1)">上一页</Button>
-                    <span class="text-sm py-2">第 {{ query.page }} / {{ Math.ceil(total / query.pageSize) || 1 }} 页</span>
-                    <Button :disabled="query.page >= Math.ceil(total / query.pageSize)" @click="setPage(query.page + 1)">下一页</Button>
+                    <span class="text-sm py-2">第 {{ query.page }} / {{ Math.ceil(total / query.pageSize) || 1 }}
+                        页</span>
+                    <Button :disabled="query.page >= Math.ceil(total / query.pageSize)"
+                        @click="setPage(query.page + 1)">下一页</Button>
                 </Space>
             </div>
         </Card>
@@ -192,7 +196,8 @@ async function handleResetPassword(id: number) {
             </FormItem>
             <FormItem label="部门">
                 <Select v-model="form.departmentId" placeholder="请选择部门" class="w-full">
-                    <Select.Option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</Select.Option>
+                    <Select.Option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}
+                    </Select.Option>
                 </Select>
             </FormItem>
             <FormItem label="状态">

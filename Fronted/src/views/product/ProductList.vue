@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, reactive } from 'vue'
+import { onMounted, ref, reactive, h } from 'vue'
 import { productApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { formatMoney } from '@/utils/format'
@@ -31,7 +31,7 @@ const columns = [
     { title: '单位', dataIndex: 'unit' },
     {
         title: '状态', dataIndex: 'status', render: (status: number) =>
-            status === 1 ? Tag.color('green')('启用') : Tag.color('gray')('禁用')
+            h(Tag, { color: status === 1 ? 'green' : 'gray' }, () => status === 1 ? '启用' : '禁用')
     },
     { title: '操作', slotName: 'actions', align: 'right' },
 ]

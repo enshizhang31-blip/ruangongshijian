@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, reactive } from 'vue'
+import { onMounted, ref, reactive, h } from 'vue'
 import { saleApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { formatMoney, formatDate } from '@/utils/format'
@@ -42,12 +42,12 @@ const columns = [
     {
         title: '订单状态',
         dataIndex: 'orderStatus',
-        render: (status: number) => Tag.color(statusColorMap[status] || 'gray')(orderStatusMap[status] || '未知')
+        render: (status: number) => h(Tag, { color: statusColorMap[status] || 'gray' }, () => orderStatusMap[status] || '未知')
     },
     {
         title: '支付状态',
         dataIndex: 'paymentStatus',
-        render: (status: number) => Tag.color(status === 2 ? 'green' : 'orange')(paymentStatusMap[status] || '未知')
+        render: (status: number) => h(Tag, { color: status === 2 ? 'green' : 'orange' }, () => paymentStatusMap[status] || '未知')
     },
     { title: '下单时间', dataIndex: 'createTime', render: (t: string) => formatDate(t) },
     { title: '操作', slotName: 'actions', align: 'right', width: 120 },
@@ -194,9 +194,12 @@ async function handleSubmitEdit() {
             <div class="border-t border-gray-200 pt-4">
                 <h4 class="text-sm font-medium mb-3">订单操作</h4>
                 <Space wrap>
-                    <Button v-if="viewingOrder.orderStatus === 1" type="primary" size="small" @click="handleStatusChange(viewingOrder, 2)">确认付款</Button>
-                    <Button v-if="viewingOrder.orderStatus === 2" type="primary" size="small" @click="handleStatusChange(viewingOrder, 3)">完成订单</Button>
-                    <Button v-if="viewingOrder.orderStatus === 1" status="danger" size="small" @click="handleStatusChange(viewingOrder, 4)">取消订单</Button>
+                    <Button v-if="viewingOrder.orderStatus === 1" type="primary" size="small"
+                        @click="handleStatusChange(viewingOrder, 2)">确认付款</Button>
+                    <Button v-if="viewingOrder.orderStatus === 2" type="primary" size="small"
+                        @click="handleStatusChange(viewingOrder, 3)">完成订单</Button>
+                    <Button v-if="viewingOrder.orderStatus === 1" status="danger" size="small"
+                        @click="handleStatusChange(viewingOrder, 4)">取消订单</Button>
                 </Space>
             </div>
         </div>

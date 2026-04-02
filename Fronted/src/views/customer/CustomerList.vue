@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, reactive } from 'vue'
+import { onMounted, ref, reactive, h } from 'vue'
 import { customerApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Form, FormItem, Select, InputNumber, Message } from '@arco-design/web-vue'
@@ -29,13 +29,13 @@ const columns = [
     { title: '联系方式', dataIndex: 'phone' },
     {
         title: '客户类型', dataIndex: 'customerType', render: (type: number) =>
-            Tag.color(type === 1 ? 'arcoblue' : 'purple')(type === 1 ? '个人' : '企业')
+            h(Tag, { color: type === 1 ? 'arcoblue' : 'purple' }, () => type === 1 ? '个人' : '企业')
     },
     { title: '等级', dataIndex: 'level' },
     { title: '余额', dataIndex: 'balance', render: (balance: number) => `¥${balance || 0}` },
     {
         title: '状态', dataIndex: 'status', render: (status: number) =>
-            status === 1 ? Tag.color('green')('正常') : Tag.color('gray')('禁用')
+            h(Tag, { color: status === 1 ? 'green' : 'gray' }, () => status === 1 ? '正常' : '禁用')
     },
     { title: '操作', slotName: 'actions', align: 'right' },
 ]

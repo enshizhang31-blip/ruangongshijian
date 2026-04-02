@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, reactive } from 'vue'
+import { onMounted, ref, reactive, h } from 'vue'
 import { snApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { formatDate } from '@/utils/format'
@@ -100,10 +100,12 @@ async function handleQuerySn() {
 const columns = [
     { title: 'SN码', dataIndex: 'sn', width: 180 },
     { title: '商品名称', dataIndex: 'goodsName' },
-    { title: '状态', dataIndex: 'status', render: (status: number) => {
-        const item = statusMap[status] || { label: '未知', color: 'gray' }
-        return Tag.color(item.color)(item.label)
-    }},
+    {
+        title: '状态', dataIndex: 'status', render: (status: number) => {
+            const item = statusMap[status] || { label: '未知', color: 'gray' }
+            return h(Tag, { color: item.color }, () => item.label)
+        }
+    },
     { title: '绑定时间', dataIndex: 'bindTime', render: (t: string) => t ? formatDate(t) : '-' },
     { title: '使用时间', dataIndex: 'usedTime', render: (t: string) => t ? formatDate(t) : '-' },
     { title: '创建时间', dataIndex: 'createTime', render: (t: string) => formatDate(t) },
@@ -121,11 +123,15 @@ const columns = [
             </div>
             <Space>
                 <Button type="primary" @click="showQueryModal = true">
-                    <template #icon><MagnifyingGlassIcon class="w-4 h-4" /></template>
+                    <template #icon>
+                        <MagnifyingGlassIcon class="w-4 h-4" />
+                    </template>
                     SN码查询
                 </Button>
                 <Button type="primary" @click="showAddModal = true">
-                    <template #icon><PlusIcon class="w-4 h-4" /></template>
+                    <template #icon>
+                        <PlusIcon class="w-4 h-4" />
+                    </template>
                     录入SN码
                 </Button>
             </Space>
@@ -160,8 +166,10 @@ const columns = [
                 <Space direction="horizontal">
                     <span class="text-sm text-gray-500">共 {{ total }} 条</span>
                     <Button :disabled="query.page <= 1" @click="setPage(query.page - 1)">上一页</Button>
-                    <span class="text-sm py-2">第 {{ query.page }} / {{ Math.ceil(total / query.pageSize) || 1 }} 页</span>
-                    <Button :disabled="query.page >= Math.ceil(total / query.pageSize)" @click="setPage(query.page + 1)">下一页</Button>
+                    <span class="text-sm py-2">第 {{ query.page }} / {{ Math.ceil(total / query.pageSize) || 1 }}
+                        页</span>
+                    <Button :disabled="query.page >= Math.ceil(total / query.pageSize)"
+                        @click="setPage(query.page + 1)">下一页</Button>
                 </Space>
             </div>
         </Card>
