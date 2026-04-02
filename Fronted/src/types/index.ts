@@ -15,3 +15,6 @@ export type { SaleOrder, SaleOrderItem } from './sale'
 
 // ========== 统计 ==========
 export type { DashboardStats } from './statistics'
+
+// ========== SN码 ==========
+export type { SnCode, SnCodeLog, SnQuery } from './sn'
