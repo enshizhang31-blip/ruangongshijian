@@ -7,6 +7,7 @@ import {
 import {
     ViewColumnsIcon,
     CubeIcon,
+    QueueListIcon,
     UsersIcon,
     ShoppingCartIcon,
     ChartBarIcon,
@@ -22,6 +23,7 @@ const selectedKey = route.path
 const menuItems = [
     { key: '/dashboard', label: '首页', icon: ViewColumnsIcon },
     { key: '/product', label: '商品管理', icon: CubeIcon },
+    { key: '/sn', label: 'SN码管理', icon: QueueListIcon },
     { key: '/customer', label: '客户管理', icon: UsersIcon },
     { key: '/sale', label: '销售订单', icon: ShoppingCartIcon },
     { key: '/statistics', label: '数据统计', icon: ChartBarIcon },
