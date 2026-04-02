@@ -11,6 +11,7 @@ import {
     UsersIcon,
     ShoppingCartIcon,
     ChartBarIcon,
+    UserGroupIcon,
     Cog6ToothIcon,
 } from '@heroicons/vue/24/outline'
 import { useAppStore } from '@/stores/app'
@@ -26,6 +27,7 @@ const menuItems = [
     { key: '/sn', label: 'SN码管理', icon: QueueListIcon },
     { key: '/customer', label: '客户管理', icon: UsersIcon },
     { key: '/sale', label: '销售订单', icon: ShoppingCartIcon },
+    { key: '/admin/user', label: '员工管理', icon: UserGroupIcon },
     { key: '/statistics', label: '数据统计', icon: ChartBarIcon },
     { key: '/settings', label: '系统设置', icon: Cog6ToothIcon },
 ]

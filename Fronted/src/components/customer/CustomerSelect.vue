@@ -27,8 +27,8 @@ const selectedCustomer = ref<Customer | null>(null)
 async function fetchCustomers() {
     loading.value = true
     try {
-        const result = await customerApi.list({ page: 1, pageSize: 100 })
-        customers.value = result.list.filter(c => c.status === 1)
+        const result = await customerApi.list({ page: 1, pageSize: 100 }) as { list: Customer[] }
+        customers.value = result.list.filter((c: Customer) => c.status === 1)
     } finally {
         loading.value = false
     }

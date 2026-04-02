@@ -27,8 +27,8 @@ const selectedProduct = ref<Product | null>(null)
 async function fetchProducts() {
     loading.value = true
     try {
-        const result = await productApi.list({ page: 1, pageSize: 100 })
-        products.value = result.list.filter(p => p.status === 1)
+        const result = await productApi.list({ page: 1, pageSize: 100 }) as { list: Product[] }
+        products.value = result.list.filter((p: Product) => p.status === 1)
     } finally {
         loading.value = false
     }
