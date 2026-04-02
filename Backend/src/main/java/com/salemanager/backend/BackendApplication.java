@@ -1,4 +1,4 @@
-package com.salemanager.common.config;
+package com.salemanager.backend;
 
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;

@@ -1,7 +1,6 @@
 package com.salemanager.modules.ums.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.salemanager.common.exception.BusinessException;
 import com.salemanager.modules.ums.mapper.AdminUserMapper;
 import com.salemanager.modules.ums.mapper.RoleMapper;
@@ -9,8 +8,6 @@ import com.salemanager.modules.ums.model.AdminUser;
 import com.salemanager.modules.ums.model.Role;
 import com.salemanager.modules.ums.param.AdminUserParam;
 import com.salemanager.modules.ums.service.UserService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,9 +30,6 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Override
     public List<AdminUser> getUserList(String keyword, Integer status, Integer page, Integer pageSize) {
