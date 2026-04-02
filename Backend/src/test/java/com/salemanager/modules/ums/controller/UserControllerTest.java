@@ -1,12 +1,13 @@
 package com.salemanager.modules.ums.controller;
 
-import com.salemanager.common.config.BackendApplication;
+import com.salemanager.backend.BackendApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -17,16 +18,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 员工接口测试
  */
 @SpringBootTest(classes = BackendApplication.class)
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
+@AutoConfigureMockMvc(addFilters = false)
+@Transactional
 class UserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    /**
-     * 测试获取员工列表
-     */
     @Test
     void testGetUserList() throws Exception {
         mockMvc.perform(get("/api/admin/user"))
@@ -35,9 +33,6 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.data").isArray());
     }
 
-    /**
-     * 测试获取员工详情
-     */
     @Test
     void testGetUserDetail() throws Exception {
         mockMvc.perform(get("/api/admin/user/1"))
@@ -46,9 +41,6 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.data.id").value(1));
     }
 
-    /**
-     * 测试新增员工
-     */
     @Test
     void testCreateUser() throws Exception {
         String json = """
@@ -62,7 +54,7 @@ class UserControllerTest {
                 """;
 
         mockMvc.perform(post("/api/admin/user")
-                        .contentType("application/json")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
