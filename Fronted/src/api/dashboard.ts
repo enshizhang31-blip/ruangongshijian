@@ -3,6 +3,6 @@ import type { DashboardStats } from '@/types'
 
 export const dashboardApi = {
   stats() {
-    return request.get<DashboardStats>('/dashboard/stats').then((res) => res.data)
+    return request.get<DashboardStats>('/dashboard/stats').then((res: any) => res.data.data)
   },
 }
