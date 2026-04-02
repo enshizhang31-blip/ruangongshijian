@@ -7,5 +7,5 @@ export interface DashboardStats {
     todayCustomers: number
     totalProducts: number
     lowStockProducts: number
-    recentOrders: SaleOrder[]
+    recentOrders?: SaleOrder[]
 }
