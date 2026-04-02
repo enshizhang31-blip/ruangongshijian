@@ -1,31 +1,27 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, reactive } from 'vue'
 import { productApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { formatMoney } from '@/utils/format'
-import { Table, Button, Input, Space, Tag, Popconfirm } from '@arco-design/web-vue'
+import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Form, FormItem, Select, Message } from '@arco-design/web-vue'
 import type { Product } from '@/types'
 import { PlusIcon, PencilIcon } from '@heroicons/vue/24/outline'
 
 const { loading, list, total, query, load, setPage, setKeyword } = usePageQuery(productApi.list)
 const keyword = ref('')
+const showModal = ref(false)
+const isEdit = ref(false)
+const editingId = ref<number>()
 
-onMounted(() => {
-    load()
+const form = reactive<Partial<Product>>({
+    name: '',
+    categoryId: undefined,
+    price: 0,
+    stock: 0,
+    unit: '',
+    description: '',
+    status: 1,
 })
-
-function handleSearch() {
-    setKeyword(keyword.value)
-}
-
-function handleEdit(record: Product) {
-    console.log('edit', record)
-}
-
-async function handleDelete(id: number) {
-    await productApi.delete(id)
-    load()
-}
 
 const columns = [
     { title: '商品名称', dataIndex: 'name' },
@@ -39,6 +35,59 @@ const columns = [
     },
     { title: '操作', slotName: 'actions', align: 'right' },
 ]
+
+onMounted(() => {
+    load()
+})
+
+function handleSearch() {
+    setKeyword(keyword.value)
+}
+
+function handleReset() {
+    keyword.value = ''
+    setKeyword('')
+}
+
+function handleAdd() {
+    isEdit.value = false
+    editingId.value = undefined
+    Object.assign(form, { name: '', categoryId: undefined, price: 0, stock: 0, unit: '', description: '', status: 1 })
+    showModal.value = true
+}
+
+function handleEdit(record: Product) {
+    isEdit.value = true
+    editingId.value = record.id
+    Object.assign(form, { ...record })
+    showModal.value = true
+}
+
+async function handleSubmit() {
+    if (!form.name) {
+        Message.warning('请填写商品名称')
+        return
+    }
+    try {
+        if (isEdit.value && editingId.value) {
+            await productApi.update({ ...form, id: editingId.value } as Product)
+            Message.success('更新成功')
+        } else {
+            await productApi.create(form as Product)
+            Message.success('创建成功')
+        }
+        showModal.value = false
+        load()
+    } catch {
+        Message.error('操作失败')
+    }
+}
+
+async function handleDelete(id: number) {
+    await productApi.delete(id)
+    Message.success('删除成功')
+    load()
+}
 </script>
 
 <template>
@@ -48,7 +97,7 @@ const columns = [
                 <h1 class="text-xl lg:text-2xl font-bold text-gray-800">商品管理</h1>
                 <p class="text-sm text-gray-500 mt-1">管理商品信息</p>
             </div>
-            <Button type="primary" @click="() => { }">
+            <Button type="primary" @click="handleAdd">
                 <template #icon>
                     <PlusIcon class="w-4 h-4" />
                 </template>
@@ -62,7 +111,7 @@ const columns = [
                     <template #prefix><span class="text-gray-400">🔍</span></template>
                 </Input>
                 <Button type="primary" @click="handleSearch">搜索</Button>
-                <Button @click="keyword = ''; setKeyword('')">重置</Button>
+                <Button @click="handleReset">重置</Button>
             </Space>
         </Card>
 
@@ -94,4 +143,36 @@ const columns = [
             </div>
         </Card>
     </div>
+
+    <!-- 新增/编辑弹窗 -->
+    <Modal v-model:visible="showModal" :title="isEdit ? '编辑商品' : '新增商品'" @ok="handleSubmit" :width="500">
+        <Form :model="form" layout="vertical">
+            <FormItem label="商品名称" required>
+                <Input v-model="form.name" placeholder="请输入商品名称" />
+            </FormItem>
+            <FormItem label="商品分类">
+                <Select v-model="form.categoryId" placeholder="请选择分类" class="w-full">
+                    <!-- 分类选项后续动态加载 -->
+                </Select>
+            </FormItem>
+            <FormItem label="价格">
+                <InputNumber v-model="form.price" :min="0" :precision="2" class="w-full" />
+            </FormItem>
+            <FormItem label="库存">
+                <InputNumber v-model="form.stock" :min="0" class="w-full" />
+            </FormItem>
+            <FormItem label="单位">
+                <Input v-model="form.unit" placeholder="如：个、箱、件" />
+            </FormItem>
+            <FormItem label="描述">
+                <Input v-model="form.description" placeholder="商品描述" :rows="3" />
+            </FormItem>
+            <FormItem label="状态">
+                <Select v-model="form.status" class="w-full">
+                    <Select.Option :value="1">启用</Select.Option>
+                    <Select.Option :value="0">禁用</Select.Option>
+                </Select>
+            </FormItem>
+        </Form>
+    </Modal>
 </template>
