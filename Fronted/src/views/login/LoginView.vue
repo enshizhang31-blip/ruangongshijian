@@ -2,9 +2,12 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Form, FormItem, Input, Button, Message } from '@arco-design/web-vue'
+import { authApi } from '@/api'
 import { setToken } from '@/utils/storage'
+import { useAppStore } from '@/stores/app'
 
 const router = useRouter()
+const appStore = useAppStore()
 const loading = ref(false)
 const form = ref({
     username: '',
@@ -18,10 +21,16 @@ async function handleLogin() {
     }
     loading.value = true
     try {
-        setToken('mock-token')
+        const res = await authApi.login(form.value)
+        setToken(res.token)
+        appStore.setUser({
+            userId: res.userId,
+            username: res.username,
+            realName: res.realName,
+        })
         router.push('/dashboard')
     } catch {
-        Message.error('登录失败')
+        Message.error('登录失败，请检查用户名和密码')
     } finally {
         loading.value = false
     }

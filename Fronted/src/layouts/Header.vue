@@ -1,14 +1,23 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Avatar, Dropdown } from '@arco-design/web-vue'
-import { ArrowRightStartOnRectangleIcon } from '@heroicons/vue/24/outline'
+import { useAppStore } from '@/stores/app'
+import { removeToken, removeUserInfo } from '@/utils/storage'
 
-const username = ref('管理员')
+const router = useRouter()
+const appStore = useAppStore()
 
-const userMenu = [
-    { key: 'profile', label: '个人设置' },
-    { key: 'logout', label: '退出登录' },
-]
+const username = computed(() => appStore.userInfo?.realName || appStore.userInfo?.username || '未登录')
+
+function handleMenuClick(key: string) {
+    if (key === 'logout') {
+        removeToken()
+        removeUserInfo()
+        appStore.logout()
+        router.push('/login')
+    }
+}
 </script>
 
 <template>
@@ -28,9 +37,13 @@ const userMenu = [
                 </div>
                 <template #content>
                     <div class="py-1">
-                        <div v-for="item in userMenu" :key="item.key"
+                        <div @click="handleMenuClick('profile')"
                             class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-                            {{ item.label }}
+                            个人设置
+                        </div>
+                        <div @click="handleMenuClick('logout')"
+                            class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                            退出登录
                         </div>
                     </div>
                 </template>

@@ -1,8 +1,8 @@
 // ========== 通用 ==========
 export type { PageQuery, PageResult, Result } from './common'
 
-// ========== 用户 ==========
-export type { User } from './user'
+// ========== 用户/员工 ==========
+export type { AdminUser, Department, Role } from './user'
 
 // ========== 商品 ==========
 export type { Product, ProductCategory } from './product'

@@ -1,10 +1,38 @@
-// ========== 用户 ==========
-export interface User {
+// ========== 员工 ==========
+export interface AdminUser {
     id: number
     username: string
-    nickname?: string
-    email?: string
+    realName: string
     phone?: string
+    email?: string
+    departmentId?: number
+    departmentName?: string
+    permissions: string[]
+    routes: string[]
+    status: number
+    lastLoginAt?: string
+    createTime?: string
+}
+
+// ========== 部门 ==========
+export interface Department {
+    id: number
+    name: string
+    parentId?: number
+    sort?: number
+    status: number
+    createTime?: string
+}
+
+// ========== 角色 ==========
+export interface Role {
+    id: number
+    name: string
+    code: string
+    description?: string
+    permissions: string[]
+    routes: string[]
+    isPreset: number
     status: number
     createTime?: string
 }
