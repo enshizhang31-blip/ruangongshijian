@@ -3,7 +3,7 @@ package com.salemanager.modules.ums.controller;
 import com.salemanager.backend.BackendApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -30,7 +30,8 @@ class UserControllerTest {
         mockMvc.perform(get("/api/admin/user"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(jsonPath("$.data.list").isArray())
+                .andExpect(jsonPath("$.data.pagination").exists());
     }
 
     @Test
