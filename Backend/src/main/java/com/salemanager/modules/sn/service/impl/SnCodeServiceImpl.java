@@ -2,6 +2,9 @@ package com.salemanager.modules.sn.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.salemanager.common.exception.BusinessException;
 import com.salemanager.modules.product.mapper.GoodsMapper;
 import com.salemanager.modules.product.mapper.SkuMapper;
 import com.salemanager.modules.product.model.Goods;
@@ -12,11 +15,13 @@ import com.salemanager.modules.sn.model.SnCode;
 import com.salemanager.modules.sn.model.SnCodeLog;
 import com.salemanager.modules.sn.param.SnCodeParam;
 import com.salemanager.modules.sn.service.SnCodeService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +33,8 @@ import java.util.Map;
  */
 @Service
 public class SnCodeServiceImpl implements SnCodeService {
+
+    private static final Logger log = LoggerFactory.getLogger(SnCodeServiceImpl.class);
 
     @Autowired
     private SnCodeMapper snCodeMapper;
@@ -43,9 +50,11 @@ public class SnCodeServiceImpl implements SnCodeService {
 
     @Override
     public List<SnCode> getSnCodeList(String keyword, Integer status, Integer page, Integer pageSize) {
+        log.info("getSnCodeList keyword={}, status={}, page={}, pageSize={}", keyword, status, page, pageSize);
+
         LambdaQueryWrapper<SnCode> wrapper = new LambdaQueryWrapper<>();
 
-        if (keyword != null && !keyword.isEmpty()) {
+        if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w
                     .like(SnCode::getSnCode, keyword)
                     .or()
@@ -58,17 +67,17 @@ public class SnCodeServiceImpl implements SnCodeService {
 
         wrapper.orderByDesc(SnCode::getCreatedAt);
 
-        int offset = (page - 1) * pageSize;
-        wrapper.last("LIMIT " + offset + ", " + pageSize);
+        IPage<SnCode> result = new Page<>(page, pageSize);
+        snCodeMapper.selectPage(result, wrapper);
 
-        return snCodeMapper.selectList(wrapper);
+        return result.getRecords();
     }
 
     @Override
     public Long getSnCodeCount(String keyword, Integer status) {
         LambdaQueryWrapper<SnCode> wrapper = new LambdaQueryWrapper<>();
 
-        if (keyword != null && !keyword.isEmpty()) {
+        if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w
                     .like(SnCode::getSnCode, keyword)
                     .or()
@@ -84,18 +93,42 @@ public class SnCodeServiceImpl implements SnCodeService {
 
     @Override
     public SnCode getSnCodeById(Long id) {
-        return snCodeMapper.selectById(id);
+        log.info("getSnCodeById id={}", id);
+        if (id == null || id <= 0) {
+            throw new BusinessException(400, "SN码ID无效");
+        }
+
+        SnCode snCode = snCodeMapper.selectById(id);
+        if (snCode == null) {
+            log.warn("SN码不存在 id={}", id);
+            throw new BusinessException("SN码不存在");
+        }
+        return snCode;
     }
 
     @Override
     public SnCode getSnCodeBySn(String sn) {
+        log.info("getSnCodeBySn sn={}", sn);
+        if (!StringUtils.hasText(sn)) {
+            throw new BusinessException(400, "SN码不能为空");
+        }
+
         LambdaQueryWrapper<SnCode> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(SnCode::getSnCode, sn);
-        return snCodeMapper.selectOne(wrapper);
+        SnCode result = snCodeMapper.selectOne(wrapper);
+
+        if (result == null) {
+            log.warn("SN码不存在 sn={}", sn);
+            throw new BusinessException("SN码不存在");
+        }
+        return result;
     }
 
     @Override
+    @Transactional
     public void createSnCode(SnCodeParam param) {
+        log.info("createSnCode sn={}", param.getSn());
+
         SnCode snCode = new SnCode();
         snCode.setSnCode(param.getSn());
         snCode.setSkuId(param.getSkuId());
@@ -123,6 +156,7 @@ public class SnCodeServiceImpl implements SnCodeService {
         }
 
         snCodeMapper.insert(snCode);
+        log.info("SN码创建成功 id={}, sn={}", snCode.getId(), snCode.getSnCode());
 
         // 记录日志
         logOperation(snCode.getId(), snCode.getSnCode(), param.getSkuId(), "录入", null, 0, null, param.getRemark());
@@ -131,11 +165,14 @@ public class SnCodeServiceImpl implements SnCodeService {
     @Override
     @Transactional
     public Map<String, Object> batchCreateSnCode(SnCodeParam param) {
+        log.info("batchCreateSnCode goodsId={}, count={}", param.getGoodsId(),
+                param.getSns() != null ? param.getSns().length : 0);
+
         int success = 0;
         int failed = 0;
         List<String> errors = new ArrayList<>();
 
-        if (param.getSns() != null) {
+        if (param.getSns() != null && param.getSns().length > 0) {
             for (String sn : param.getSns()) {
                 try {
                     SnCodeParam singleParam = new SnCodeParam();
@@ -156,20 +193,17 @@ public class SnCodeServiceImpl implements SnCodeService {
         result.put("success", success);
         result.put("failed", failed);
         result.put("errors", errors);
+        log.info("batchCreateSnCode 完成 success={}, failed={}", success, failed);
         return result;
     }
 
     @Override
+    @Transactional
     public void bindSnCode(String sn, Long orderId) {
-        SnCode snCode = getSnCodeBySn(sn);
-        if (snCode == null) {
-            return;
-        }
+        log.info("bindSnCode sn={}, orderId={}", sn, orderId);
 
+        SnCode snCode = getSnCodeBySn(sn);
         Integer oldStatus = snCode.getStatus();
-        snCode.setStatus(1); // 已售
-        snCode.setSoldAt(LocalDateTime.now());
-        snCode.setUpdatedAt(LocalDateTime.now());
 
         LambdaUpdateWrapper<SnCode> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(SnCode::getId, snCode.getId())
@@ -178,20 +212,22 @@ public class SnCodeServiceImpl implements SnCodeService {
                 .set(SnCode::getUpdatedAt, LocalDateTime.now());
         snCodeMapper.update(null, wrapper);
 
-        // 记录日志
+        log.info("SN码绑定成功 sn={}", sn);
         logOperation(snCode.getId(), snCode.getSnCode(), snCode.getSkuId(), "销售", oldStatus, 1, null, "订单ID: " + orderId);
     }
 
     @Override
+    @Transactional
     public void unbindSnCode(Long id) {
+        log.info("unbindSnCode id={}", id);
+
         SnCode snCode = snCodeMapper.selectById(id);
         if (snCode == null) {
-            return;
+            log.warn("SN码不存在 id={}", id);
+            throw new BusinessException("SN码不存在");
         }
 
         Integer oldStatus = snCode.getStatus();
-        snCode.setStatus(0); // 回到在库
-        snCode.setUpdatedAt(LocalDateTime.now());
 
         LambdaUpdateWrapper<SnCode> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(SnCode::getId, id)
@@ -199,12 +235,14 @@ public class SnCodeServiceImpl implements SnCodeService {
                 .set(SnCode::getUpdatedAt, LocalDateTime.now());
         snCodeMapper.update(null, wrapper);
 
-        // 记录日志
+        log.info("SN码解绑成功 id={}", id);
         logOperation(snCode.getId(), snCode.getSnCode(), snCode.getSkuId(), "解绑", oldStatus, 0, null, null);
     }
 
     @Override
     public List<SnCodeLog> getSnCodeLogs(Long snId, Integer page, Integer pageSize) {
+        log.info("getSnCodeLogs snId={}, page={}, pageSize={}", snId, page, pageSize);
+
         LambdaQueryWrapper<SnCodeLog> wrapper = new LambdaQueryWrapper<>();
 
         if (snId != null) {
@@ -213,10 +251,10 @@ public class SnCodeServiceImpl implements SnCodeService {
 
         wrapper.orderByDesc(SnCodeLog::getCreatedAt);
 
-        int offset = (page - 1) * pageSize;
-        wrapper.last("LIMIT " + offset + ", " + pageSize);
+        IPage<SnCodeLog> result = new Page<>(page, pageSize);
+        snCodeLogMapper.selectPage(result, wrapper);
 
-        return snCodeLogMapper.selectList(wrapper);
+        return result.getRecords();
     }
 
     @Override
@@ -232,6 +270,8 @@ public class SnCodeServiceImpl implements SnCodeService {
 
     @Override
     public List<SnCode> getSnCodesByGoodsId(Long goodsId) {
+        log.info("getSnCodesByGoodsId goodsId={}", goodsId);
+
         LambdaQueryWrapper<SnCode> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(SnCode::getSpuId, goodsId);
         wrapper.orderByDesc(SnCode::getCreatedAt);
@@ -240,16 +280,16 @@ public class SnCodeServiceImpl implements SnCodeService {
 
     private void logOperation(Long snCodeId, String snCode, Long skuId, String operation,
                               Integer fromStatus, Integer toStatus, Long operatorId, String remark) {
-        SnCodeLog log = new SnCodeLog();
-        log.setSnCodeId(snCodeId);
-        log.setSnCode(snCode);
-        log.setSkuId(skuId);
-        log.setOperation(operation);
-        log.setFromStatus(fromStatus);
-        log.setToStatus(toStatus);
-        log.setOperatorId(operatorId);
-        log.setRemark(remark);
-        log.setCreatedAt(LocalDateTime.now());
-        snCodeLogMapper.insert(log);
+        SnCodeLog snCodeLog = new SnCodeLog();
+        snCodeLog.setSnCodeId(snCodeId);
+        snCodeLog.setSnCode(snCode);
+        snCodeLog.setSkuId(skuId);
+        snCodeLog.setOperation(operation);
+        snCodeLog.setFromStatus(fromStatus);
+        snCodeLog.setToStatus(toStatus);
+        snCodeLog.setOperatorId(operatorId);
+        snCodeLog.setRemark(remark);
+        snCodeLog.setCreatedAt(LocalDateTime.now());
+        snCodeLogMapper.insert(snCodeLog);
     }
 }

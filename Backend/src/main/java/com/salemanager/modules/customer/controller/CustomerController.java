@@ -4,7 +4,11 @@ import com.salemanager.common.result.Result;
 import com.salemanager.modules.customer.model.Customer;
 import com.salemanager.modules.customer.param.CustomerParam;
 import com.salemanager.modules.customer.service.CustomerService;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -16,7 +20,10 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/admin/customer")
+@Validated
 public class CustomerController {
+
+    private static final Logger log = LoggerFactory.getLogger(CustomerController.class);
 
     @Autowired
     private CustomerService customerService;
@@ -30,6 +37,8 @@ public class CustomerController {
             @RequestParam(required = false) Integer status,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "20") Integer pageSize) {
+
+        log.info("getCustomerList keyword={}, status={}, page={}, pageSize={}", keyword, status, page, pageSize);
 
         List<Customer> list = customerService.getCustomerList(keyword, status, page, pageSize);
         Long total = customerService.getCustomerCount(keyword, status);
@@ -50,6 +59,7 @@ public class CustomerController {
      */
     @GetMapping("/{id}")
     public Result<Customer> getCustomerById(@PathVariable Long id) {
+        log.info("getCustomerById id={}", id);
         Customer customer = customerService.getCustomerById(id);
         return Result.success(customer);
     }
@@ -58,7 +68,8 @@ public class CustomerController {
      * 新增客户
      */
     @PostMapping
-    public Result<Void> createCustomer(@RequestBody CustomerParam param) {
+    public Result<Void> createCustomer(@Valid @RequestBody CustomerParam param) {
+        log.info("createCustomer username={}", param.getUsername());
         customerService.createCustomer(param);
         return Result.success();
     }
@@ -67,7 +78,8 @@ public class CustomerController {
      * 更新客户
      */
     @PutMapping("/{id}")
-    public Result<Void> updateCustomer(@PathVariable Long id, @RequestBody CustomerParam param) {
+    public Result<Void> updateCustomer(@PathVariable Long id, @Valid @RequestBody CustomerParam param) {
+        log.info("updateCustomer id={}", id);
         customerService.updateCustomer(id, param);
         return Result.success();
     }
@@ -77,6 +89,7 @@ public class CustomerController {
      */
     @DeleteMapping("/{id}")
     public Result<Void> deleteCustomer(@PathVariable Long id) {
+        log.info("deleteCustomer id={}", id);
         customerService.deleteCustomer(id);
         return Result.success();
     }

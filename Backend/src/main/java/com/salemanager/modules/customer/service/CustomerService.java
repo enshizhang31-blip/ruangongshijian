@@ -1,5 +1,6 @@
 package com.salemanager.modules.customer.service;
 
+import com.salemanager.common.exception.BusinessException;
 import com.salemanager.modules.customer.model.Customer;
 import com.salemanager.modules.customer.param.CustomerParam;
 
@@ -22,6 +23,10 @@ public interface CustomerService {
 
     /**
      * 获取客户详情
+     *
+     * @param id 客户ID
+     * @return 客户信息
+     * @throws BusinessException 客户不存在时抛出异常
      */
     Customer getCustomerById(Long id);
 

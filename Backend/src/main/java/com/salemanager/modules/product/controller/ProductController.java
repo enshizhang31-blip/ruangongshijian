@@ -4,7 +4,11 @@ import com.salemanager.common.result.Result;
 import com.salemanager.modules.product.model.Goods;
 import com.salemanager.modules.product.param.ProductParam;
 import com.salemanager.modules.product.service.ProductService;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -16,7 +20,10 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/admin/product")
+@Validated
 public class ProductController {
+
+    private static final Logger log = LoggerFactory.getLogger(ProductController.class);
 
     @Autowired
     private ProductService productService;
@@ -30,6 +37,8 @@ public class ProductController {
             @RequestParam(required = false) Integer status,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "20") Integer pageSize) {
+
+        log.info("getProductList keyword={}, status={}, page={}, pageSize={}", keyword, status, page, pageSize);
 
         List<Goods> list = productService.getProductList(keyword, status, page, pageSize);
         Long total = productService.getProductCount(keyword, status);
@@ -50,6 +59,7 @@ public class ProductController {
      */
     @GetMapping("/{id}")
     public Result<Goods> getProductById(@PathVariable Long id) {
+        log.info("getProductById id={}", id);
         Goods goods = productService.getProductById(id);
         return Result.success(goods);
     }
@@ -58,7 +68,8 @@ public class ProductController {
      * 新增商品
      */
     @PostMapping
-    public Result<Void> createProduct(@RequestBody ProductParam param) {
+    public Result<Void> createProduct(@Valid @RequestBody ProductParam param) {
+        log.info("createProduct name={}", param.getName());
         productService.createProduct(param);
         return Result.success();
     }
@@ -67,7 +78,8 @@ public class ProductController {
      * 更新商品
      */
     @PutMapping("/{id}")
-    public Result<Void> updateProduct(@PathVariable Long id, @RequestBody ProductParam param) {
+    public Result<Void> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductParam param) {
+        log.info("updateProduct id={}", id);
         productService.updateProduct(id, param);
         return Result.success();
     }
@@ -77,6 +89,7 @@ public class ProductController {
      */
     @DeleteMapping("/{id}")
     public Result<Void> deleteProduct(@PathVariable Long id) {
+        log.info("deleteProduct id={}", id);
         productService.deleteProduct(id);
         return Result.success();
     }

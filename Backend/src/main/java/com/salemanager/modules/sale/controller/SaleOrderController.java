@@ -5,7 +5,11 @@ import com.salemanager.modules.sale.model.SaleOrder;
 import com.salemanager.modules.sale.model.SaleOrderItem;
 import com.salemanager.modules.sale.param.SaleOrderParam;
 import com.salemanager.modules.sale.service.SaleOrderService;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -17,7 +21,10 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/admin/sale/order")
+@Validated
 public class SaleOrderController {
+
+    private static final Logger log = LoggerFactory.getLogger(SaleOrderController.class);
 
     @Autowired
     private SaleOrderService saleOrderService;
@@ -31,6 +38,8 @@ public class SaleOrderController {
             @RequestParam(required = false) Integer status,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "20") Integer pageSize) {
+
+        log.info("getOrderList keyword={}, status={}, page={}, pageSize={}", keyword, status, page, pageSize);
 
         List<SaleOrder> list = saleOrderService.getOrderList(keyword, status, page, pageSize);
         Long total = saleOrderService.getOrderCount(keyword, status);
@@ -51,6 +60,7 @@ public class SaleOrderController {
      */
     @GetMapping("/{id}")
     public Result<SaleOrder> getOrderById(@PathVariable Long id) {
+        log.info("getOrderById id={}", id);
         SaleOrder order = saleOrderService.getOrderById(id);
         return Result.success(order);
     }
@@ -60,6 +70,7 @@ public class SaleOrderController {
      */
     @GetMapping("/{id}/items")
     public Result<List<SaleOrderItem>> getOrderItems(@PathVariable Long id) {
+        log.info("getOrderItems orderId={}", id);
         List<SaleOrderItem> items = saleOrderService.getOrderItems(id);
         return Result.success(items);
     }
@@ -68,7 +79,8 @@ public class SaleOrderController {
      * 新增订单
      */
     @PostMapping
-    public Result<Void> createOrder(@RequestBody SaleOrderParam param) {
+    public Result<Void> createOrder(@Valid @RequestBody SaleOrderParam param) {
+        log.info("createOrder customerId={}", param.getCustomerId());
         saleOrderService.createOrder(param);
         return Result.success();
     }
@@ -77,7 +89,8 @@ public class SaleOrderController {
      * 更新订单
      */
     @PutMapping("/{id}")
-    public Result<Void> updateOrder(@PathVariable Long id, @RequestBody SaleOrderParam param) {
+    public Result<Void> updateOrder(@PathVariable Long id, @Valid @RequestBody SaleOrderParam param) {
+        log.info("updateOrder id={}", id);
         saleOrderService.updateOrder(id, param);
         return Result.success();
     }
@@ -87,6 +100,7 @@ public class SaleOrderController {
      */
     @DeleteMapping("/{id}")
     public Result<Void> deleteOrder(@PathVariable Long id) {
+        log.info("deleteOrder id={}", id);
         saleOrderService.deleteOrder(id);
         return Result.success();
     }

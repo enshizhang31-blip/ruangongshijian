@@ -48,7 +48,7 @@ class AuthControllerTest {
     void testLoginFail_WrongPassword() throws Exception {
         mockMvc.perform(post("/api/admin/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"admin\",\"password\":\"wrong\"}"))
+                        .content("{\"username\":\"admin\",\"password\":\"wrongpw\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(401))
                 .andExpect(jsonPath("$.message").value("用户名或密码错误"));

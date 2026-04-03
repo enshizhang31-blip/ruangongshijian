@@ -5,7 +5,11 @@ import com.salemanager.modules.sn.model.SnCode;
 import com.salemanager.modules.sn.model.SnCodeLog;
 import com.salemanager.modules.sn.param.SnCodeParam;
 import com.salemanager.modules.sn.service.SnCodeService;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -17,7 +21,10 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/admin/sn")
+@Validated
 public class SnCodeController {
+
+    private static final Logger log = LoggerFactory.getLogger(SnCodeController.class);
 
     @Autowired
     private SnCodeService snCodeService;
@@ -31,6 +38,8 @@ public class SnCodeController {
             @RequestParam(required = false) Integer status,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "20") Integer pageSize) {
+
+        log.info("getSnCodeList keyword={}, status={}, page={}, pageSize={}", keyword, status, page, pageSize);
 
         List<SnCode> list = snCodeService.getSnCodeList(keyword, status, page, pageSize);
         Long total = snCodeService.getSnCodeCount(keyword, status);
@@ -51,6 +60,7 @@ public class SnCodeController {
      */
     @GetMapping("/code/{id}")
     public Result<SnCode> getSnCodeById(@PathVariable Long id) {
+        log.info("getSnCodeById id={}", id);
         SnCode snCode = snCodeService.getSnCodeById(id);
         return Result.success(snCode);
     }
@@ -59,7 +69,8 @@ public class SnCodeController {
      * 录入SN码
      */
     @PostMapping("/code")
-    public Result<Void> createSnCode(@RequestBody SnCodeParam param) {
+    public Result<Void> createSnCode(@Valid @RequestBody SnCodeParam param) {
+        log.info("createSnCode sn={}", param.getSn());
         snCodeService.createSnCode(param);
         return Result.success();
     }
@@ -68,7 +79,8 @@ public class SnCodeController {
      * 批量录入SN码
      */
     @PostMapping("/code/batch")
-    public Result<Map<String, Object>> batchCreateSnCode(@RequestBody SnCodeParam param) {
+    public Result<Map<String, Object>> batchCreateSnCode(@Valid @RequestBody SnCodeParam param) {
+        log.info("batchCreateSnCode count={}", param.getSns() != null ? param.getSns().length : 0);
         Map<String, Object> result = snCodeService.batchCreateSnCode(param);
         return Result.success(result);
     }
@@ -80,6 +92,7 @@ public class SnCodeController {
     public Result<Void> bindSnCode(@RequestBody Map<String, Object> params) {
         String sn = (String) params.get("sn");
         Long orderId = params.get("orderId") != null ? Long.valueOf(params.get("orderId").toString()) : null;
+        log.info("bindSnCode sn={}, orderId={}", sn, orderId);
         snCodeService.bindSnCode(sn, orderId);
         return Result.success();
     }
@@ -89,6 +102,7 @@ public class SnCodeController {
      */
     @PostMapping("/code/{id}/unbind")
     public Result<Void> unbindSnCode(@PathVariable Long id) {
+        log.info("unbindSnCode id={}", id);
         snCodeService.unbindSnCode(id);
         return Result.success();
     }
@@ -98,6 +112,7 @@ public class SnCodeController {
      */
     @GetMapping("/code/query/{sn}")
     public Result<SnCode> querySnCode(@PathVariable String sn) {
+        log.info("querySnCode sn={}", sn);
         SnCode snCode = snCodeService.getSnCodeBySn(sn);
         return Result.success(snCode);
     }
@@ -110,6 +125,8 @@ public class SnCodeController {
             @RequestParam(required = false) Long snId,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "20") Integer pageSize) {
+
+        log.info("getSnCodeLogs snId={}, page={}, pageSize={}", snId, page, pageSize);
 
         List<SnCodeLog> list = snCodeService.getSnCodeLogs(snId, page, pageSize);
         Long total = snCodeService.getSnCodeLogCount(snId);
@@ -130,6 +147,7 @@ public class SnCodeController {
      */
     @GetMapping("/code/goods/{goodsId}")
     public Result<List<SnCode>> getSnCodesByGoodsId(@PathVariable Long goodsId) {
+        log.info("getSnCodesByGoodsId goodsId={}", goodsId);
         List<SnCode> list = snCodeService.getSnCodesByGoodsId(goodsId);
         return Result.success(list);
     }

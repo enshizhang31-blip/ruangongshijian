@@ -5,6 +5,8 @@ import com.salemanager.common.exception.BusinessException;
 import com.salemanager.modules.ums.mapper.MenuMapper;
 import com.salemanager.modules.ums.model.Menu;
 import com.salemanager.modules.ums.service.MenuService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,11 +21,14 @@ import java.util.stream.Collectors;
 @Service
 public class MenuServiceImpl implements MenuService {
 
+    private static final Logger log = LoggerFactory.getLogger(MenuServiceImpl.class);
+
     @Autowired
     private MenuMapper menuMapper;
 
     @Override
     public List<Menu> getMenuList() {
+        log.info("getMenuList");
         return menuMapper.selectList(
                 new LambdaQueryWrapper<Menu>()
                         .eq(Menu::getStatus, 1)
@@ -33,6 +38,7 @@ public class MenuServiceImpl implements MenuService {
 
     @Override
     public List<Menu> getMenuTree() {
+        log.info("getMenuTree");
         List<Menu> allMenus = getMenuList();
 
         // 构建父子关系
@@ -60,8 +66,10 @@ public class MenuServiceImpl implements MenuService {
 
     @Override
     public Menu getMenuById(Long id) {
+        log.info("getMenuById id={}", id);
         Menu menu = menuMapper.selectById(id);
         if (menu == null) {
+            log.warn("菜单不存在 id={}", id);
             throw new BusinessException(404, "菜单不存在");
         }
         return menu;

@@ -1,6 +1,8 @@
 package com.salemanager.common.exception;
 
 import com.salemanager.common.result.Result;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.validation.BindException;
@@ -8,6 +10,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.stream.Collectors;
 
 /**
  * 全局异常处理
@@ -27,7 +31,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 处理参数校验异常
+     * 处理参数校验异常（@RequestBody）
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public Result<?> handleValidationException(MethodArgumentNotValidException e) {
@@ -36,6 +40,19 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .orElse("参数校验失败");
         log.warn("参数校验异常: {}", message);
+        return Result.fail(400, message);
+    }
+
+    /**
+     * 处理绑定异常（@RequestParam / @PathVariable）
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public Result<?> handleConstraintViolationException(ConstraintViolationException e) {
+        String message = e.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .findFirst()
+                .orElse("参数校验失败");
+        log.warn("约束校验异常: {}", message);
         return Result.fail(400, message);
     }
 

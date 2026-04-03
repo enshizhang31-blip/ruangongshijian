@@ -10,6 +10,8 @@ import com.salemanager.modules.sn.mapper.SnCodeMapper;
 import com.salemanager.modules.sn.model.SnCode;
 import com.salemanager.modules.statistics.model.DashboardStats;
 import com.salemanager.modules.statistics.service.DashboardService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +25,8 @@ import java.time.LocalTime;
  */
 @Service
 public class DashboardServiceImpl implements DashboardService {
+
+    private static final Logger log = LoggerFactory.getLogger(DashboardServiceImpl.class);
 
     @Autowired
     private SaleOrderMapper orderMapper;
@@ -38,6 +42,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     public DashboardStats getStats() {
+        log.info("getStats");
         DashboardStats stats = new DashboardStats();
 
         LocalDate today = LocalDate.now();

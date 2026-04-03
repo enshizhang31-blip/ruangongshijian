@@ -1,6 +1,8 @@
 package com.salemanager.modules.ums.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.salemanager.common.exception.BusinessException;
 import com.salemanager.modules.ums.mapper.AdminUserMapper;
 import com.salemanager.modules.ums.mapper.RoleMapper;
@@ -8,10 +10,13 @@ import com.salemanager.modules.ums.model.AdminUser;
 import com.salemanager.modules.ums.model.Role;
 import com.salemanager.modules.ums.param.AdminUserParam;
 import com.salemanager.modules.ums.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +26,8 @@ import java.util.List;
  */
 @Service
 public class UserServiceImpl implements UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     @Autowired
     private AdminUserMapper adminUserMapper;
@@ -33,9 +40,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<AdminUser> getUserList(String keyword, Integer status, Integer page, Integer pageSize) {
+        log.info("getUserList keyword={}, status={}, page={}, pageSize={}", keyword, status, page, pageSize);
+
         LambdaQueryWrapper<AdminUser> wrapper = new LambdaQueryWrapper<>();
 
-        if (keyword != null && !keyword.isEmpty()) {
+        if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w
                     .like(AdminUser::getUsername, keyword)
                     .or()
@@ -50,17 +59,17 @@ public class UserServiceImpl implements UserService {
 
         wrapper.orderByDesc(AdminUser::getCreatedAt);
 
-        int offset = (page - 1) * pageSize;
-        wrapper.last("LIMIT " + offset + ", " + pageSize);
+        IPage<AdminUser> result = new Page<>(page, pageSize);
+        adminUserMapper.selectPage(result, wrapper);
 
-        return adminUserMapper.selectList(wrapper);
+        return result.getRecords();
     }
 
     @Override
     public Long getUserCount(String keyword, Integer status) {
         LambdaQueryWrapper<AdminUser> wrapper = new LambdaQueryWrapper<>();
 
-        if (keyword != null && !keyword.isEmpty()) {
+        if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w
                     .like(AdminUser::getUsername, keyword)
                     .or()
@@ -78,8 +87,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public AdminUser getUserById(Long id) {
+        log.info("getUserById id={}", id);
+        if (id == null || id <= 0) {
+            throw new BusinessException(400, "员工ID无效");
+        }
+
         AdminUser user = adminUserMapper.selectById(id);
         if (user == null) {
+            log.warn("员工不存在 id={}", id);
             throw new BusinessException(404, "员工不存在");
         }
         // 不返回密码
@@ -90,18 +105,22 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void createUser(AdminUserParam param) {
+        log.info("createUser username={}", param.getUsername());
+
         // 校验用户名唯一
         Long count = adminUserMapper.selectCount(
                 new LambdaQueryWrapper<AdminUser>()
                         .eq(AdminUser::getUsername, param.getUsername())
         );
         if (count > 0) {
+            log.warn("用户名已存在 username={}", param.getUsername());
             throw new BusinessException(400, "用户名已存在");
         }
 
         // 从角色模板复制权限
         Role role = roleMapper.selectById(param.getRoleId());
         if (role == null) {
+            log.warn("角色不存在 roleId={}", param.getRoleId());
             throw new BusinessException(400, "角色不存在");
         }
 
@@ -119,13 +138,17 @@ public class UserServiceImpl implements UserService {
         user.setUpdatedAt(LocalDateTime.now());
 
         adminUserMapper.insert(user);
+        log.info("员工创建成功 id={}, username={}", user.getId(), user.getUsername());
     }
 
     @Override
     @Transactional
     public void updateUser(Long id, AdminUserParam param) {
+        log.info("updateUser id={}", id);
+
         AdminUser user = adminUserMapper.selectById(id);
         if (user == null) {
+            log.warn("员工不存在 id={}", id);
             throw new BusinessException(404, "员工不存在");
         }
 
@@ -147,27 +170,42 @@ public class UserServiceImpl implements UserService {
 
         user.setUpdatedAt(LocalDateTime.now());
         adminUserMapper.updateById(user);
+        log.info("员工更新成功 id={}", id);
     }
 
     @Override
     @Transactional
     public void deleteUser(Long id) {
+        log.info("deleteUser id={}", id);
+        if (id == null || id <= 0) {
+            throw new BusinessException(400, "员工ID无效");
+        }
+
         AdminUser user = adminUserMapper.selectById(id);
         if (user == null) {
+            log.warn("员工不存在 id={}", id);
             throw new BusinessException(404, "员工不存在");
         }
         adminUserMapper.deleteById(id);
+        log.info("员工删除成功 id={}", id);
     }
 
     @Override
     @Transactional
     public void resetPassword(Long id) {
+        log.info("resetPassword id={}", id);
+        if (id == null || id <= 0) {
+            throw new BusinessException(400, "员工ID无效");
+        }
+
         AdminUser user = adminUserMapper.selectById(id);
         if (user == null) {
+            log.warn("员工不存在 id={}", id);
             throw new BusinessException(404, "员工不存在");
         }
         user.setPassword(passwordEncoder.encode("123456"));
         user.setUpdatedAt(LocalDateTime.now());
         adminUserMapper.updateById(user);
+        log.info("密码重置成功 id={}", id);
     }
 }

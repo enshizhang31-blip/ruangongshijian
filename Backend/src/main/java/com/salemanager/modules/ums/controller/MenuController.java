@@ -3,6 +3,8 @@ package com.salemanager.modules.ums.controller;
 import com.salemanager.common.result.Result;
 import com.salemanager.modules.ums.model.Menu;
 import com.salemanager.modules.ums.service.MenuService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +17,8 @@ import java.util.List;
 @RequestMapping("/api/admin/menu")
 public class MenuController {
 
+    private static final Logger log = LoggerFactory.getLogger(MenuController.class);
+
     @Autowired
     private MenuService menuService;
 
@@ -23,6 +27,7 @@ public class MenuController {
      */
     @GetMapping
     public Result<List<Menu>> getMenuList() {
+        log.info("getMenuList");
         List<Menu> list = menuService.getMenuList();
         return Result.success(list);
     }
@@ -32,6 +37,7 @@ public class MenuController {
      */
     @GetMapping("/tree")
     public Result<List<Menu>> getMenuTree() {
+        log.info("getMenuTree");
         List<Menu> tree = menuService.getMenuTree();
         return Result.success(tree);
     }
@@ -41,6 +47,7 @@ public class MenuController {
      */
     @GetMapping("/{id}")
     public Result<Menu> getMenuById(@PathVariable Long id) {
+        log.info("getMenuById id={}", id);
         Menu menu = menuService.getMenuById(id);
         return Result.success(menu);
     }

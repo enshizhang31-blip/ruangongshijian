@@ -1,5 +1,6 @@
 package com.salemanager.modules.sn.service;
 
+import com.salemanager.common.exception.BusinessException;
 import com.salemanager.modules.sn.model.SnCode;
 import com.salemanager.modules.sn.model.SnCodeLog;
 import com.salemanager.modules.sn.param.SnCodeParam;
@@ -24,11 +25,19 @@ public interface SnCodeService {
 
     /**
      * 获取SN码详情
+     *
+     * @param id SN码ID
+     * @return SN码信息
+     * @throws BusinessException SN码不存在时抛出异常
      */
     SnCode getSnCodeById(Long id);
 
     /**
      * 按SN码查询
+     *
+     * @param sn SN码
+     * @return SN码信息
+     * @throws BusinessException SN码不存在时抛出异常
      */
     SnCode getSnCodeBySn(String sn);
 
