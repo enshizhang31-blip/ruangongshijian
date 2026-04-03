@@ -166,9 +166,9 @@ const columns = [
                 <Space direction="horizontal">
                     <span class="text-sm text-gray-500">共 {{ total }} 条</span>
                     <Button :disabled="query.page <= 1" @click="setPage(query.page - 1)">上一页</Button>
-                    <span class="text-sm py-2">第 {{ query.page }} / {{ Math.ceil(total / query.pageSize) || 1 }}
+                    <span class="text-sm py-2">第 {{ query.page }} / {{ Math.ceil(total / (query.pageSize || 20)) || 1 }}
                         页</span>
-                    <Button :disabled="query.page >= Math.ceil(total / query.pageSize)"
+                    <Button :disabled="query.page >= Math.ceil(total / (query.pageSize || 20))"
                         @click="setPage(query.page + 1)">下一页</Button>
                 </Space>
             </div>

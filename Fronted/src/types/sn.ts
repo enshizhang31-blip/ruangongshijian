@@ -1,34 +1,40 @@
 // ========== SN码 ==========
 export interface SnCode {
-    id: number
-    sn: string
-    goodsId: number
-    goodsName?: string
-    skuId?: number
-    status: number // 0:未绑定 1:已绑定 2:已使用 3:已退货
-    bindTime?: string
-    usedTime?: string
-    orderId?: number
-    remark?: string
-    createTime?: string
+  id: number
+  snCode: string
+  skuId?: number
+  spuId?: number
+  spuName?: string
+  skuCode?: string
+  specJson?: string
+  price?: number
+  status: number // 0:在库 1:已售 2:已作废 3:退货中 4:已退货
+  source?: number // 1:手动 2:CSV 3:自动生成
+  createdAt?: string
+  soldAt?: string
+  updatedAt?: string
 }
 
 export interface SnCodeLog {
-    id: number
-    snId: number
-    sn?: string
-    operationType: number // 1:录入 2:绑定 3:解绑 4:使用 5:退货
-    operationTypeName?: string
-    operatorId: number
-    operatorName?: string
-    content?: string
-    createTime?: string
+  id: number
+  snCodeId?: number
+  snCode?: string
+  skuId?: number
+  operation?: string // 录入, 销售, 解绑
+  fromStatus?: number
+  toStatus?: number
+  operatorId?: number
+  operatorName?: string
+  remark?: string
+  createdAt?: string
 }
 
 export interface SnQuery {
-    sn?: string
-    goodsId?: number
-    status?: number
-    startDate?: string
-    endDate?: string
+  sn?: string
+  goodsId?: number
+  skuId?: number
+  status?: number
+  source?: number
+  startDate?: string
+  endDate?: string
 }

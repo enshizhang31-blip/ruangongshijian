@@ -3,7 +3,7 @@ import { onMounted, ref, reactive, h } from 'vue'
 import { productApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { formatMoney } from '@/utils/format'
-import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Form, FormItem, Select, Message } from '@arco-design/web-vue'
+import { Table, Button, Input, InputNumber, Space, Tag, Popconfirm, Card, Modal, Form, FormItem, Select, Message } from '@arco-design/web-vue'
 import type { Product } from '@/types'
 import { PlusIcon, PencilIcon } from '@heroicons/vue/24/outline'
 
@@ -16,15 +16,18 @@ const editingId = ref<number>()
 const form = reactive<Partial<Product>>({
     name: '',
     categoryId: undefined,
+    brand: '',
     price: 0,
     stock: 0,
     unit: '',
+    images: '',
     description: '',
     status: 1,
 })
 
 const columns = [
     { title: '商品名称', dataIndex: 'name' },
+    { title: '品牌', dataIndex: 'brand' },
     { title: '分类', dataIndex: 'categoryName' },
     { title: '价格', dataIndex: 'price', render: (value: number) => `¥${formatMoney(value)}` },
     { title: '库存', dataIndex: 'stock' },
@@ -52,7 +55,7 @@ function handleReset() {
 function handleAdd() {
     isEdit.value = false
     editingId.value = undefined
-    Object.assign(form, { name: '', categoryId: undefined, price: 0, stock: 0, unit: '', description: '', status: 1 })
+    Object.assign(form, { name: '', categoryId: undefined, brand: '', price: 0, stock: 0, unit: '', images: '', description: '', status: 1 })
     showModal.value = true
 }
 
@@ -135,9 +138,9 @@ async function handleDelete(id: number) {
                 <Space direction="horizontal">
                     <span class="text-sm text-gray-500">共 {{ total }} 条</span>
                     <Button :disabled="query.page <= 1" @click="setPage(query.page - 1)">上一页</Button>
-                    <span class="text-sm py-2">第 {{ query.page }} / {{ Math.ceil(total / query.pageSize) || 1 }}
+                    <span class="text-sm py-2">第 {{ query.page }} / {{ Math.ceil(total / (query.pageSize || 20)) || 1 }}
                         页</span>
-                    <Button :disabled="query.page >= Math.ceil(total / query.pageSize)"
+                    <Button :disabled="query.page >= Math.ceil(total / (query.pageSize || 20))"
                         @click="setPage(query.page + 1)">下一页</Button>
                 </Space>
             </div>

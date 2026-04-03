@@ -1,11 +1,13 @@
 // ========== 统计 ==========
-import type { SaleOrder } from './sale'
 
 export interface DashboardStats {
     todaySales: number
+    monthSales: number
+    totalSales: number
     todayOrders: number
-    todayCustomers: number
+    monthOrders: number
+    totalOrders: number
+    totalCustomers: number
     totalProducts: number
-    lowStockProducts: number
-    recentOrders?: SaleOrder[]
+    totalSnCodes: number
 }

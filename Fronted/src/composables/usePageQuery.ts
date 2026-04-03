@@ -1,5 +1,14 @@
 import { ref, computed, type Ref } from 'vue'
-import type { PageQuery, PageResult } from '@/types'
+import type { PageQuery } from '@/types'
+
+interface PageResult<T> {
+  list: T[]
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+  }
+}
 
 export function usePageQuery<T>(
   fetchFn: (params: PageQuery) => Promise<PageResult<T>>,
@@ -10,7 +19,6 @@ export function usePageQuery<T>(
   const query = ref<PageQuery>({
     page: 1,
     pageSize: 20,
-    keyword: '',
   })
 
   const totalPages = computed(() => Math.ceil(total.value / query.value.pageSize))
@@ -20,7 +28,12 @@ export function usePageQuery<T>(
     try {
       const result = await fetchFn(query.value)
       list.value = result.list
-      total.value = result.total
+      total.value = result.pagination.total
+      // 同步后端返回的分页信息
+      if (result.pagination) {
+        query.value.page = result.pagination.page
+        query.value.pageSize = result.pagination.pageSize
+      }
     } finally {
       loading.value = false
     }
@@ -37,6 +50,18 @@ export function usePageQuery<T>(
     load()
   }
 
+  function setPageSize(pageSize: number) {
+    query.value.pageSize = pageSize
+    query.value.page = 1
+    load()
+  }
+
+  function setStatus(status: number | undefined) {
+    query.value.status = status
+    query.value.page = 1
+    load()
+  }
+
   return {
     loading,
     list,
@@ -46,5 +71,7 @@ export function usePageQuery<T>(
     load,
     setPage,
     setKeyword,
+    setPageSize,
+    setStatus,
   }
 }
