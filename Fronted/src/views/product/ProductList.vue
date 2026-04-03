@@ -2,8 +2,8 @@
 import { onMounted, ref, reactive, h } from 'vue'
 import { productApi } from '@/api'
 import { usePageQuery } from '@/composables'
-import { formatMoney } from '@/utils/format'
-import { Table, Button, Input, InputNumber, Space, Tag, Popconfirm, Card, Modal, Form, FormItem, Select, Message } from '@arco-design/web-vue'
+import { formatDate } from '@/utils/format'
+import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Form, FormItem, Select, Message } from '@arco-design/web-vue'
 import type { Product } from '@/types'
 import { PlusIcon, PencilIcon } from '@heroicons/vue/24/outline'
 
@@ -17,9 +17,7 @@ const form = reactive<Partial<Product>>({
     name: '',
     categoryId: undefined,
     brand: '',
-    price: 0,
-    stock: 0,
-    unit: '',
+    imageUrl: '',
     images: '',
     description: '',
     status: 1,
@@ -28,14 +26,10 @@ const form = reactive<Partial<Product>>({
 const columns = [
     { title: '商品名称', dataIndex: 'name' },
     { title: '品牌', dataIndex: 'brand' },
-    { title: '分类', dataIndex: 'categoryName' },
-    { title: '价格', dataIndex: 'price', render: (value: number) => `¥${formatMoney(value)}` },
-    { title: '库存', dataIndex: 'stock' },
-    { title: '单位', dataIndex: 'unit' },
-    {
-        title: '状态', dataIndex: 'status', render: (status: number) =>
+    { title: '状态', dataIndex: 'status', render: (status: number) =>
             h(Tag, { color: status === 1 ? 'green' : 'gray' }, () => status === 1 ? '启用' : '禁用')
     },
+    { title: '创建时间', dataIndex: 'createTime', render: (t: string) => t ? formatDate(t) : '-' },
     { title: '操作', slotName: 'actions', align: 'right' },
 ]
 
@@ -55,7 +49,7 @@ function handleReset() {
 function handleAdd() {
     isEdit.value = false
     editingId.value = undefined
-    Object.assign(form, { name: '', categoryId: undefined, brand: '', price: 0, stock: 0, unit: '', images: '', description: '', status: 1 })
+    Object.assign(form, { name: '', categoryId: undefined, brand: '', imageUrl: '', images: '', description: '', status: 1 })
     showModal.value = true
 }
 
@@ -153,19 +147,8 @@ async function handleDelete(id: number) {
             <FormItem label="商品名称" required>
                 <Input v-model="form.name" placeholder="请输入商品名称" />
             </FormItem>
-            <FormItem label="商品分类">
-                <Select v-model="form.categoryId" placeholder="请选择分类" class="w-full">
-                    <!-- 分类选项后续动态加载 -->
-                </Select>
-            </FormItem>
-            <FormItem label="价格">
-                <InputNumber v-model="form.price" :min="0" :precision="2" class="w-full" />
-            </FormItem>
-            <FormItem label="库存">
-                <InputNumber v-model="form.stock" :min="0" class="w-full" />
-            </FormItem>
-            <FormItem label="单位">
-                <Input v-model="form.unit" placeholder="如：个、箱、件" />
+            <FormItem label="品牌">
+                <Input v-model="form.brand" placeholder="请输入品牌" />
             </FormItem>
             <FormItem label="描述">
                 <Input v-model="form.description" placeholder="商品描述" :rows="3" />

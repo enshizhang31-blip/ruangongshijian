@@ -3,7 +3,6 @@ export interface Product {
   id: number
   name: string
   categoryId?: number
-  categoryName?: string
   brand?: string
   imageUrl?: string
   images?: string

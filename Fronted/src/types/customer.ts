@@ -1,7 +1,7 @@
 // ========== 客户 ==========
 export interface Customer {
   id: number
-  username?: string
+  username: string
   realName?: string
   phone?: string
   email?: string
