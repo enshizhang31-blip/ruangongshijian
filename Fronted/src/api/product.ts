@@ -1,23 +1,23 @@
-import request from './request'
+import api from './request'
 import type { Product, ProductCategory, PageQuery, PageResult } from '@/types'
 
 export const productApi = {
   list(params: PageQuery) {
-    return request.get<PageResult<Product>>('/admin/product', { params }).then((res: any) => res.data.data)
+    return api.get<PageResult<Product>>('/admin/product', { params })
   },
   getById(id: number) {
-    return request.get<Product>(`/admin/product/${id}`).then((res: any) => res.data.data)
+    return api.get<Product>(`/admin/product/${id}`)
   },
   create(data: Product) {
-    return request.post<Product>('/admin/product', data).then((res: any) => res.data.data)
+    return api.post<Product>('/admin/product', data)
   },
   update(data: Product) {
-    return request.put<Product>('/admin/product', data).then((res: any) => res.data.data)
+    return api.put<Product>('/admin/product', data)
   },
   delete(id: number) {
-    return request.delete<void>(`/admin/product/${id}`).then((res: any) => res.data.data)
+    return api.delete<void>(`/admin/product/${id}`)
   },
   categories() {
-    return request.get<ProductCategory[]>('/admin/product/categories').then((res: any) => res.data.data)
+    return api.get<ProductCategory[]>('/admin/product/categories')
   },
 }

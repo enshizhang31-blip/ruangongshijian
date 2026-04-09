@@ -1,20 +1,20 @@
-import request from './request'
+import api from './request'
 import type { Customer, PageQuery, PageResult } from '@/types'
 
 export const customerApi = {
   list(params: PageQuery) {
-    return request.get<PageResult<Customer>>('/admin/customer', { params }).then((res: any) => res.data.data)
+    return api.get<PageResult<Customer>>('/admin/customer', { params })
   },
   getById(id: number) {
-    return request.get<Customer>(`/admin/customer/${id}`).then((res: any) => res.data.data)
+    return api.get<Customer>(`/admin/customer/${id}`)
   },
   create(data: Customer) {
-    return request.post<Customer>('/admin/customer', data).then((res: any) => res.data.data)
+    return api.post<Customer>('/admin/customer', data)
   },
   update(data: Customer) {
-    return request.put<Customer>('/admin/customer', data).then((res: any) => res.data.data)
+    return api.put<Customer>('/admin/customer', data)
   },
   delete(id: number) {
-    return request.delete<void>(`/admin/customer/${id}`).then((res: any) => res.data.data)
+    return api.delete<void>(`/admin/customer/${id}`)
   },
 }

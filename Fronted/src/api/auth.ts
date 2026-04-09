@@ -1,4 +1,4 @@
-import request from './request'
+import api from './request'
 
 export interface LoginDTO {
   username: string
@@ -16,14 +16,12 @@ export interface LoginVO {
 
 export const authApi = {
   login(data: LoginDTO) {
-    return request.post<LoginVO>('/admin/auth/login', data).then((res: any) => res.data.data)
+    return api.post<LoginVO>('/admin/auth/login', data)
   },
-
   getCurrentUser() {
-    return request.get<LoginVO>('/admin/auth/current').then((res: any) => res.data.data)
+    return api.get<LoginVO>('/admin/auth/current')
   },
-
   getRoutes() {
-    return request.get<{ permissions: string[]; routes: string[] }>('/admin/auth/routes').then((res: any) => res.data.data)
+    return api.get<{ permissions: string[]; routes: string[] }>('/admin/auth/routes')
   },
 }
