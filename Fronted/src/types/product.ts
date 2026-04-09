@@ -12,6 +12,20 @@ export interface Product {
   updatedAt?: string
 }
 
+export interface Sku {
+  id: number
+  spuId: number
+  skuCode: string
+  specJson?: string
+  price: number
+  costPrice?: number
+  unit?: string
+  imageUrl?: string
+  status: number
+  createdAt?: string
+  updatedAt?: string
+}
+
 export interface ProductCategory {
   id: number
   name: string

@@ -15,6 +15,16 @@ export interface SnCode {
   updatedAt?: string
 }
 
+export interface SnCodeQuery {
+  sn?: string
+  goodsId?: number
+  skuId?: number
+  status?: number
+  source?: number
+  startDate?: string
+  endDate?: string
+}
+
 export interface SnCodeLog {
   id: number
   snCodeId?: number

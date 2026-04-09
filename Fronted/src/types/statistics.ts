@@ -10,4 +10,6 @@ export interface DashboardStats {
     totalCustomers: number
     totalProducts: number
     totalSnCodes: number
+    todayCustomers?: number
+    lowStockProducts?: number
 }

@@ -4,9 +4,9 @@ export interface SaleOrder {
   orderNo: string
   customerId: number
   customerName?: string
-  customerPhone?: string
+  receiverPhone?: string
   totalAmount: number
-  discountAmount: number
+  discountAmount?: number
   payAmount: number
   payType?: number
   status?: number
@@ -29,5 +29,6 @@ export interface SaleOrderItem {
   price: number
   quantity: number
   subtotal?: number
+  snCodeIds?: string
   createdAt?: string
 }

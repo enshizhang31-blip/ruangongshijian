@@ -1,19 +1,16 @@
 // ========== 客户 ==========
 export interface Customer {
   id: number
-  username: string
-  realName?: string
+  openid?: string
+  nickname?: string
+  avatar?: string
   phone?: string
-  email?: string
-  avatarUrl?: string
-  gender?: number
-  birthday?: string
+  memberLevel?: number
   balance?: number
   points?: number
-  levelId?: number
-  levelName?: string
+  totalConsume?: number
+  totalPoints?: number
   status: number
-  lastLoginAt?: string
   createdAt?: string
   updatedAt?: string
 }
