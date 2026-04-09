@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -19,20 +18,16 @@ public class Customer {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private String username;
-    private String password;
-    private String realName;
+    private String openid;
+    private String nickname;
+    private String avatar;
     private String phone;
-    private String email;
-    private String avatarUrl;
-    private Integer gender;
-    private LocalDate birthday;
+    private Integer memberLevel;
     private BigDecimal balance;
     private Integer points;
-    private Long levelId;
-    private String levelName;
+    private BigDecimal totalConsume;
+    private Integer totalPoints;
     private Integer status;
-    private LocalDateTime lastLoginAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -38,9 +38,7 @@ public class CustomerServiceImpl implements CustomerService {
 
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w
-                    .like(Customer::getUsername, keyword)
-                    .or()
-                    .like(Customer::getRealName, keyword)
+                    .like(Customer::getNickname, keyword)
                     .or()
                     .like(Customer::getPhone, keyword));
         }
@@ -63,9 +61,7 @@ public class CustomerServiceImpl implements CustomerService {
 
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w
-                    .like(Customer::getUsername, keyword)
-                    .or()
-                    .like(Customer::getRealName, keyword)
+                    .like(Customer::getNickname, keyword)
                     .or()
                     .like(Customer::getPhone, keyword));
         }
@@ -95,16 +91,17 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional
     public void createCustomer(CustomerParam param) {
-        log.info("createCustomer username={}", param.getUsername());
+        log.info("createCustomer phone={}", param.getPhone());
 
         Customer customer = new Customer();
-        customer.setUsername(param.getUsername() != null ? param.getUsername() : param.getPhone());
-        customer.setRealName(param.getRealName());
         customer.setPhone(param.getPhone());
-        customer.setEmail(param.getEmail());
-        customer.setAvatarUrl(param.getAvatarUrl());
+        customer.setNickname(param.getNickname());
+        customer.setAvatar(param.getAvatar());
+        customer.setMemberLevel(param.getMemberLevel() != null ? param.getMemberLevel() : 1);
         customer.setBalance(BigDecimal.ZERO);
         customer.setPoints(0);
+        customer.setTotalConsume(BigDecimal.ZERO);
+        customer.setTotalPoints(0);
         customer.setStatus(param.getStatus() != null ? param.getStatus() : 1);
         customer.setCreatedAt(LocalDateTime.now());
         customer.setUpdatedAt(LocalDateTime.now());
@@ -124,10 +121,10 @@ public class CustomerServiceImpl implements CustomerService {
             throw new BusinessException("客户不存在");
         }
 
-        if (param.getRealName() != null) customer.setRealName(param.getRealName());
         if (param.getPhone() != null) customer.setPhone(param.getPhone());
-        if (param.getEmail() != null) customer.setEmail(param.getEmail());
-        if (param.getAvatarUrl() != null) customer.setAvatarUrl(param.getAvatarUrl());
+        if (param.getNickname() != null) customer.setNickname(param.getNickname());
+        if (param.getAvatar() != null) customer.setAvatar(param.getAvatar());
+        if (param.getMemberLevel() != null) customer.setMemberLevel(param.getMemberLevel());
         if (param.getStatus() != null) customer.setStatus(param.getStatus());
         customer.setUpdatedAt(LocalDateTime.now());
 

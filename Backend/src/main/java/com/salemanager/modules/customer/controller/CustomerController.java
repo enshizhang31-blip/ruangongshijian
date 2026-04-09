@@ -69,7 +69,7 @@ public class CustomerController {
      */
     @PostMapping
     public Result<Void> createCustomer(@Valid @RequestBody CustomerParam param) {
-        log.info("createCustomer username={}", param.getUsername());
+        log.info("createCustomer phone={}", param.getPhone());
         customerService.createCustomer(param);
         return Result.success();
     }
