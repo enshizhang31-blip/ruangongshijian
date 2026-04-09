@@ -14,6 +14,7 @@ export function usePageQuery<T>(
   fetchFn: (params: PageQuery) => Promise<PageResult<T>>,
 ) {
   const loading = ref(false)
+  const error = ref<Error | null>(null)
   const list: Ref<T[]> = ref([]) as Ref<T[]>
   const total = ref(0)
   const query = ref<PageQuery>({
@@ -21,10 +22,11 @@ export function usePageQuery<T>(
     pageSize: 20,
   })
 
-  const totalPages = computed(() => Math.ceil(total.value / query.value.pageSize))
+  const totalPages = computed(() => Math.ceil(total.value / (query.value.pageSize || 20)))
 
   async function load() {
     loading.value = true
+    error.value = null
     try {
       const result = await fetchFn(query.value)
       list.value = result.list
@@ -34,6 +36,9 @@ export function usePageQuery<T>(
         query.value.page = result.pagination.page
         query.value.pageSize = result.pagination.pageSize
       }
+    } catch (e) {
+      error.value = e instanceof Error ? e : new Error('请求失败')
+      console.error('usePageQuery error:', e)
     } finally {
       loading.value = false
     }
@@ -64,6 +69,7 @@ export function usePageQuery<T>(
 
   return {
     loading,
+    error,
     list,
     total,
     query,

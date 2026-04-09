@@ -6,9 +6,20 @@ export function formatMoney(amount: number | string, decimals = 2): string {
 }
 
 /** 格式化日期 */
-export function formatDate(date: string | Date, format = 'YYYY-MM-DD'): string {
-  const d = typeof date === 'string' ? new Date(date) : date
+export function formatDate(date: any, format = 'YYYY-MM-DD'): string {
+  if (!date) return ''
+
+  let d: Date
+  if (date instanceof Date) {
+    d = date
+  } else if (typeof date === 'string' || typeof date === 'number') {
+    d = new Date(date)
+  } else {
+    return ''
+  }
+
   if (isNaN(d.getTime())) return ''
+
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
