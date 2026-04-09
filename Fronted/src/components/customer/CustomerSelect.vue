@@ -51,7 +51,7 @@ onMounted(() => {
             class="w-full flex items-center justify-between px-4 py-2.5 border border-gray-300 rounded-xl bg-white hover:border-blue-400 transition-colors"
             @click="showDropdown = !showDropdown">
             <span :class="selectedCustomer ? 'text-gray-900' : 'text-gray-400'">
-                {{ selectedCustomer?.name || placeholder }}
+                {{ selectedCustomer?.nickname || placeholder }}
             </span>
             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -66,7 +66,7 @@ onMounted(() => {
                     class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors"
                     :class="selectedCustomer?.id === customer.id ? 'bg-blue-50' : ''" @click="select(customer)">
                     <div class="text-left">
-                        <p class="text-sm font-medium text-gray-900">{{ customer.name }}</p>
+                        <p class="text-sm font-medium text-gray-900">{{ customer.nickname || '-' }}</p>
                         <p class="text-xs text-gray-500">{{ customer.phone || '无电话' }}</p>
                     </div>
                     <CheckIcon v-if="selectedCustomer?.id === customer.id" class="w-4 h-4 text-blue-500" />

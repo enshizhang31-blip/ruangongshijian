@@ -38,7 +38,6 @@ const paymentStatusMap: Record<number, { label: string; class: string }> = {
                 <tr class="text-left text-sm text-gray-600">
                     <th class="px-6 py-3 font-medium">订单号</th>
                     <th class="px-6 py-3 font-medium">客户</th>
-                    <th class="px-6 py-3 font-medium">销售人员</th>
                     <th class="px-6 py-3 font-medium">订单金额</th>
                     <th class="px-6 py-3 font-medium">实付金额</th>
                     <th class="px-6 py-3 font-medium">订单状态</th>
@@ -48,13 +47,13 @@ const paymentStatusMap: Record<number, { label: string; class: string }> = {
             </thead>
             <tbody class="divide-y divide-gray-100">
                 <tr v-if="loading">
-                    <td colspan="8" class="text-center py-12 text-gray-400">
+                    <td colspan="7" class="text-center py-12 text-gray-400">
                         <ArrowPathIcon class="w-5 h-5 mr-2 animate-spin inline-block" />加载中...
                     </td>
                 </tr>
                 <template v-else-if="list.length === 0">
                     <tr>
-                        <td colspan="8" class="text-center py-12">
+                        <td colspan="7" class="text-center py-12">
                             <div class="flex flex-col items-center justify-center">
                                 <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-2">
                                     <InboxIcon class="w-6 h-6 text-gray-400" />
@@ -68,13 +67,12 @@ const paymentStatusMap: Record<number, { label: string; class: string }> = {
                     class="border-t border-gray-100 hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4 font-mono text-sm">{{ item.orderNo }}</td>
                     <td class="px-6 py-4">{{ item.customerName || '-' }}</td>
-                    <td class="px-6 py-4 text-gray-500">{{ item.salesUserName || '-' }}</td>
                     <td class="px-6 py-4 text-gray-400 line-through">¥{{ formatMoney(item.totalAmount) }}</td>
-                    <td class="px-6 py-4 text-blue-600 font-bold">¥{{ formatMoney(item.payableAmount) }}</td>
+                    <td class="px-6 py-4 text-blue-600 font-bold">¥{{ formatMoney(item.payAmount) }}</td>
                     <td class="px-6 py-4">
-                        <StatusBadge :status="item.orderStatus" :map="orderStatusMap" />
+                        <StatusBadge :status="item.status || 0" :map="orderStatusMap" />
                     </td>
-                    <td class="px-6 py-4 text-gray-500 text-sm">{{ formatDate(item.createTime || '') }}</td>
+                    <td class="px-6 py-4 text-gray-500 text-sm">{{ formatDate(item.createdAt || '') }}</td>
                     <td class="px-6 py-4 text-right">
                         <button class="text-blue-500 hover:text-blue-600 mr-3" @click="emit('view', item)">
                             <EyeIcon class="w-4 h-4" />

@@ -67,7 +67,7 @@ onMounted(() => {
                     :class="selectedProduct?.id === product.id ? 'bg-blue-50' : ''" @click="select(product)">
                     <div class="text-left">
                         <p class="text-sm font-medium text-gray-900">{{ product.name }}</p>
-                        <p class="text-xs text-gray-500">¥{{ product.price }} / {{ product.unit || '件' }}</p>
+                        <p class="text-xs text-gray-500">{{ product.brand || '无品牌' }}</p>
                     </div>
                     <CheckIcon v-if="selectedProduct?.id === product.id" class="w-4 h-4 text-blue-500" />
                 </button>

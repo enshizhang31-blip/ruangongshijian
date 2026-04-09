@@ -25,10 +25,7 @@ const emit = defineEmits<{
             <thead class="bg-gray-50">
                 <tr class="text-left text-sm text-gray-600">
                     <th class="px-6 py-3 font-medium">商品名称</th>
-                    <th class="px-6 py-3 font-medium">分类</th>
-                    <th class="px-6 py-3 font-medium">价格</th>
-                    <th class="px-6 py-3 font-medium">库存</th>
-                    <th class="px-6 py-3 font-medium">单位</th>
+                    <th class="px-6 py-3 font-medium">品牌</th>
                     <th class="px-6 py-3 font-medium">状态</th>
                     <th class="px-6 py-3 font-medium text-right">操作</th>
                 </tr>
@@ -54,14 +51,7 @@ const emit = defineEmits<{
                 <tr v-for="item in list" :key="item.id"
                     class="border-t border-gray-100 hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4 font-medium text-gray-900">{{ item.name }}</td>
-                    <td class="px-6 py-4 text-gray-500">{{ item.categoryName || '-' }}</td>
-                    <td class="px-6 py-4 text-blue-600 font-medium">¥{{ formatMoney(item.price) }}</td>
-                    <td class="px-6 py-4">
-                        <span :class="item.stock < 10 ? 'text-red-500 font-medium' : 'text-gray-900'">
-                            {{ item.stock }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-gray-500">{{ item.unit || '-' }}</td>
+                    <td class="px-6 py-4 text-gray-500">{{ item.brand || '-' }}</td>
                     <td class="px-6 py-4">
                         <StatusBadge :status="item.status" />
                     </td>
