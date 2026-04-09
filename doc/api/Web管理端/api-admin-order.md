@@ -34,7 +34,7 @@
 | orderNo | string | 否 | 订单编号 |
 | customerId | long | 否 | 客户ID |
 | customerPhone | string | 否 | 客户手机号 |
-| status | int | 否 | 订单状态：0待付款 1已付款 2已完成 3已取消 4退款中 5已退款 |
+| status | int | 否 | 订单状态：0待支付 1已支付 2已发货 3已完成 4已取消 5退款中 6已退款 |
 | startDate | date | 否 | 下单开始日期 |
 | endDate | date | 否 | 下单结束日期 |
 | page | int | 否 | 页码，默认1 |
