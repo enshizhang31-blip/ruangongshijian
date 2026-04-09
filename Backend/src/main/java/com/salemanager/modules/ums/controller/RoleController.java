@@ -41,4 +41,14 @@ public class RoleController {
         Role role = roleService.getRoleById(id);
         return Result.success(role);
     }
+
+    /**
+     * 获取所有角色（不带分页）
+     */
+    @GetMapping("/all")
+    public Result<List<Role>> getAllRoles() {
+        log.info("getAllRoles");
+        List<Role> list = roleService.getRoleList();
+        return Result.success(list);
+    }
 }
