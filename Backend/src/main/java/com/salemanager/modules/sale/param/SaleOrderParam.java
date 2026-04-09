@@ -21,7 +21,7 @@ public class SaleOrderParam {
     private String customerName;
 
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
-    private String customerPhone;
+    private String receiverPhone;
 
     @NotEmpty(message = "订单商品不能为空")
     @Valid

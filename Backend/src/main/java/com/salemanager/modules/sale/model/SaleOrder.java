@@ -2,6 +2,7 @@ package com.salemanager.modules.sale.model;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -21,16 +22,27 @@ public class SaleOrder {
     private String orderNo;
     private Long customerId;
     private String customerName;
-    private String customerPhone;
+    @TableField("receiver_phone")
+    private String receiverPhone;
     private BigDecimal totalAmount;
     private BigDecimal discountAmount;
+    @TableField("points_discount")
+    private BigDecimal pointsDiscount;
     private BigDecimal payAmount;
     private Integer payType;
-    private Integer status;
-    private String remark;
-    private LocalDateTime createdAt;
+    @TableField("pay_time")
     private LocalDateTime paidAt;
-    private LocalDateTime completedAt;
+    private Integer status;
+    private Long addressId;
+    @TableField("receiver_name")
+    private String receiverName;
+    @TableField("receiver_address")
+    private String receiverAddress;
+    private String remark;
+    @TableField("cancel_time")
     private LocalDateTime cancelledAt;
+    @TableField("finish_time")
+    private LocalDateTime completedAt;
+    private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

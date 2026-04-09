@@ -40,6 +40,17 @@ public class SaleOrderServiceImpl implements SaleOrderService {
     public List<SaleOrder> getOrderList(String keyword, Integer status, Integer page, Integer pageSize) {
         log.info("getOrderList keyword={}, status={}, page={}, pageSize={}", keyword, status, page, pageSize);
 
+        // 边界校验
+        if (page == null || page < 1) {
+            page = 1;
+        }
+        if (pageSize == null || pageSize < 1) {
+            pageSize = 10;
+        }
+        if (pageSize > 100) {
+            pageSize = 100;
+        }
+
         LambdaQueryWrapper<SaleOrder> wrapper = new LambdaQueryWrapper<>();
 
         if (StringUtils.hasText(keyword)) {
@@ -48,7 +59,7 @@ public class SaleOrderServiceImpl implements SaleOrderService {
                     .or()
                     .like(SaleOrder::getCustomerName, keyword)
                     .or()
-                    .like(SaleOrder::getCustomerPhone, keyword));
+                    .like(SaleOrder::getReceiverPhone, keyword));
         }
 
         if (status != null) {
@@ -73,7 +84,7 @@ public class SaleOrderServiceImpl implements SaleOrderService {
                     .or()
                     .like(SaleOrder::getCustomerName, keyword)
                     .or()
-                    .like(SaleOrder::getCustomerPhone, keyword));
+                    .like(SaleOrder::getReceiverPhone, keyword));
         }
 
         if (status != null) {
@@ -119,7 +130,7 @@ public class SaleOrderServiceImpl implements SaleOrderService {
         order.setOrderNo(generateOrderNo());
         order.setCustomerId(param.getCustomerId());
         order.setCustomerName(param.getCustomerName());
-        order.setCustomerPhone(param.getCustomerPhone());
+        order.setReceiverPhone(param.getReceiverPhone());
         order.setPayType(param.getPayType() != null ? param.getPayType() : 1);
         order.setStatus(param.getStatus() != null ? param.getStatus() : 0);
         order.setRemark(param.getRemark());
@@ -174,7 +185,7 @@ public class SaleOrderServiceImpl implements SaleOrderService {
         }
 
         if (param.getCustomerName() != null) order.setCustomerName(param.getCustomerName());
-        if (param.getCustomerPhone() != null) order.setCustomerPhone(param.getCustomerPhone());
+        if (param.getReceiverPhone() != null) order.setReceiverPhone(param.getReceiverPhone());
         if (param.getStatus() != null) order.setStatus(param.getStatus());
         if (param.getRemark() != null) order.setRemark(param.getRemark());
         order.setUpdatedAt(LocalDateTime.now());
