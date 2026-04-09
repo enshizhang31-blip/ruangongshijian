@@ -7,9 +7,15 @@ import type { DashboardStats } from '@/types'
 
 const stats = ref<DashboardStats>({
     todaySales: 0,
+    monthSales: 0,
+    totalSales: 0,
     todayOrders: 0,
-    todayCustomers: 0,
+    monthOrders: 0,
+    totalOrders: 0,
+    totalCustomers: 0,
     totalProducts: 0,
+    totalSnCodes: 0,
+    todayCustomers: 0,
     lowStockProducts: 0,
 })
 

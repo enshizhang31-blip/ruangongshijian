@@ -2,29 +2,37 @@
 import { onMounted, ref, reactive, h } from 'vue'
 import { customerApi } from '@/api'
 import { usePageQuery } from '@/composables'
-import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Form, FormItem, Select, InputNumber, Message } from '@arco-design/web-vue'
+import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Form, FormItem, Select, Message, Empty } from '@arco-design/web-vue'
 import type { Customer } from '@/types'
 import { PlusIcon, PencilIcon } from '@heroicons/vue/24/outline'
+import { formatMoney } from '@/utils/format'
 
-const { loading, list, total, query, load, setPage, setKeyword } = usePageQuery(customerApi.list)
+const { loading, error, list, total, query, load, setPage, setKeyword } = usePageQuery(customerApi.list)
 const keyword = ref('')
 const showModal = ref(false)
 const isEdit = ref(false)
 const editingId = ref<number>()
 
 const form = reactive<Partial<Customer>>({
-    username: '',
-    realName: '',
+    nickname: '',
     phone: '',
-    email: '',
+    avatar: '',
+    memberLevel: 1,
     status: 1,
 })
 
 const columns = [
-    { title: '用户名', dataIndex: 'username' },
-    { title: '姓名', dataIndex: 'realName' },
-    { title: '联系方式', dataIndex: 'phone' },
-    { title: '邮箱', dataIndex: 'email' },
+    { title: '昵称', dataIndex: 'nickname' },
+    { title: '手机号', dataIndex: 'phone' },
+    {
+        title: '会员等级', dataIndex: 'memberLevel', render: (level: number) => {
+            const map: Record<number, string> = { 1: '普通', 2: '银卡', 3: '金卡', 4: '钻石' }
+            return h(Tag, { color: level >= 3 ? 'gold' : 'arcoblue' }, () => map[level] || '普通')
+        }
+    },
+    {
+        title: '余额', dataIndex: 'balance', render: (balance: number | string) => `¥${formatMoney(balance)}`
+    },
     {
         title: '状态', dataIndex: 'status', render: (status: number) =>
             h(Tag, { color: status === 1 ? 'green' : 'gray' }, () => status === 1 ? '正常' : '禁用')
@@ -48,7 +56,7 @@ function handleReset() {
 function handleAdd() {
     isEdit.value = false
     editingId.value = undefined
-    Object.assign(form, { username: '', realName: '', phone: '', email: '', status: 1 })
+    Object.assign(form, { nickname: '', phone: '', avatar: '', memberLevel: 1, status: 1 })
     showModal.value = true
 }
 
@@ -60,8 +68,8 @@ function handleEdit(record: Customer) {
 }
 
 async function handleSubmit() {
-    if (!form.name) {
-        Message.warning('请填写客户名称')
+    if (!form.phone) {
+        Message.warning('请填写手机号')
         return
     }
     try {
@@ -74,15 +82,19 @@ async function handleSubmit() {
         }
         showModal.value = false
         load()
-    } catch {
-        Message.error('操作失败')
+    } catch (e: any) {
+        Message.error(e?.message || '操作失败')
     }
 }
 
 async function handleDelete(id: number) {
-    await customerApi.delete(id)
-    Message.success('删除成功')
-    load()
+    try {
+        await customerApi.delete(id)
+        Message.success('删除成功')
+        load()
+    } catch (e: any) {
+        Message.error(e?.message || '删除失败')
+    }
 }
 </script>
 
@@ -103,7 +115,7 @@ async function handleDelete(id: number) {
 
         <Card class="mb-4">
             <Space direction="horizontal" :size="12" wrap>
-                <Input v-model="keyword" placeholder="搜索客户名称..." class="!w-64" @press-enter="handleSearch">
+                <Input v-model="keyword" placeholder="搜索客户名称..." class="w-64!" @press-enter="handleSearch">
                     <template #prefix><span class="text-gray-400">🔍</span></template>
                 </Input>
                 <Button type="primary" @click="handleSearch">搜索</Button>
@@ -112,7 +124,18 @@ async function handleDelete(id: number) {
         </Card>
 
         <Card>
-            <Table :loading="loading" :columns="columns" :data="list" :pagination="false" :scroll="{ x: 800 }">
+            <!-- 错误状态 -->
+            <div v-if="error" class="text-center py-8">
+                <div class="text-red-500 mb-2">加载失败: {{ error.message }}</div>
+                <Button type="primary" size="small" @click="load">重试</Button>
+            </div>
+
+            <!-- 空状态 -->
+            <div v-else-if="!loading && list.length === 0" class="text-center py-8">
+                <Empty description="暂无数据" />
+            </div>
+
+            <Table v-else :loading="loading" :columns="columns" :data="list" :pagination="false" :scroll="{ x: 800 }">
                 <template #actions="{ record }">
                     <Space>
                         <Button type="text" size="small" @click="handleEdit(record)">
@@ -130,11 +153,12 @@ async function handleDelete(id: number) {
             <div class="flex justify-end mt-4">
                 <Space direction="horizontal">
                     <span class="text-sm text-gray-500">共 {{ total }} 条</span>
-                    <Button :disabled="query.page <= 1" @click="setPage(query.page - 1)">上一页</Button>
-                    <span class="text-sm py-2">第 {{ query.page }} / {{ Math.ceil(total / (query.pageSize || 20)) || 1 }}
+                    <Button :disabled="(query.page || 1) <= 1" @click="setPage((query.page || 1) - 1)">上一页</Button>
+                    <span class="text-sm py-2">第 {{ query.page || 1 }} / {{ Math.ceil(total / (query.pageSize || 20)) ||
+                        1 }}
                         页</span>
-                    <Button :disabled="query.page >= Math.ceil(total / (query.pageSize || 20))"
-                        @click="setPage(query.page + 1)">下一页</Button>
+                    <Button :disabled="(query.page || 1) >= Math.ceil(total / (query.pageSize || 20))"
+                        @click="setPage((query.page || 1) + 1)">下一页</Button>
                 </Space>
             </div>
         </Card>
@@ -143,17 +167,22 @@ async function handleDelete(id: number) {
     <!-- 新增/编辑弹窗 -->
     <Modal v-model:visible="showModal" :title="isEdit ? '编辑客户' : '新增客户'" @ok="handleSubmit" :width="500">
         <Form :model="form" layout="vertical">
-            <FormItem label="用户名" required>
-                <Input v-model="form.username" placeholder="请输入用户名" :disabled="isEdit" />
+            <FormItem label="昵称">
+                <Input v-model="form.nickname" placeholder="请输入昵称" />
             </FormItem>
-            <FormItem label="姓名">
-                <Input v-model="form.realName" placeholder="请输入姓名" />
-            </FormItem>
-            <FormItem label="联系方式">
+            <FormItem label="手机号" required>
                 <Input v-model="form.phone" placeholder="请输入手机号" />
             </FormItem>
-            <FormItem label="邮箱">
-                <Input v-model="form.email" placeholder="请输入邮箱" />
+            <FormItem label="头像URL">
+                <Input v-model="form.avatar" placeholder="请输入头像URL" />
+            </FormItem>
+            <FormItem label="会员等级">
+                <Select v-model="form.memberLevel" class="w-full">
+                    <Select.Option :value="1">普通会员</Select.Option>
+                    <Select.Option :value="2">银卡会员</Select.Option>
+                    <Select.Option :value="3">金卡会员</Select.Option>
+                    <Select.Option :value="4">钻石会员</Select.Option>
+                </Select>
             </FormItem>
             <FormItem label="状态">
                 <Select v-model="form.status" class="w-full">

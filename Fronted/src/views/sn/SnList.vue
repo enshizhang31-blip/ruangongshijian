@@ -3,11 +3,11 @@ import { onMounted, ref, reactive, h } from 'vue'
 import { snApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { formatDate } from '@/utils/format'
-import { Table, Button, Input, Space, Tag, Card, Modal, Select, DatePicker, Message } from '@arco-design/web-vue'
+import { Table, Button, Input, InputNumber, Space, Tag, Card, Modal, Select, DatePicker, Message, Empty } from '@arco-design/web-vue'
 import type { SnCode } from '@/types'
 import { PlusIcon, MagnifyingGlassIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
 
-const { loading, list, total, query, load, setPage, setKeyword } = usePageQuery(snApi.list)
+const { loading, error, list, total, query, load, setPage, setKeyword } = usePageQuery(snApi.list)
 const keyword = ref('')
 const showAddModal = ref(false)
 const showQueryModal = ref(false)
@@ -21,20 +21,23 @@ const searchForm = reactive({
     endDate: '',
 })
 
-// SN码状态
+// SN码状态 - 与数据库 sn_code.status 一致
+// 0:在库 1:已售 2:已作废 3:退货中 4:已退货
 const statusMap: Record<number, { label: string; color: string }> = {
-    0: { label: '未绑定', color: 'orange' },
-    1: { label: '已绑定', color: 'arcoblue' },
-    2: { label: '已使用', color: 'green' },
-    3: { label: '已退货', color: 'red' },
+    0: { label: '在库', color: 'orange' },
+    1: { label: '已售', color: 'arcoblue' },
+    2: { label: '已作废', color: 'gray' },
+    3: { label: '退货中', color: 'purple' },
+    4: { label: '已退货', color: 'red' },
 }
 
 const statusOptions = [
     { label: '全部状态', value: undefined },
-    { label: '未绑定', value: 0 },
-    { label: '已绑定', value: 1 },
-    { label: '已使用', value: 2 },
-    { label: '已退货', value: 3 },
+    { label: '在库', value: 0 },
+    { label: '已售', value: 1 },
+    { label: '已作废', value: 2 },
+    { label: '退货中', value: 3 },
+    { label: '已退货', value: 4 },
 ]
 
 const newSn = reactive({
@@ -98,17 +101,16 @@ async function handleQuerySn() {
 }
 
 const columns = [
-    { title: 'SN码', dataIndex: 'sn', width: 180 },
-    { title: '商品名称', dataIndex: 'goodsName' },
+    { title: 'SN码', dataIndex: 'snCode', width: 180 },
+    { title: '商品名称', dataIndex: 'spuName' },
     {
         title: '状态', dataIndex: 'status', render: (status: number) => {
             const item = statusMap[status] || { label: '未知', color: 'gray' }
             return h(Tag, { color: item.color }, () => item.label)
         }
     },
-    { title: '绑定时间', dataIndex: 'bindTime', render: (t: string) => t ? formatDate(t) : '-' },
-    { title: '使用时间', dataIndex: 'usedTime', render: (t: string) => t ? formatDate(t) : '-' },
-    { title: '创建时间', dataIndex: 'createTime', render: (t: string) => formatDate(t) },
+    { title: '销售时间', dataIndex: 'soldAt', render: (t: string) => t ? formatDate(t) : '-' },
+    { title: '创建时间', dataIndex: 'createdAt', render: (t: string) => formatDate(t) },
     { title: '操作', slotName: 'actions', align: 'right', width: 120 },
 ]
 </script>
@@ -140,10 +142,10 @@ const columns = [
         <!-- 搜索区域 -->
         <Card class="mb-4">
             <Space direction="horizontal" :size="12" wrap>
-                <Input v-model="keyword" placeholder="搜索SN码或商品名称..." class="!w-64" @press-enter="handleSearch">
+                <Input v-model="keyword" placeholder="搜索SN码或商品名称..." class="w-64!" @press-enter="handleSearch">
                     <template #prefix><span class="text-gray-400">🔍</span></template>
                 </Input>
-                <Select v-model="searchForm.status" :options="statusOptions" placeholder="状态筛选" class="!w-32" />
+                <Select v-model="searchForm.status" :options="statusOptions" placeholder="状态筛选" class="w-32!" />
                 <Button type="primary" @click="handleAdvancedSearch">搜索</Button>
                 <Button @click="handleReset">重置</Button>
             </Space>
@@ -165,11 +167,12 @@ const columns = [
             <div class="flex justify-end mt-4">
                 <Space direction="horizontal">
                     <span class="text-sm text-gray-500">共 {{ total }} 条</span>
-                    <Button :disabled="query.page <= 1" @click="setPage(query.page - 1)">上一页</Button>
-                    <span class="text-sm py-2">第 {{ query.page }} / {{ Math.ceil(total / (query.pageSize || 20)) || 1 }}
+                    <Button :disabled="(query.page || 1) <= 1" @click="setPage((query.page || 1) - 1)">上一页</Button>
+                    <span class="text-sm py-2">第 {{ query.page || 1 }} / {{ Math.ceil(total / (query.pageSize || 20)) ||
+                        1 }}
                         页</span>
-                    <Button :disabled="query.page >= Math.ceil(total / (query.pageSize || 20))"
-                        @click="setPage(query.page + 1)">下一页</Button>
+                    <Button :disabled="(query.page || 1) >= Math.ceil(total / (query.pageSize || 20))"
+                        @click="setPage((query.page || 1) + 1)">下一页</Button>
                 </Space>
             </div>
         </Card>
@@ -183,8 +186,8 @@ const columns = [
                 <Input v-model="newSn.sn" placeholder="请输入SN码" class="w-full" />
             </div>
             <div>
-                <div class="text-sm text-gray-600 mb-1">商品 *</div>
-                <Input v-model="newSn.sn" placeholder="请输入商品ID" class="w-full" />
+                <div class="text-sm text-gray-600 mb-1">商品ID *</div>
+                <InputNumber v-model="newSn.goodsId" placeholder="请输入商品ID" class="w-full" />
             </div>
             <div>
                 <div class="text-sm text-gray-600 mb-1">备注</div>
@@ -196,7 +199,7 @@ const columns = [
     <!-- SN码查询弹窗 -->
     <Modal v-model:visible="showQueryModal" title="SN码查询" :width="500">
         <Space direction="horizontal" :size="12" class="w-full mb-4">
-            <Input v-model="querySn" placeholder="请输入SN码" class="!w-64" @press-enter="handleQuerySn" />
+            <Input v-model="querySn" placeholder="请输入SN码" class="w-64!" @press-enter="handleQuerySn" />
             <Button type="primary" @click="handleQuerySn">查询</Button>
         </Space>
 
@@ -204,11 +207,11 @@ const columns = [
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <div class="text-xs text-gray-500">SN码</div>
-                    <div class="text-sm font-medium">{{ queryResult.sn }}</div>
+                    <div class="text-sm font-medium">{{ queryResult.snCode }}</div>
                 </div>
                 <div>
                     <div class="text-xs text-gray-500">商品</div>
-                    <div class="text-sm font-medium">{{ queryResult.goodsName || '-' }}</div>
+                    <div class="text-sm font-medium">{{ queryResult.spuName || '-' }}</div>
                 </div>
                 <div>
                     <div class="text-xs text-gray-500">状态</div>
@@ -217,8 +220,8 @@ const columns = [
                     </Tag>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">绑定时间</div>
-                    <div class="text-sm">{{ queryResult.bindTime ? formatDate(queryResult.bindTime) : '-' }}</div>
+                    <div class="text-xs text-gray-500">销售时间</div>
+                    <div class="text-sm">{{ queryResult.soldAt ? formatDate(queryResult.soldAt) : '-' }}</div>
                 </div>
             </div>
         </div>

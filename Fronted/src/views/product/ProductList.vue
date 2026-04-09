@@ -3,11 +3,11 @@ import { onMounted, ref, reactive, h } from 'vue'
 import { productApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { formatDate } from '@/utils/format'
-import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Form, FormItem, Select, Message } from '@arco-design/web-vue'
+import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Form, FormItem, Select, Message, Empty } from '@arco-design/web-vue'
 import type { Product } from '@/types'
 import { PlusIcon, PencilIcon } from '@heroicons/vue/24/outline'
 
-const { loading, list, total, query, load, setPage, setKeyword } = usePageQuery(productApi.list)
+const { loading, error, list, total, query, load, setPage, setKeyword } = usePageQuery(productApi.list)
 const keyword = ref('')
 const showModal = ref(false)
 const isEdit = ref(false)
@@ -26,10 +26,11 @@ const form = reactive<Partial<Product>>({
 const columns = [
     { title: '商品名称', dataIndex: 'name' },
     { title: '品牌', dataIndex: 'brand' },
-    { title: '状态', dataIndex: 'status', render: (status: number) =>
+    {
+        title: '状态', dataIndex: 'status', render: (status: number) =>
             h(Tag, { color: status === 1 ? 'green' : 'gray' }, () => status === 1 ? '启用' : '禁用')
     },
-    { title: '创建时间', dataIndex: 'createTime', render: (t: string) => t ? formatDate(t) : '-' },
+    { title: '创建时间', dataIndex: 'createdAt', render: (t: string) => t ? formatDate(t) : '-' },
     { title: '操作', slotName: 'actions', align: 'right' },
 ]
 
@@ -75,15 +76,19 @@ async function handleSubmit() {
         }
         showModal.value = false
         load()
-    } catch {
-        Message.error('操作失败')
+    } catch (e: any) {
+        Message.error(e?.message || '操作失败')
     }
 }
 
 async function handleDelete(id: number) {
-    await productApi.delete(id)
-    Message.success('删除成功')
-    load()
+    try {
+        await productApi.delete(id)
+        Message.success('删除成功')
+        load()
+    } catch (e: any) {
+        Message.error(e?.message || '删除失败')
+    }
 }
 </script>
 
@@ -104,7 +109,7 @@ async function handleDelete(id: number) {
 
         <Card class="mb-4">
             <Space direction="horizontal" :size="12" wrap>
-                <Input v-model="keyword" placeholder="搜索商品名称..." class="!w-64" @press-enter="handleSearch">
+                <Input v-model="keyword" placeholder="搜索商品名称..." class="w-64!" @press-enter="handleSearch">
                     <template #prefix><span class="text-gray-400">🔍</span></template>
                 </Input>
                 <Button type="primary" @click="handleSearch">搜索</Button>
@@ -113,7 +118,18 @@ async function handleDelete(id: number) {
         </Card>
 
         <Card>
-            <Table :loading="loading" :columns="columns" :data="list" :pagination="false" :scroll="{ x: 800 }">
+            <!-- 错误状态 -->
+            <div v-if="error" class="text-center py-8">
+                <div class="text-red-500 mb-2">加载失败: {{ error.message }}</div>
+                <Button type="primary" size="small" @click="load">重试</Button>
+            </div>
+
+            <!-- 空状态 -->
+            <div v-else-if="!loading && list.length === 0" class="text-center py-8">
+                <Empty description="暂无数据" />
+            </div>
+
+            <Table v-else :loading="loading" :columns="columns" :data="list" :pagination="false" :scroll="{ x: 800 }">
                 <template #actions="{ record }">
                     <Space>
                         <Button type="text" size="small" @click="handleEdit(record)">
@@ -131,11 +147,12 @@ async function handleDelete(id: number) {
             <div class="flex justify-end mt-4">
                 <Space direction="horizontal">
                     <span class="text-sm text-gray-500">共 {{ total }} 条</span>
-                    <Button :disabled="query.page <= 1" @click="setPage(query.page - 1)">上一页</Button>
-                    <span class="text-sm py-2">第 {{ query.page }} / {{ Math.ceil(total / (query.pageSize || 20)) || 1 }}
+                    <Button :disabled="(query.page || 1) <= 1" @click="setPage((query.page || 1) - 1)">上一页</Button>
+                    <span class="text-sm py-2">第 {{ query.page || 1 }} / {{ Math.ceil(total / (query.pageSize || 20)) ||
+                        1 }}
                         页</span>
-                    <Button :disabled="query.page >= Math.ceil(total / (query.pageSize || 20))"
-                        @click="setPage(query.page + 1)">下一页</Button>
+                    <Button :disabled="(query.page || 1) >= Math.ceil(total / (query.pageSize || 20))"
+                        @click="setPage((query.page || 1) + 1)">下一页</Button>
                 </Space>
             </div>
         </Card>

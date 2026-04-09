@@ -28,8 +28,6 @@ async function fetchStats() {
     loading.value = true
     try {
         stats.value = await dashboardApi.stats()
-    } catch {
-        // handle error
     } finally {
         loading.value = false
     }
@@ -53,7 +51,10 @@ onMounted(() => {
             <Col :xs="24" :sm="12" :xl="6">
                 <Card class="hover:shadow-lg transition-all cursor-pointer">
                     <div class="flex items-center justify-between">
-                        <Statistic title="今日销售额" :value="stats.todaySales" :precision="2" prefix="¥" />
+                        <Statistic title="今日销售额">
+                            <template #prefix>¥</template>
+                            {{ formatMoney(stats.todaySales) }}
+                        </Statistic>
                         <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                             <CurrencyDollarIcon class="w-5 h-5 text-blue-600" />
                         </div>
@@ -63,7 +64,10 @@ onMounted(() => {
             <Col :xs="24" :sm="12" :xl="6">
                 <Card class="hover:shadow-lg transition-all cursor-pointer">
                     <div class="flex items-center justify-between">
-                        <Statistic title="本月销售额" :value="stats.monthSales" :precision="2" prefix="¥" />
+                        <Statistic title="本月销售额">
+                            <template #prefix>¥</template>
+                            {{ formatMoney(stats.monthSales) }}
+                        </Statistic>
                         <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                             <CurrencyDollarIcon class="w-5 h-5 text-green-600" />
                         </div>
@@ -73,7 +77,10 @@ onMounted(() => {
             <Col :xs="24" :sm="12" :xl="6">
                 <Card class="hover:shadow-lg transition-all cursor-pointer">
                     <div class="flex items-center justify-between">
-                        <Statistic title="总销售额" :value="stats.totalSales" :precision="2" prefix="¥" />
+                        <Statistic title="总销售额">
+                            <template #prefix>¥</template>
+                            {{ formatMoney(stats.totalSales) }}
+                        </Statistic>
                         <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                             <CurrencyDollarIcon class="w-5 h-5 text-purple-600" />
                         </div>
