@@ -6,10 +6,6 @@
 
 SET NAMES utf8mb4;
 
--- 创建数据库
-CREATE DATABASE IF NOT EXISTS sale_manager DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE sale_manager;
-
 -- =====================================================
 -- 一、商品模块（SPU + SKU + SN码 + 分类 + 规格）
 -- =====================================================
@@ -147,43 +143,35 @@ CREATE TABLE IF NOT EXISTS spec_value (
 -- 2.1 会员等级配置表
 CREATE TABLE IF NOT EXISTS member_level_config (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
-    level_name VARCHAR(32) NOT NULL COMMENT '等级名称',
-    level_code VARCHAR(32) NOT NULL COMMENT '等级代码',
-    min_points INT DEFAULT 0 COMMENT '最低积分',
-    discount_rate DECIMAL(4,2) DEFAULT 1.00 COMMENT '折扣率',
-    birthday_bonus_rate DECIMAL(4,2) DEFAULT 0 COMMENT '生日优惠率',
-    free_shipping_threshold DECIMAL(10,2) DEFAULT 0 COMMENT '免运费门槛',
-    points_multiplier DECIMAL(3,2) DEFAULT 1.00 COMMENT '积分倍数',
-    status TINYINT DEFAULT 1 COMMENT '状态: 0禁用 1启用',
-    sort INT DEFAULT 0 COMMENT '排序',
+    level TINYINT NOT NULL UNIQUE COMMENT '等级值',
+    name VARCHAR(32) NOT NULL COMMENT '等级名称',
+    consume_threshold DECIMAL(12,2) COMMENT '升级门槛',
+    discount DECIMAL(3,2) DEFAULT 1.00 COMMENT '折扣率',
+    points_rate INT DEFAULT 1 COMMENT '积分倍率',
+    status TINYINT DEFAULT 1 COMMENT '状态',
     created_at DATETIME COMMENT '创建时间',
     updated_at DATETIME COMMENT '更新时间',
-    INDEX idx_level_code (level_code),
-    INDEX idx_min_points (min_points)
+    UNIQUE KEY uk_level (level)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员等级配置表';
 
 -- 2.2 客户表（会员）
 CREATE TABLE IF NOT EXISTS customer (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
-    username VARCHAR(64) NOT NULL COMMENT '用户名',
-    password VARCHAR(128) COMMENT '密码(BCrypt加密)',
-    real_name VARCHAR(64) COMMENT '真实姓名',
+    openid VARCHAR(64) COMMENT '微信openid',
+    nickname VARCHAR(64) COMMENT '昵称',
+    avatar VARCHAR(255) COMMENT '头像URL',
     phone VARCHAR(20) COMMENT '手机号',
-    email VARCHAR(128) COMMENT '邮箱',
-    avatar_url VARCHAR(512) COMMENT '头像URL',
-    gender TINYINT DEFAULT 0 COMMENT '性别: 0未知 1男 2女',
-    birthday DATE COMMENT '生日',
-    balance DECIMAL(12,2) DEFAULT 0 COMMENT '余额',
-    points INT DEFAULT 0 COMMENT '积分',
-    level_id BIGINT COMMENT '会员等级ID',
-    level_name VARCHAR(32) COMMENT '会员等级名称',
-    status TINYINT DEFAULT 1 COMMENT '状态: 0禁用 1启用',
-    last_login_at DATETIME COMMENT '最后登录时间',
+    member_level TINYINT DEFAULT 1 COMMENT '会员等级：1普通 2银卡 3金卡 4钻石',
+    balance DECIMAL(12,2) DEFAULT 0 COMMENT '账户余额',
+    points INT DEFAULT 0 COMMENT '积分余额',
+    total_consume DECIMAL(12,2) DEFAULT 0 COMMENT '累计消费金额',
+    total_points INT DEFAULT 0 COMMENT '累计获得积分',
+    status TINYINT DEFAULT 1 COMMENT '状态',
     created_at DATETIME COMMENT '创建时间',
     updated_at DATETIME COMMENT '更新时间',
-    UNIQUE KEY uk_username (username),
+    UNIQUE KEY uk_openid (openid),
     UNIQUE KEY uk_phone (phone),
-    INDEX idx_level (level_id),
+    INDEX idx_member_level (member_level),
     INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户表';
 
@@ -196,9 +184,9 @@ CREATE TABLE IF NOT EXISTS address (
     province VARCHAR(32) COMMENT '省份',
     city VARCHAR(32) COMMENT '城市',
     district VARCHAR(32) COMMENT '区县',
-    detail_address VARCHAR(256) COMMENT '详细地址',
+    detail VARCHAR(256) COMMENT '详细地址',
     is_default TINYINT DEFAULT 0 COMMENT '是否默认: 0否 1是',
-    status TINYINT DEFAULT 1 COMMENT '状态: 0禁用 1启用',
+    status TINYINT DEFAULT 1 COMMENT '状态',
     created_at DATETIME COMMENT '创建时间',
     updated_at DATETIME COMMENT '更新时间',
     INDEX idx_customer (customer_id),
@@ -209,13 +197,14 @@ CREATE TABLE IF NOT EXISTS address (
 CREATE TABLE IF NOT EXISTS balance_record (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
     customer_id BIGINT NOT NULL COMMENT '客户ID',
-    type VARCHAR(16) NOT NULL COMMENT '类型: recharge, consume, refund',
+    type TINYINT NOT NULL COMMENT '类型：1充值 2消费 3退款 4调整',
     amount DECIMAL(12,2) NOT NULL COMMENT '变动金额',
     balance_before DECIMAL(12,2) COMMENT '变动前余额',
     balance_after DECIMAL(12,2) COMMENT '变动后余额',
+    source VARCHAR(32) COMMENT '来源',
+    source_id BIGINT COMMENT '来源ID',
+    payment_method VARCHAR(32) COMMENT '支付方式',
     remark VARCHAR(256) COMMENT '备注',
-    order_id BIGINT COMMENT '关联订单ID',
-    operator_id BIGINT COMMENT '操作人ID',
     created_at DATETIME COMMENT '创建时间',
     INDEX idx_customer (customer_id),
     INDEX idx_type (type),
@@ -226,13 +215,12 @@ CREATE TABLE IF NOT EXISTS balance_record (
 CREATE TABLE IF NOT EXISTS points_record (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
     customer_id BIGINT NOT NULL COMMENT '客户ID',
-    type VARCHAR(16) NOT NULL COMMENT '类型: earn, redeem, expire, adjust',
-    points INT NOT NULL COMMENT '变动积分',
-    points_before INT COMMENT '变动前积分',
-    points_after INT COMMENT '变动后积分',
+    type TINYINT NOT NULL COMMENT '类型：1获得 2抵扣 3过期 4调整',
+    amount INT NOT NULL COMMENT '积分数量',
+    balance INT COMMENT '变动后余额',
+    source VARCHAR(32) COMMENT '来源',
+    source_id BIGINT COMMENT '来源ID',
     remark VARCHAR(256) COMMENT '备注',
-    order_id BIGINT COMMENT '关联订单ID',
-    expires_at DATETIME COMMENT '过期时间',
     created_at DATETIME COMMENT '创建时间',
     INDEX idx_customer (customer_id),
     INDEX idx_type (type),
@@ -322,7 +310,7 @@ CREATE TABLE IF NOT EXISTS `order` (
     pay_amount DECIMAL(12,2) NOT NULL COMMENT '实付金额',
     pay_type TINYINT COMMENT '支付方式: 1微信 2支付宝 3余额',
     pay_time DATETIME COMMENT '支付时间',
-    status TINYINT DEFAULT 0 COMMENT '订单状态: 0待支付 1已支付 2已发货 3已完成 4已取消 5退款中 6已退款',
+    status TINYINT DEFAULT 0 COMMENT '订单状态: 0待付款 1已付款 2已完成 3已取消 4退款中 5已退款',
     address_id BIGINT COMMENT '收货地址ID',
     receiver_name VARCHAR(64) COMMENT '收货人',
     receiver_phone VARCHAR(20) COMMENT '联系电话',
@@ -343,16 +331,15 @@ CREATE TABLE IF NOT EXISTS `order` (
 CREATE TABLE IF NOT EXISTS order_item (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
     order_id BIGINT NOT NULL COMMENT '订单ID',
+    order_no VARCHAR(32) COMMENT '订单编号（冗余）',
     sku_id BIGINT NOT NULL COMMENT 'SKU ID',
-    spu_id BIGINT COMMENT 'SPU ID',
-    sku_code VARCHAR(32) COMMENT 'SKU编码',
-    sku_name VARCHAR(128) COMMENT 'SKU名称',
-    spec_json JSON COMMENT '规格JSON',
-    image_url VARCHAR(512) COMMENT '商品图片',
-    price DECIMAL(10,2) NOT NULL COMMENT '单价',
-    quantity INT NOT NULL COMMENT '数量',
+    spu_name VARCHAR(128) COMMENT '商品名称',
+    sku_spec JSON COMMENT '规格JSON',
+    sku_image VARCHAR(255) COMMENT 'SKU图片',
+    price DECIMAL(10,2) NOT NULL COMMENT '购买单价',
+    quantity INT NOT NULL COMMENT '购买数量',
     subtotal DECIMAL(10,2) NOT NULL COMMENT '小计金额',
-    sn_code VARCHAR(64) COMMENT 'SN码(如果是实物商品)',
+    sn_code_ids VARCHAR(512) COMMENT '关联SN码ID列表JSON',
     created_at DATETIME COMMENT '创建时间',
     INDEX idx_order (order_id),
     INDEX idx_sku (sku_id)
@@ -451,6 +438,7 @@ CREATE TABLE IF NOT EXISTS menu (
     permission VARCHAR(64) COMMENT '权限标识',
     status TINYINT DEFAULT 1 COMMENT '状态: 0禁用 1启用',
     created_at DATETIME COMMENT '创建时间',
+    updated_at DATETIME COMMENT '更新时间',
     INDEX idx_parent (parent_id),
     INDEX idx_type (type),
     INDEX idx_permission (permission),
@@ -497,17 +485,17 @@ INSERT INTO admin_user (username, password, real_name, permissions, routes, stat
 ('admin', '$2a$10$9Fr2OrEUefhFyxvFEviIg.kHuXtbYVT44sQyFk9MSaAbDksT1Z.mK', '系统管理员', '["*"]', '["/*"]', 1, NOW(), NOW());
 
 -- 6.3 预设菜单数据
-INSERT INTO menu (name, path, component, icon, sort, parent_id, type, permission, status, created_at) VALUES
-('仪表盘', '/dashboard', 'dashboard/index', 'HomeIcon', 1, 0, 1, 'dashboard:view', 1, NOW()),
-('商品管理', '/product', NULL, 'CubeIcon', 2, 0, 1, 'product:view', 1, NOW()),
-('商品列表', '/product/list', 'product/ProductList', NULL, 1, 2, 1, 'spu:view', 1, NOW()),
-('SN码管理', '/sn', NULL, 'TagIcon', 3, 0, 1, 'sn:view', 1, NOW()),
-('SN码列表', '/sn/list', 'sn/SnList', NULL, 1, 4, 1, 'sn:view', 1, NOW()),
-('订单管理', '/order', NULL, 'ShoppingCartIcon', 4, 0, 1, 'order:view', 1, NOW()),
-('订单列表', '/order/list', 'sale/SaleOrderList', NULL, 1, 6, 1, 'order:view', 1, NOW()),
-('客户管理', '/customer', NULL, 'UsersIcon', 5, 0, 1, 'customer:view', 1, NOW()),
-('客户列表', '/customer/list', 'customer/CustomerList', NULL, 1, 8, 1, 'customer:view', 1, NOW()),
-('数据统计', '/statistics', NULL, 'ChartBarIcon', 6, 0, 1, 'statistics:view', 1, NOW()),
-('系统管理', '/system', NULL, 'Cog6ToothIcon', 100, 0, 1, 'system:view', 1, NOW()),
-('员工管理', '/system/user', 'system/UserList', NULL, 1, 11, 1, 'system:user', 1, NOW()),
-('角色管理', '/system/role', 'system/RoleList', NULL, 2, 11, 1, 'system:role', 1, NOW());
+INSERT INTO menu (name, path, component, icon, sort, parent_id, type, permission, status, created_at, updated_at) VALUES
+('仪表盘', '/dashboard', 'dashboard/index', 'HomeIcon', 1, 0, 1, 'dashboard:view', 1, NOW(), NOW()),
+('商品管理', '/product', NULL, 'CubeIcon', 2, 0, 1, 'product:view', 1, NOW(), NOW()),
+('商品列表', '/product/list', 'product/ProductList', NULL, 1, 2, 1, 'spu:view', 1, NOW(), NOW()),
+('SN码管理', '/sn', NULL, 'TagIcon', 3, 0, 1, 'sn:view', 1, NOW(), NOW()),
+('SN码列表', '/sn/list', 'sn/SnList', NULL, 1, 4, 1, 'sn:view', 1, NOW(), NOW()),
+('订单管理', '/order', NULL, 'ShoppingCartIcon', 4, 0, 1, 'order:view', 1, NOW(), NOW()),
+('订单列表', '/order/list', 'sale/SaleOrderList', NULL, 1, 6, 1, 'order:view', 1, NOW(), NOW()),
+('客户管理', '/customer', NULL, 'UsersIcon', 5, 0, 1, 'customer:view', 1, NOW(), NOW()),
+('客户列表', '/customer/list', 'customer/CustomerList', NULL, 1, 8, 1, 'customer:view', 1, NOW(), NOW()),
+('数据统计', '/statistics', NULL, 'ChartBarIcon', 6, 0, 1, 'statistics:view', 1, NOW(), NOW()),
+('系统管理', '/system', NULL, 'Cog6ToothIcon', 100, 0, 1, 'system:view', 1, NOW(), NOW()),
+('员工管理', '/system/user', 'system/UserList', NULL, 1, 11, 1, 'system:user', 1, NOW(), NOW()),
+('角色管理', '/system/role', 'system/RoleList', NULL, 2, 11, 1, 'system:role', 1, NOW(), NOW());

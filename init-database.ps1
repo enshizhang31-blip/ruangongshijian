@@ -3,7 +3,7 @@
 
 $ProjectRoot = Split-Path -Parent $PSCommandPath
 $ComposeFile = "$ProjectRoot\Backend\docker-compose.yml"
-$InitFile = "$ProjectRoot\Backend\mysql\init\0-init.sql"
+$InitFile = "$ProjectRoot\sql\init.sql"
 $MySQLContainer = "salemanager-mysql"
 
 Write-Host "========================================"
@@ -42,11 +42,9 @@ Start-Sleep -Seconds 8
 
 # Execute init script with retry
 Write-Host "Creating database..."
-$success = $false
 for ($i = 1; $i -le 3; $i++) {
-    $result = docker exec $MySQLContainer mysql -uroot -proot123 -e "DROP DATABASE IF EXISTS sale_manager; CREATE DATABASE sale_manager;" 2>&1
+    $result = docker exec $MySQLContainer mysql -uroot -proot123 --default-character-set=utf8mb4 -e "DROP DATABASE IF EXISTS sale_manager; CREATE DATABASE sale_manager;" 2>&1
     if ($LASTEXITCODE -eq 0) {
-        $success = $true
         break
     }
     Write-Host "Retry $i..."
@@ -60,7 +58,21 @@ docker cp $InitFile ${MySQLContainer}:/tmp/init.sql
 
 Write-Host "Executing init script..."
 for ($i = 1; $i -le 3; $i++) {
-    $result = docker exec $MySQLContainer mysql -uroot -proot123 sale_manager -e "source /tmp/init.sql" 2>&1
+    $result = docker exec $MySQLContainer mysql -uroot -proot123 --default-character-set=utf8mb4 sale_manager -e "source /tmp/init.sql" 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        break
+    }
+    Write-Host "Retry $i..."
+    Start-Sleep -Seconds 3
+}
+
+# 导入示例数据
+Write-Host "Copying seed data file..."
+docker cp "$ProjectRoot\sql\seed-data.sql" ${MySQLContainer}:/tmp/seed-data.sql
+
+Write-Host "Importing seed data..."
+for ($i = 1; $i -le 3; $i++) {
+    $result = docker exec $MySQLContainer mysql -uroot -proot123 --default-character-set=utf8mb4 sale_manager -e "source /tmp/seed-data.sql" 2>&1
     if ($LASTEXITCODE -eq 0) {
         break
     }
@@ -79,3 +91,7 @@ Write-Host ""
 Write-Host "Admin account:"
 Write-Host "  Username: admin"
 Write-Host "  Password: 123456"
+
+Write-Host ""
+Write-Host "Data summary:"
+docker exec $MySQLContainer mysql -uroot -proot123 sale_manager -e "SELECT 'customer' as tbl, COUNT(*) as cnt FROM customer UNION ALL SELECT 'goods', COUNT(*) FROM goods UNION ALL SELECT 'sku', COUNT(*) FROM sku UNION ALL SELECT 'order', COUNT(*) FROM \`order\` UNION ALL SELECT 'order_item', COUNT(*) FROM order_item;"
