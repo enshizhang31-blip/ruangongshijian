@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Objects;
 
 /**
  * 统计服务实现
@@ -86,6 +87,7 @@ public class DashboardServiceImpl implements DashboardService {
     private BigDecimal getSalesAmount(LocalDateTime start, LocalDateTime end) {
         LambdaQueryWrapper<SaleOrder> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(SaleOrder::getStatus, 1); // 已付款
+        wrapper.select(SaleOrder::getPayAmount);
 
         if (start != null) {
             wrapper.ge(SaleOrder::getCreatedAt, start);
@@ -95,11 +97,13 @@ public class DashboardServiceImpl implements DashboardService {
         var orders = orderMapper.selectList(wrapper);
         return orders.stream()
                 .map(SaleOrder::getPayAmount)
+        .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private Integer getOrderCount(LocalDateTime start, LocalDateTime end) {
         LambdaQueryWrapper<SaleOrder> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SaleOrder::getStatus, 1); // 已付款
 
         if (start != null) {
             wrapper.ge(SaleOrder::getCreatedAt, start);

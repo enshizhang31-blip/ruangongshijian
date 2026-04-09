@@ -29,6 +29,7 @@ public class Menu {
     private String permission;
     private Integer status;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     /**
      * 子菜单（不映射到数据库）
