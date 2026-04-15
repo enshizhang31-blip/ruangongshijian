@@ -3,6 +3,8 @@ package com.salemanager.modules.ums.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.salemanager.common.exception.BusinessException;
 import com.salemanager.modules.ums.mapper.AdminUserMapper;
 import com.salemanager.modules.ums.mapper.RoleMapper;
@@ -19,7 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 员工服务实现
@@ -37,6 +43,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public List<AdminUser> getUserList(String keyword, Integer status, Integer page, Integer pageSize) {
@@ -207,5 +216,67 @@ public class UserServiceImpl implements UserService {
         user.setUpdatedAt(LocalDateTime.now());
         adminUserMapper.updateById(user);
         log.info("密码重置成功 id={}", id);
+    }
+
+    @Override
+    public Map<String, Object> getUserPermissions(Long id) {
+        log.info("getUserPermissions id={}", id);
+        if (id == null || id <= 0) {
+            throw new BusinessException(400, "员工ID无效");
+        }
+
+        AdminUser user = adminUserMapper.selectById(id);
+        if (user == null) {
+            log.warn("员工不存在 id={}", id);
+            throw new BusinessException(404, "员工不存在");
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("permissions", parseJson(user.getPermissions()));
+        result.put("routes", parseJson(user.getRoutes()));
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public void updateUserPermissions(Long id, List<String> permissions, List<String> routes) {
+        log.info("updateUserPermissions id={}, permissions={}, routes={}", id, permissions, routes);
+        if (id == null || id <= 0) {
+            throw new BusinessException(400, "员工ID无效");
+        }
+
+        AdminUser user = adminUserMapper.selectById(id);
+        if (user == null) {
+            log.warn("员工不存在 id={}", id);
+            throw new BusinessException(404, "员工不存在");
+        }
+
+        user.setPermissions(permissions != null ? toJson(permissions) : null);
+        user.setRoutes(routes != null ? toJson(routes) : null);
+        user.setUpdatedAt(LocalDateTime.now());
+        adminUserMapper.updateById(user);
+        log.info("员工权限更新成功 id={}", id);
+    }
+
+    private String toJson(List<String> list) {
+        try {
+            return objectMapper.writeValueAsString(list);
+        } catch (JsonProcessingException e) {
+            log.error("序列化失败", e);
+            throw new BusinessException(500, "数据序列化失败");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> parseJson(String json) {
+        if (json == null || json.isEmpty()) {
+            return new ArrayList<>();
+        }
+        try {
+            return objectMapper.readValue(json, List.class);
+        } catch (JsonProcessingException e) {
+            log.error("JSON解析失败: {}", json, e);
+            return new ArrayList<>();
+        }
     }
 }
