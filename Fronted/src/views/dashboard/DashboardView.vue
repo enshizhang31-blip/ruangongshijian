@@ -2,15 +2,18 @@
 import { ref, onMounted } from 'vue'
 import { dashboardApi } from '@/api'
 import { formatMoney } from '@/utils/format'
-import { Card, Row, Col, Statistic } from '@arco-design/web-vue'
+import { Card, Row, Col, Statistic, Space } from '@arco-design/web-vue'
+import * as echarts from 'echarts'
+import type { DashboardStats } from '@/types'
 import {
     CurrencyDollarIcon,
     ShoppingCartIcon,
     UsersIcon,
     CubeIcon,
+    ChartBarIcon,
 } from '@heroicons/vue/24/outline'
 
-const stats = ref({
+const stats = ref<DashboardStats>({
     todaySales: 0,
     monthSales: 0,
     totalSales: 0,
@@ -20,17 +23,113 @@ const stats = ref({
     totalCustomers: 0,
     totalProducts: 0,
     totalSnCodes: 0,
+    todayCustomers: 0,
+    lowStockProducts: 0,
 })
 
 const loading = ref(false)
+const salesChartRef = ref<HTMLDivElement>()
+let salesChart: echarts.ECharts | null = null
 
 async function fetchStats() {
     loading.value = true
     try {
         stats.value = await dashboardApi.stats()
+        updateSalesChart()
     } finally {
         loading.value = false
     }
+}
+
+function initSalesChart() {
+    if (!salesChartRef.value) return
+
+    salesChart = echarts.init(salesChartRef.value)
+
+    const option: echarts.EChartsOption = {
+        tooltip: {
+            trigger: 'axis',
+        },
+        legend: {
+            data: ['销售额', '订单量'],
+            bottom: 0,
+        },
+        grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '15%',
+            top: '10%',
+            containLabel: true,
+        },
+        xAxis: {
+            type: 'category',
+            data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+        },
+        yAxis: [
+            {
+                type: 'value',
+                name: '销售额',
+            },
+            {
+                type: 'value',
+                name: '订单量',
+            },
+        ],
+        series: [
+            {
+                name: '销售额',
+                type: 'bar',
+                data: [8200, 9320, 9010, 12340, 12920, 15380, 12500],
+                itemStyle: { color: '#1650D0' },
+            },
+            {
+                name: '订单量',
+                type: 'line',
+                yAxisIndex: 1,
+                data: [12, 25, 18, 35, 42, 38, 28],
+                itemStyle: { color: '#00B42A' },
+            },
+        ],
+    }
+
+    salesChart.setOption(option)
+}
+
+function updateSalesChart() {
+    if (!salesChart) {
+        initSalesChart()
+        return
+    }
+    // 模拟数据更新
+    const option: echarts.EChartsOption = {
+        series: [
+            {
+                name: '销售额',
+                data: [
+                    Math.random() * 10000 + 5000,
+                    Math.random() * 10000 + 5000,
+                    Math.random() * 10000 + 5000,
+                    Math.random() * 10000 + 5000,
+                    Math.random() * 10000 + 5000,
+                    Math.random() * 10000 + 5000,
+                    Math.random() * 10000 + 5000,
+                ],
+            },
+            {
+                name: '订单量',
+                data: [
+                    Math.floor(Math.random() * 50 + 10),
+                    Math.floor(Math.random() * 50 + 10),
+                    Math.floor(Math.random() * 50 + 10),
+                    Math.floor(Math.random() * 50 + 10),
+                    Math.floor(Math.random() * 50 + 10),
+                    Math.floor(Math.random() * 50 + 10),
+                    Math.floor(Math.random() * 50 + 10),
+                ],
+            },
+        ],
+    }
+    salesChart.setOption(option)
 }
 
 onMounted(() => {
@@ -158,5 +257,16 @@ onMounted(() => {
                 </Card>
             </Col>
         </Row>
+
+        <!-- 销售趋势图表 -->
+        <h3 class="text-lg font-medium text-gray-800 mb-4 mt-6">
+            <Space>
+                <ChartBarIcon class="w-5 h-5 text-blue-600" />
+                销售趋势
+            </Space>
+        </h3>
+        <Card>
+            <div ref="salesChartRef" class="w-full h-80"></div>
+        </Card>
     </div>
 </template>

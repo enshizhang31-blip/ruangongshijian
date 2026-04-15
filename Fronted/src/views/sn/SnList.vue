@@ -1,18 +1,26 @@
 <script setup lang="ts">
 import { onMounted, ref, reactive, h } from 'vue'
-import { snApi } from '@/api'
+import { snApi, productApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { formatDate } from '@/utils/format'
-import { Table, Button, Input, InputNumber, Space, Tag, Card, Modal, Select, DatePicker, Message, Empty } from '@arco-design/web-vue'
-import type { SnCode } from '@/types'
-import { PlusIcon, MagnifyingGlassIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
+import { Table, Button, Input, InputNumber, Space, Tag, Card, Modal, Select, DatePicker, Message, Empty, Upload } from '@arco-design/web-vue'
+import type { SnCode, Product } from '@/types'
+import { PlusIcon, MagnifyingGlassIcon, ArrowPathIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline'
 
 const { loading, error, list, total, query, load, setPage, setKeyword } = usePageQuery(snApi.list)
 const keyword = ref('')
 const showAddModal = ref(false)
+const showBatchModal = ref(false)
 const showQueryModal = ref(false)
 const querySn = ref('')
 const queryResult = ref<SnCode | null>(null)
+
+// 商品列表
+const goodsList = ref<Product[]>([])
+const loadingGoods = ref(false)
+
+// 批量导入
+const batchSns = ref('')
 
 const searchForm = reactive({
     goodsId: undefined as number | undefined,
@@ -46,9 +54,31 @@ const newSn = reactive({
     remark: '',
 })
 
+const batchGoodsId = ref<number>()
+const batchRemark = ref('')
+
 onMounted(() => {
     load()
+    fetchGoods()
 })
+
+async function fetchGoods() {
+    loadingGoods.value = true
+    try {
+        const res = await productApi.list({ pageSize: 100 })
+        goodsList.value = res.list
+    } catch {
+        Message.error('获取商品列表失败')
+    } finally {
+        loadingGoods.value = false
+    }
+}
+
+function getGoodsName(goodsId?: number): string {
+    if (!goodsId) return '-'
+    const goods = goodsList.value.find(g => g.id === goodsId)
+    return goods?.name || '-'
+}
 
 function handleSearch() {
     setKeyword(keyword.value)
@@ -74,7 +104,7 @@ function handleReset() {
 async function handleAddSn() {
     if (!newSn.sn || newSn.goodsId === undefined) {
         Message.warning('请填写完整信息')
-        return
+        return false
     }
     try {
         await snApi.create({ sn: newSn.sn, goodsId: newSn.goodsId, remark: newSn.remark })
@@ -82,9 +112,45 @@ async function handleAddSn() {
         showAddModal.value = false
         Object.assign(newSn, { sn: '', goodsId: undefined, remark: '' })
         load()
-    } catch {
+    } catch (e: any) {
         Message.error('录入失败')
+        return false
     }
+}
+
+async function handleBatchImport() {
+    if (!batchGoodsId.value) {
+        Message.warning('请选择商品')
+        return false
+    }
+    if (!batchSns.value || batchSns.value.trim() === '') {
+        Message.warning('请输入SN码')
+        return false
+    }
+    const sns = batchSns.value.split('\n').map(s => s.trim()).filter(s => s.length > 0)
+    if (sns.length === 0) {
+        Message.warning('请输入有效的SN码')
+        return false
+    }
+    try {
+        const result = await snApi.batchCreate({ sns, goodsId: batchGoodsId.value, remark: batchRemark.value })
+        Message.success(`批量导入成功: ${result.success}个，失败: ${result.failed}个`)
+        showBatchModal.value = false
+        batchSns.value = ''
+        batchGoodsId.value = undefined
+        batchRemark.value = ''
+        load()
+    } catch (e: any) {
+        Message.error('批量导入失败')
+        return false
+    }
+}
+
+function handleOpenBatchModal() {
+    batchGoodsId.value = undefined
+    batchSns.value = ''
+    batchRemark.value = ''
+    showBatchModal.value = true
 }
 
 async function handleQuerySn() {
@@ -129,6 +195,12 @@ const columns = [
                         <MagnifyingGlassIcon class="w-4 h-4" />
                     </template>
                     SN码查询
+                </Button>
+                <Button @click="handleOpenBatchModal">
+                    <template #icon>
+                        <ArrowUpTrayIcon class="w-4 h-4" />
+                    </template>
+                    批量导入
                 </Button>
                 <Button type="primary" @click="showAddModal = true">
                     <template #icon>
@@ -179,19 +251,44 @@ const columns = [
     </div>
 
     <!-- 录入SN码弹窗 -->
-    <Modal v-model:visible="showAddModal" title="录入SN码" @ok="handleAddSn" :width="400">
+    <Modal v-model:visible="showAddModal" title="录入SN码" :on-before-ok="handleAddSn" :width="500">
         <Space direction="vertical" :size="16" class="w-full">
+            <div>
+                <div class="text-sm text-gray-600 mb-1">商品 *</div>
+                <Select v-model="newSn.goodsId" placeholder="请选择商品" class="w-full" :loading="loadingGoods" filterable>
+                    <Select.Option v-for="g in goodsList" :key="g.id" :value="g.id">
+                        {{ g.name }} ({{ g.brand || '无品牌' }})
+                    </Select.Option>
+                </Select>
+            </div>
             <div>
                 <div class="text-sm text-gray-600 mb-1">SN码 *</div>
                 <Input v-model="newSn.sn" placeholder="请输入SN码" class="w-full" />
             </div>
             <div>
-                <div class="text-sm text-gray-600 mb-1">商品ID *</div>
-                <InputNumber v-model="newSn.goodsId" placeholder="请输入商品ID" class="w-full" />
-            </div>
-            <div>
                 <div class="text-sm text-gray-600 mb-1">备注</div>
                 <Input v-model="newSn.remark" placeholder="可选" class="w-full" />
+            </div>
+        </Space>
+    </Modal>
+
+    <!-- 批量导入弹窗 -->
+    <Modal v-model:visible="showBatchModal" title="批量导入SN码" :on-before-ok="handleBatchImport" :width="600">
+        <Space direction="vertical" :size="16" class="w-full">
+            <div>
+                <div class="text-sm text-gray-600 mb-1">商品 *</div>
+                <Select v-model="batchGoodsId" placeholder="请选择商品" class="w-full" :loading="loadingGoods" filterable>
+                    <Select.Option v-for="g in goodsList" :key="g.id" :value="g.id">
+                        {{ g.name }} ({{ g.brand || '无品牌' }})
+                    </Select.Option>
+                </Select>
+            </div>
+            <div>
+                <div class="text-sm text-gray-600 mb-1">SN码列表（每行一个） *</div>
+                <Input v-model="batchSns" placeholder="请输入SN码，每行一个" :rows="10" type="textarea" class="w-full" />
+            </div>
+            <div class="text-xs text-gray-500">
+                提示：每行输入一个SN码，批量导入将自动识别换行符分割
             </div>
         </Space>
     </Modal>

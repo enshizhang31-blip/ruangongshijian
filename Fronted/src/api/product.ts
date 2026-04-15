@@ -1,8 +1,8 @@
 import api from './request'
-import type { Product, ProductCategory, PageQuery, PageResult } from '@/types'
+import type { Product, ProductCategory, Sku, PageQuery, PageResult } from '@/types'
 
 export const productApi = {
-  list(params: PageQuery) {
+  list(params: PageQuery & { categoryId?: number }) {
     return api.get<PageResult<Product>>('/admin/product', { params })
   },
   getById(id: number) {
@@ -19,5 +19,8 @@ export const productApi = {
   },
   categories() {
     return api.get<ProductCategory[]>('/admin/product/categories')
+  },
+  getSkus(spuId: number) {
+    return api.get<Sku[]>(`/admin/product/${spuId}/skus`)
   },
 }

@@ -4,14 +4,16 @@ import { customerApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Form, FormItem, Select, Message, Empty } from '@arco-design/web-vue'
 import type { Customer } from '@/types'
-import { PlusIcon, PencilIcon } from '@heroicons/vue/24/outline'
-import { formatMoney } from '@/utils/format'
+import { PlusIcon, PencilIcon, EyeIcon } from '@heroicons/vue/24/outline'
+import { formatMoney, formatDate } from '@/utils/format'
 
 const { loading, error, list, total, query, load, setPage, setKeyword } = usePageQuery(customerApi.list)
 const keyword = ref('')
 const showModal = ref(false)
+const showDetailModal = ref(false)
 const isEdit = ref(false)
 const editingId = ref<number>()
+const viewingCustomer = ref<Customer | null>(null)
 
 const form = reactive<Partial<Customer>>({
     nickname: '',
@@ -67,10 +69,15 @@ function handleEdit(record: Customer) {
     showModal.value = true
 }
 
+function handleView(record: Customer) {
+    viewingCustomer.value = record
+    showDetailModal.value = true
+}
+
 async function handleSubmit() {
     if (!form.phone) {
         Message.warning('请填写手机号')
-        return
+        return false
     }
     try {
         if (isEdit.value && editingId.value) {
@@ -84,6 +91,7 @@ async function handleSubmit() {
         load()
     } catch (e: any) {
         Message.error(e?.message || '操作失败')
+        return false
     }
 }
 
@@ -138,6 +146,9 @@ async function handleDelete(id: number) {
             <Table v-else :loading="loading" :columns="columns" :data="list" :pagination="false" :scroll="{ x: 800 }">
                 <template #actions="{ record }">
                     <Space>
+                        <Button type="text" size="small" @click="handleView(record)">
+                            <EyeIcon class="w-4 h-4" />
+                        </Button>
                         <Button type="text" size="small" @click="handleEdit(record)">
                             <PencilIcon class="w-4 h-4" />
                         </Button>
@@ -165,7 +176,7 @@ async function handleDelete(id: number) {
     </div>
 
     <!-- 新增/编辑弹窗 -->
-    <Modal v-model:visible="showModal" :title="isEdit ? '编辑客户' : '新增客户'" @ok="handleSubmit" :width="500">
+    <Modal v-model:visible="showModal" :title="isEdit ? '编辑客户' : '新增客户'" :on-before-ok="handleSubmit" :width="500">
         <Form :model="form" layout="vertical">
             <FormItem label="昵称">
                 <Input v-model="form.nickname" placeholder="请输入昵称" />
@@ -191,5 +202,73 @@ async function handleDelete(id: number) {
                 </Select>
             </FormItem>
         </Form>
+    </Modal>
+
+    <!-- 客户详情弹窗 -->
+    <Modal v-model:visible="showDetailModal" title="客户详情" :width="550" :footer="false">
+        <div v-if="viewingCustomer">
+            <!-- 基本信息 -->
+            <div class="mb-4">
+                <div class="flex items-center gap-4 mb-4">
+                    <img v-if="viewingCustomer.avatar" :src="viewingCustomer.avatar" class="w-16 h-16 rounded-full object-cover" />
+                    <div v-else class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
+                        {{ viewingCustomer.nickname?.charAt(0) || '?' }}
+                    </div>
+                    <div>
+                        <div class="text-lg font-medium">{{ viewingCustomer.nickname || '-' }}</div>
+                        <Tag :color="viewingCustomer.status === 1 ? 'green' : 'gray'" size="small">
+                            {{ viewingCustomer.status === 1 ? '正常' : '禁用' }}
+                        </Tag>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 会员信息 -->
+            <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                <h4 class="text-sm font-medium text-gray-700 mb-3">会员信息</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-xs text-gray-500">会员等级</div>
+                        <div class="text-sm">
+                            <Tag :color="viewingCustomer.memberLevel === 4 ? 'gold' : viewingCustomer.memberLevel === 3 ? 'orange' : 'arcoblue'">
+                                {{ ['', '普通会员', '银卡会员', '金卡会员', '钻石会员'][viewingCustomer.memberLevel || 1] }}
+                            </Tag>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500">手机号</div>
+                        <div class="text-sm">{{ viewingCustomer.phone || '-' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500">账户余额</div>
+                        <div class="text-sm font-medium text-green-600">¥{{ formatMoney(viewingCustomer.balance || 0) }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500">积分余额</div>
+                        <div class="text-sm">{{ viewingCustomer.points || 0 }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 消费统计 -->
+            <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                <h4 class="text-sm font-medium text-gray-700 mb-3">消费统计</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-xs text-gray-500">累计消费</div>
+                        <div class="text-sm font-medium">¥{{ formatMoney(viewingCustomer.totalConsume || 0) }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500">累计积分</div>
+                        <div class="text-sm">{{ viewingCustomer.totalPoints || 0 }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 时间信息 -->
+            <div class="text-xs text-gray-400">
+                注册时间: {{ viewingCustomer.createdAt ? formatDate(viewingCustomer.createdAt) : '-' }}
+            </div>
+        </div>
     </Modal>
 </template>

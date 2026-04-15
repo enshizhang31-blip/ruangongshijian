@@ -5,7 +5,7 @@ export type { PageQuery, PageResult, Result } from './common'
 export type { AdminUser, Department, Role } from './user'
 
 // ========== 商品 ==========
-export type { Product, ProductCategory } from './product'
+export type { Product, ProductCategory, Sku } from './product'
 
 // ========== 客户 ==========
 export type { Customer } from './customer'

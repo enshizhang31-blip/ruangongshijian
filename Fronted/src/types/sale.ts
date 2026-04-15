@@ -5,8 +5,12 @@ export interface SaleOrder {
   customerId: number
   customerName?: string
   receiverPhone?: string
+  receiverName?: string
+  receiverAddress?: string
+  addressId?: number
   totalAmount: number
   discountAmount?: number
+  pointsDiscount?: number
   payAmount: number
   payType?: number
   status?: number
