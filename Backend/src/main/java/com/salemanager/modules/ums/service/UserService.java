@@ -4,6 +4,7 @@ import com.salemanager.modules.ums.model.AdminUser;
 import com.salemanager.modules.ums.param.AdminUserParam;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 员工服务
@@ -44,4 +45,14 @@ public interface UserService {
      * 重置密码
      */
     void resetPassword(Long id);
+
+    /**
+     * 获取员工权限
+     */
+    Map<String, Object> getUserPermissions(Long id);
+
+    /**
+     * 更新员工权限
+     */
+    void updateUserPermissions(Long id, List<String> permissions, List<String> routes);
 }

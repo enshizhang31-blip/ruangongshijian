@@ -106,4 +106,30 @@ public class UserController {
         userService.resetPassword(id);
         return Result.success();
     }
+
+    /**
+     * 获取员工权限
+     */
+    @GetMapping("/{id}/permissions")
+    public Result<Map<String, Object>> getUserPermissions(@PathVariable Long id) {
+        log.info("getUserPermissions id={}", id);
+        Map<String, Object> permissions = userService.getUserPermissions(id);
+        return Result.success(permissions);
+    }
+
+    /**
+     * 更新员工权限
+     */
+    @PutMapping("/{id}/permissions")
+    public Result<Void> updateUserPermissions(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> params) {
+        log.info("updateUserPermissions id={}", id);
+        @SuppressWarnings("unchecked")
+        List<String> permissions = (List<String>) params.get("permissions");
+        @SuppressWarnings("unchecked")
+        List<String> routes = (List<String>) params.get("routes");
+        userService.updateUserPermissions(id, permissions, routes);
+        return Result.success();
+    }
 }
