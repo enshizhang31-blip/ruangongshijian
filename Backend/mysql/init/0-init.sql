@@ -475,14 +475,16 @@ CREATE TABLE IF NOT EXISTS admin_log (
 
 -- 6.1 预设角色
 INSERT INTO role (name, code, description, permissions, routes, is_preset, status, created_at, updated_at) VALUES
-('超级管理员', 'SUPER_ADMIN', '拥有所有权限', '["*"]', '["/*"]', 1, 1, NOW(), NOW()),
+('超级管理员', 'SUPER_ADMIN', '拥有所有权限', '["spu:view","spu:add","spu:edit","spu:delete","spu:import","spu:export","sku:view","sku:add","sku:edit","sku:delete","category:view","category:add","category:edit","category:delete","spec:view","spec:add","spec:edit","spec:delete","sn:view","sn:add","sn:import","sn:export","sn:generate","sn:query","sn:status","customer:view","customer:detail","customer:edit","customer:balance","customer:points","customer:disable","order:view","order:detail","order:process","order:refund","statistics:view","system:user","system:role","system:menu","system:log"]',
+                '["/dashboard","/product","/product/list","/sn","/sn/list","/order","/order/list","/customer","/customer/list","/statistics","/system","/system/user","/system/role"]', 1, 1, NOW(), NOW()),
 ('运营主管', 'OPERATOR', '商品、订单、客户、数据统计管理', '["spu:view","spu:add","spu:edit","spu:delete","spu:import","spu:export","sku:view","sku:add","sku:edit","sku:delete","sn:view","sn:add","sn:import","sn:export","sn:query","category:view","category:add","category:edit","order:view","order:edit","customer:view","customer:add","customer:edit","statistics:view"]', '["/dashboard","/product","/sn","/order","/customer","/statistics"]', 1, 1, NOW(), NOW()),
 ('录入员', 'INPUTTER', '商品新增、SN码查询、操作记录', '["spu:add","spu:edit","sn:add","sn:import","sn:query","sn:view","category:add","category:edit"]', '["/dashboard","/product","/sn"]', 1, 1, NOW(), NOW());
 
 -- 6.2 预设管理员账户
 -- 用户名: admin  密码: 123456 (BCrypt hash)
 INSERT INTO admin_user (username, password, real_name, permissions, routes, status, created_at, updated_at) VALUES
-('admin', '$2a$10$9Fr2OrEUefhFyxvFEviIg.kHuXtbYVT44sQyFk9MSaAbDksT1Z.mK', '系统管理员', '["*"]', '["/*"]', 1, NOW(), NOW());
+('admin', '$2a$10$9Fr2OrEUefhFyxvFEviIg.kHuXtbYVT44sQyFk9MSaAbDksT1Z.mK', '系统管理员', '["spu:view","spu:add","spu:edit","spu:delete","spu:import","spu:export","sku:view","sku:add","sku:edit","sku:delete","category:view","category:add","category:edit","category:delete","spec:view","spec:add","spec:edit","spec:delete","sn:view","sn:add","sn:import","sn:export","sn:generate","sn:query","sn:status","customer:view","customer:detail","customer:edit","customer:balance","customer:points","customer:disable","order:view","order:detail","order:process","order:refund","statistics:view","system:user","system:role","system:menu","system:log"]',
+                '["/dashboard","/product","/product/list","/sn","/sn/list","/order","/order/list","/customer","/customer/list","/statistics","/system","/system/user","/system/role"]', 1, NOW(), NOW());
 
 -- 6.3 预设菜单数据
 INSERT INTO menu (name, path, component, icon, sort, parent_id, type, permission, status, created_at, updated_at) VALUES
