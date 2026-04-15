@@ -5,7 +5,7 @@ import { usePageQuery } from '@/composables'
 import { formatDate } from '@/utils/format'
 import { Table, Button, Input, Space, Tag, Card, Modal, Form, FormItem, Select, Popconfirm, Message, Spin, Empty } from '@arco-design/web-vue'
 import type { AdminUser, Department, Role } from '@/types'
-import { PlusIcon, PencilIcon, KeyIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, PencilIcon, KeyIcon, ShieldCheckIcon } from '@heroicons/vue/24/outline'
 
 const { loading, error, list, total, query, load, setPage, setKeyword } = usePageQuery(adminApi.list)
 const keyword = ref('')
@@ -16,6 +16,32 @@ const departments = ref<Department[]>([])
 const roles = ref<Role[]>([])
 const loadingDepts = ref(false)
 const loadingRoles = ref(false)
+
+// 权限管理
+const showPermModal = ref(false)
+const permEditingId = ref<number>()
+const permLoading = ref(false)
+const userPermissions = ref<string[]>([])
+const userRoutes = ref<string[]>([])
+const allPermissions = [
+    'spu:view', 'spu:add', 'spu:edit', 'spu:delete', 'spu:import', 'spu:export', 'spu:status',
+    'sku:view', 'sku:add', 'sku:edit', 'sku:delete',
+    'category:view', 'category:add', 'category:edit', 'category:delete',
+    'spec:view', 'spec:add', 'spec:edit', 'spec:delete',
+    'sn:view', 'sn:add', 'sn:import', 'sn:export', 'sn:generate', 'sn:query', 'sn:status',
+    'customer:view', 'customer:detail', 'customer:edit', 'customer:balance', 'customer:points', 'customer:disable',
+    'order:view', 'order:detail', 'order:process', 'order:refund',
+    'statistics:view',
+    'system:user', 'system:role', 'system:menu', 'system:log',
+]
+const allRoutes = [
+    '/dashboard', '/product', '/product/list',
+    '/sn', '/sn/list',
+    '/order', '/order/list',
+    '/customer', '/customer/list',
+    '/statistics',
+    '/system', '/system/user', '/system/role',
+]
 
 const form = reactive<{
     id?: number
@@ -117,19 +143,15 @@ function handleEdit(record: AdminUser) {
 async function handleSubmit() {
     if (!form.username) {
         Message.warning('请填写用户名')
-        return
+        return false
     }
     if (!isEdit.value && !form.password) {
         Message.warning('请填写密码')
-        return
+        return false
     }
     if (!form.realName) {
         Message.warning('请填写姓名')
-        return
-    }
-    if (!isEdit.value && !form.roleId) {
-        Message.warning('请选择角色')
-        return
+        return false
     }
     try {
         if (isEdit.value && editingId.value) {
@@ -151,8 +173,10 @@ async function handleSubmit() {
         }
         showModal.value = false
         load()
+        return true
     } catch (e: any) {
         Message.error(e?.message || '操作失败')
+        return false
     }
 }
 
@@ -165,6 +189,54 @@ async function handleDelete(id: number) {
 async function handleResetPassword(id: number) {
     await adminApi.resetPassword(id)
     Message.success('密码已重置为 123456')
+}
+
+async function handleOpenPermModal(record: AdminUser) {
+    permEditingId.value = record.id
+    permLoading.value = true
+    showPermModal.value = true
+    try {
+        const res = await adminApi.getPermissions(record.id!)
+        userPermissions.value = res.permissions || []
+        userRoutes.value = res.routes || []
+    } catch (e: any) {
+        Message.error('获取权限失败')
+    } finally {
+        permLoading.value = false
+    }
+}
+
+async function handleSavePerm() {
+    if (!permEditingId.value) return
+    try {
+        await adminApi.updatePermissions(permEditingId.value, {
+            permissions: userPermissions.value,
+            routes: userRoutes.value,
+        })
+        Message.success('权限更新成功')
+        showPermModal.value = false
+    } catch (e: any) {
+        Message.error(e?.message || '权限更新失败')
+        return false
+    }
+}
+
+function togglePermission(p: string) {
+    const idx = userPermissions.value.indexOf(p)
+    if (idx >= 0) {
+        userPermissions.value.splice(idx, 1)
+    } else {
+        userPermissions.value.push(p)
+    }
+}
+
+function toggleRoute(r: string) {
+    const idx = userRoutes.value.indexOf(r)
+    if (idx >= 0) {
+        userRoutes.value.splice(idx, 1)
+    } else {
+        userRoutes.value.push(r)
+    }
 }
 </script>
 
@@ -211,6 +283,9 @@ async function handleResetPassword(id: number) {
                         <Button type="text" size="small" @click="handleEdit(record)">
                             <PencilIcon class="w-4 h-4" />
                         </Button>
+                        <Button type="text" size="small" @click="handleOpenPermModal(record)">
+                            <ShieldCheckIcon class="w-4 h-4" />
+                        </Button>
                         <Popconfirm title="确定重置该员工密码？" @ok="handleResetPassword(record.id)">
                             <Button type="text" size="small">
                                 <KeyIcon class="w-4 h-4" />
@@ -237,7 +312,7 @@ async function handleResetPassword(id: number) {
         </Card>
     </div>
 
-    <Modal v-model:visible="showModal" :title="isEdit ? '编辑员工' : '新增员工'" @ok="handleSubmit" :width="500">
+    <Modal v-model:visible="showModal" :title="isEdit ? '编辑员工' : '新增员工'" :on-before-ok="handleSubmit" :width="500">
         <Form :model="form" layout="vertical">
             <FormItem label="用户名" required>
                 <Input v-model="form.username" placeholder="请输入用户名" :disabled="isEdit" />
@@ -248,7 +323,7 @@ async function handleResetPassword(id: number) {
             <FormItem label="姓名" required>
                 <Input v-model="form.realName" placeholder="请输入姓名" />
             </FormItem>
-            <FormItem label="角色" required>
+            <FormItem v-if="!isEdit" label="角色" required>
                 <Select v-model="form.roleId" placeholder="请选择角色" class="w-full" :loading="loadingRoles">
                     <Select.Option v-for="r in roles" :key="r.id" :value="r.id">{{ r.name }}</Select.Option>
                 </Select>
@@ -270,6 +345,26 @@ async function handleResetPassword(id: number) {
                     <Select.Option :value="1">正常</Select.Option>
                     <Select.Option :value="0">禁用</Select.Option>
                 </Select>
+            </FormItem>
+        </Form>
+    </Modal>
+
+    <!-- 权限编辑弹窗 -->
+    <Modal v-model:visible="showPermModal" title="编辑权限" :on-before-ok="handleSavePerm" :width="600" :loading="permLoading">
+        <Form :model="{}" layout="vertical">
+            <FormItem label="操作权限">
+                <div class="flex flex-wrap gap-2">
+                    <Tag v-for="p in allPermissions" :key="p" :color="userPermissions.includes(p) ? 'green' : 'gray'" class="cursor-pointer" @click="togglePermission(p)">
+                        {{ p }}
+                    </Tag>
+                </div>
+            </FormItem>
+            <FormItem label="路由权限">
+                <div class="flex flex-wrap gap-2">
+                    <Tag v-for="r in allRoutes" :key="r" :color="userRoutes.includes(r) ? 'blue' : 'gray'" class="cursor-pointer" @click="toggleRoute(r)">
+                        {{ r }}
+                    </Tag>
+                </div>
             </FormItem>
         </Form>
     </Modal>

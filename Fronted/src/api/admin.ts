@@ -20,6 +20,12 @@ export const adminApi = {
     resetPassword(id: number) {
         return api.post<void>(`/admin/user/${id}/resetpwd`)
     },
+    getPermissions(id: number) {
+        return api.get<{ permissions: string[]; routes: string[] }>(`/admin/user/${id}/permissions`)
+    },
+    updatePermissions(id: number, data: { permissions: string[]; routes: string[] }) {
+        return api.put<void>(`/admin/user/${id}/permissions`, data)
+    },
 }
 
 export const departmentApi = {
