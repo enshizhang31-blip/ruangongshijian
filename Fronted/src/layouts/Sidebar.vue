@@ -1,9 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import {
-    Menu,
-    MenuItem,
-} from '@arco-design/web-vue'
+import { Menu, MenuItem, SubMenu } from '@arco-design/web-vue'
 import {
     ViewColumnsIcon,
     CubeIcon,
@@ -19,11 +17,22 @@ import { useAppStore } from '@/stores/app'
 const route = useRoute()
 const appStore = useAppStore()
 
-const selectedKey = route.path
+const selectedKey = computed(() => route.path.split('/').slice(0, 3).join('/'))
+const currentPath = computed(() => route.path)
 
 const menuItems = [
     { key: '/dashboard', label: '首页', icon: ViewColumnsIcon },
-    { key: '/product', label: '商品管理', icon: CubeIcon },
+    {
+        key: '/product',
+        label: '商品管理',
+        icon: CubeIcon,
+        children: [
+            { key: '/product', label: '商品列表' },
+            { key: '/product/category', label: '商品分类' },
+            { key: '/product/sku', label: 'SKU管理' },
+            { key: '/product/spec', label: '规格管理' },
+        ]
+    },
     { key: '/sn', label: 'SN码管理', icon: QueueListIcon },
     { key: '/customer', label: '客户管理', icon: UsersIcon },
     { key: '/sale', label: '销售订单', icon: ShoppingCartIcon },
@@ -31,6 +40,11 @@ const menuItems = [
     { key: '/statistics', label: '数据统计', icon: ChartBarIcon },
     { key: '/settings', label: '系统设置', icon: Cog6ToothIcon },
 ]
+
+function isActive(key: string) {
+    if (key === '/product') return currentPath.value === '/product' || currentPath.value.startsWith('/product/')
+    return currentPath.value.startsWith(key)
+}
 </script>
 
 <template>
@@ -47,15 +61,29 @@ const menuItems = [
         <!-- Navigation -->
         <div class="flex-1 overflow-y-auto py-2">
             <Menu :default-selected-keys="[selectedKey]" class="border-0 bg-transparent">
-                <MenuItem v-for="item in menuItems" :key="item.key" class="rounded-lg mx-2 my-0.5">
-                <router-link :to="item.key" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
-                    :class="route.path === item.key
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-gray-600 hover:bg-gray-50'">
-                    <component :is="item.icon" class="w-5 h-5" />
-                    <span class="text-sm font-medium">{{ item.label }}</span>
-                </router-link>
-                </MenuItem>
+                <template v-for="item in menuItems" :key="item.key">
+                    <SubMenu v-if="item.children" :key="item.key">
+                        <template #title>
+                            <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg" :class="isActive(item.key) ? 'bg-blue-50 text-blue-600' : 'text-gray-600'">
+                                <component :is="item.icon" class="w-5 h-5" />
+                                <span class="text-sm font-medium">{{ item.label }}</span>
+                            </div>
+                        </template>
+                        <MenuItem v-for="child in item.children" :key="child.key">
+                            <router-link :to="child.key" class="flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors"
+                                :class="currentPath === child.key ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'">
+                                {{ child.label }}
+                            </router-link>
+                        </MenuItem>
+                    </SubMenu>
+                    <MenuItem v-else :key="item.key">
+                        <router-link :to="item.key" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
+                            :class="isActive(item.key) ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'">
+                            <component :is="item.icon" class="w-5 h-5" />
+                            <span class="text-sm font-medium">{{ item.label }}</span>
+                        </router-link>
+                    </MenuItem>
+                </template>
             </Menu>
         </div>
     </aside>

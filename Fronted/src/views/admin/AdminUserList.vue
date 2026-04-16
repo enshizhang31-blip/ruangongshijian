@@ -80,7 +80,7 @@ const columns = [
     },
     { title: '最后登录', dataIndex: 'lastLoginAt', render: (t: string) => t ? formatDate(t) : '-' },
     { title: '创建时间', dataIndex: 'createdAt', render: (t: string) => t ? formatDate(t) : '-' },
-    { title: '操作', slotName: 'actions', align: 'right', width: 150 },
+    { title: '操作', slotName: 'actions', width: 250 },
 ]
 
 onMounted(async () => {
@@ -229,6 +229,24 @@ async function handleSavePerm() {
         Message.error(e?.message || '权限更新失败')
         return false
     }
+}
+
+function onPermissionAdd(evt: any) {
+    // 去重：如果已有则移除
+    const val = evt.item._underlying_vm_
+    if (val && userPermissions.value.includes(val)) {
+        userPermissions.value = userPermissions.value.filter(p => p !== val)
+    }
+    // 从可用列表移除
+    availablePermissions.value = availablePermissions.value.filter(p => p !== val)
+}
+
+function onRouteAdd(evt: any) {
+    const val = evt.item._underlying_vm_
+    if (val && userRoutes.value.includes(val)) {
+        userRoutes.value = userRoutes.value.filter(r => r !== val)
+    }
+    availableRoutes.value = availableRoutes.value.filter(r => r !== val)
 }
 
 // ---- 拖拽辅助函数（按钮备选操作） ----
@@ -407,8 +425,9 @@ function toggleRoute(r: string) {
     </Modal>
 
     <!-- 权限编辑弹窗 -->
-    <Modal v-model:visible="showPermModal" title="编辑权限" :on-before-ok="handleSavePerm" :width="820" :loading="permLoading">
-        <div class="flex flex-col gap-6">
+    <Modal v-model:visible="showPermModal" title="编辑权限" :on-before-ok="handleSavePerm" :width="820"
+        :loading="permLoading">
+        <div class="flex flex-col gap-6 max-h-[70vh] overflow-y-auto pr-2">
 
             <!-- 操作权限 -->
             <section>
@@ -422,26 +441,21 @@ function toggleRoute(r: string) {
                         <Button size="mini" type="outline" status="danger" @click="clearAllPermissions">清空</Button>
                     </Space>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 items-stretch">
+                <div class="grid grid-cols-[1fr_40px_1fr] gap-3 items-stretch">
                     <!-- 可用权限 -->
-                    <div class="border border-dashed border-gray-300 rounded-xl p-3 bg-gray-50 flex flex-col min-h-[220px]">
+                    <div
+                        class="border border-dashed border-gray-300 rounded-xl p-3 bg-gray-50 flex flex-col min-h-[220px]">
                         <div class="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wide">
                             可用权限 ({{ availablePermissions.length }})
                         </div>
-                        <draggable
-                            v-model="availablePermissions"
-                            :group="{ name: 'perm', pull: 'clone', put: false }"
-                            :sort="false"
-                            item-key="(item: string) => item"
-                            class="flex-1 overflow-y-auto space-y-1"
-                        >
+                        <draggable v-model="availablePermissions" :group="{ name: 'perm', pull: 'clone', put: false }"
+                            :sort="false" item-key="(item: string) => item" class="flex-1 overflow-y-auto space-y-1">
                             <template #item="{ element }">
-                                <div
-                                    class="flex items-center justify-between px-3 py-1.5 bg-white border border-gray-100 rounded-lg text-sm cursor-grab hover:border-blue-400 hover:text-blue-600 hover:shadow-sm transition-all group"
-                                    @click="addPermission(element)"
-                                >
+                                <div class="flex items-center justify-between px-3 py-1.5 bg-white border border-gray-100 rounded-lg text-sm cursor-grab hover:border-blue-400 hover:text-blue-600 hover:shadow-sm transition-all group"
+                                    @click="addPermission(element)">
                                     <span class="font-mono text-xs">{{ element }}</span>
-                                    <ChevronRightIcon class="w-4 h-4 text-gray-300 group-hover:text-blue-500 flex-shrink-0" />
+                                    <ChevronRightIcon
+                                        class="w-4 h-4 text-gray-300 group-hover:text-blue-500 flex-shrink-0" />
                                 </div>
                             </template>
                         </draggable>
@@ -455,19 +469,14 @@ function toggleRoute(r: string) {
                         <div class="text-xs font-medium text-blue-500 mb-2 uppercase tracking-wide">
                             已选权限 ({{ userPermissions.length }})
                         </div>
-                        <draggable
-                            v-model="userPermissions"
-                            group="perm"
-                            item-key="(item: string) => item"
-                            class="flex-1 overflow-y-auto space-y-1"
-                        >
+                        <draggable v-model="userPermissions" group="perm" item-key="(item: string) => item"
+                            class="flex-1 overflow-y-auto space-y-1" @add="onPermissionAdd">
                             <template #item="{ element }">
-                                <div
-                                    class="flex items-center justify-between px-3 py-1.5 bg-white border border-blue-100 rounded-lg text-sm cursor-grab hover:border-red-400 hover:text-red-500 hover:shadow-sm transition-all group"
-                                    @click="removePermission(element)"
-                                >
+                                <div class="flex items-center justify-between px-3 py-1.5 bg-white border border-blue-100 rounded-lg text-sm cursor-grab hover:border-red-400 hover:text-red-500 hover:shadow-sm transition-all group"
+                                    @click="removePermission(element)">
                                     <span class="font-mono text-xs text-blue-700">{{ element }}</span>
-                                    <ChevronLeftIcon class="w-4 h-4 text-gray-300 group-hover:text-red-400 flex-shrink-0" />
+                                    <ChevronLeftIcon
+                                        class="w-4 h-4 text-gray-300 group-hover:text-red-400 flex-shrink-0" />
                                 </div>
                             </template>
                         </draggable>
@@ -489,26 +498,21 @@ function toggleRoute(r: string) {
                         <Button size="mini" type="outline" status="danger" @click="clearAllRoutes">清空</Button>
                     </Space>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 items-stretch">
+                <div class="grid grid-cols-[1fr_40px_1fr] gap-3 items-stretch">
                     <!-- 可用路由 -->
-                    <div class="border border-dashed border-gray-300 rounded-xl p-3 bg-gray-50 flex flex-col min-h-[180px]">
+                    <div
+                        class="border border-dashed border-gray-300 rounded-xl p-3 bg-gray-50 flex flex-col min-h-[180px]">
                         <div class="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wide">
                             可用路由 ({{ availableRoutes.length }})
                         </div>
-                        <draggable
-                            v-model="availableRoutes"
-                            :group="{ name: 'route', pull: 'clone', put: false }"
-                            :sort="false"
-                            item-key="(item: string) => item"
-                            class="flex-1 overflow-y-auto space-y-1"
-                        >
+                        <draggable v-model="availableRoutes" :group="{ name: 'route', pull: 'clone', put: false }"
+                            :sort="false" item-key="(item: string) => item" class="flex-1 overflow-y-auto space-y-1">
                             <template #item="{ element }">
-                                <div
-                                    class="flex items-center justify-between px-3 py-1.5 bg-white border border-gray-100 rounded-lg text-sm cursor-grab hover:border-purple-400 hover:text-purple-600 hover:shadow-sm transition-all group"
-                                    @click="addRoute(element)"
-                                >
+                                <div class="flex items-center justify-between px-3 py-1.5 bg-white border border-gray-100 rounded-lg text-sm cursor-grab hover:border-purple-400 hover:text-purple-600 hover:shadow-sm transition-all group"
+                                    @click="addRoute(element)">
                                     <span class="font-mono text-xs">{{ element }}</span>
-                                    <ChevronRightIcon class="w-4 h-4 text-gray-300 group-hover:text-purple-500 flex-shrink-0" />
+                                    <ChevronRightIcon
+                                        class="w-4 h-4 text-gray-300 group-hover:text-purple-500 flex-shrink-0" />
                                 </div>
                             </template>
                         </draggable>
@@ -522,19 +526,14 @@ function toggleRoute(r: string) {
                         <div class="text-xs font-medium text-purple-500 mb-2 uppercase tracking-wide">
                             已选路由 ({{ userRoutes.length }})
                         </div>
-                        <draggable
-                            v-model="userRoutes"
-                            group="route"
-                            item-key="(item: string) => item"
-                            class="flex-1 overflow-y-auto space-y-1"
-                        >
+                        <draggable v-model="userRoutes" group="route" item-key="(item: string) => item"
+                            class="flex-1 overflow-y-auto space-y-1" @add="onRouteAdd">
                             <template #item="{ element }">
-                                <div
-                                    class="flex items-center justify-between px-3 py-1.5 bg-white border border-purple-100 rounded-lg text-sm cursor-grab hover:border-red-400 hover:text-red-500 hover:shadow-sm transition-all group"
-                                    @click="removeRoute(element)"
-                                >
+                                <div class="flex items-center justify-between px-3 py-1.5 bg-white border border-purple-100 rounded-lg text-sm cursor-grab hover:border-red-400 hover:text-red-500 hover:shadow-sm transition-all group"
+                                    @click="removeRoute(element)">
                                     <span class="font-mono text-xs text-purple-700">{{ element }}</span>
-                                    <ChevronLeftIcon class="w-4 h-4 text-gray-300 group-hover:text-red-400 flex-shrink-0" />
+                                    <ChevronLeftIcon
+                                        class="w-4 h-4 text-gray-300 group-hover:text-red-400 flex-shrink-0" />
                                 </div>
                             </template>
                         </draggable>

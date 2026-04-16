@@ -3,11 +3,13 @@ export interface Product {
   id: number
   name: string
   categoryId?: number
+  categoryName?: string
   brand?: string
   imageUrl?: string
   images?: string
   description?: string
-  status: number // 0:草稿 1:上架 2:下架 3:已删除
+  status: number // 0:下架 1:上架
+  skuCount?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -22,6 +24,7 @@ export interface Sku {
   unit?: string
   imageUrl?: string
   status: number
+  stock?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -33,6 +36,20 @@ export interface ProductCategory {
   icon?: string
   sort?: number
   status?: number
+  children?: ProductCategory[]
   createdAt?: string
   updatedAt?: string
+}
+
+export interface Spec {
+  id: number
+  name: string
+  values?: SpecValue[]
+}
+
+export interface SpecValue {
+  id: number
+  specId: number
+  value: string
+  sort?: number
 }

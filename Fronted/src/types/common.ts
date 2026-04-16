@@ -6,6 +6,7 @@ export interface PageQuery {
   pageSize?: number
   keyword?: string
   status?: number
+  categoryId?: number
 }
 
 export interface Pagination {
