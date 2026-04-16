@@ -9,8 +9,7 @@ import { PlusIcon, PencilIcon, ChevronDownIcon, ChevronRightIcon } from '@heroic
 
 const { loading, error, list, total, query, load, setPage, setKeyword } = usePageQuery(
   (params) => productApi.list(params).then((res: any) => {
-    query.value.pageSize = res.pagination.pageSize
-    return res.list
+    return { list: res.list, pagination: { page: params.page || 1, pageSize: res.pagination.pageSize, total: res.pagination.total } }
   })
 )
 

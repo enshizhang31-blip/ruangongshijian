@@ -1,30 +1,30 @@
 import api from './request'
-import type { Product, ProductCategory, Sku, Spec, SpecValue, PageQuery, PageResult } from '@/types'
+import type { Product, ProductCategory, Sku, Spec, SpecValue, PageQuery } from '@/types'
 
 export const productApi = {
-  // ========== SPU ==========
+  // ========== SPU (商品) ==========
   list(params: PageQuery & { categoryId?: number; status?: number }) {
-    return api.get<{ list: Product[]; pagination: { page: number; pageSize: number; total: number } }>('/admin/spu', { params })
+    return api.get<{ list: Product[]; pagination: { page: number; pageSize: number; total: number } }>('/admin/product', { params })
   },
   getById(id: number) {
-    return api.get<Product>(`/admin/spu/${id}`)
+    return api.get<Product>(`/admin/product/${id}`)
   },
   create(data: Partial<Product>) {
-    return api.post<Product>('/admin/spu', data)
+    return api.post<Product>('/admin/product', data)
   },
   update(data: Partial<Product> & { id: number }) {
-    return api.put<void>('/admin/spu', data)
+    return api.put<void>('/admin/product', data)
   },
   delete(id: number) {
-    return api.delete<void>(`/admin/spu/${id}`)
+    return api.delete<void>(`/admin/product/${id}`)
   },
   updateStatus(id: number, status: number) {
-    return api.put<void>(`/admin/spu/${id}/status`, { status })
+    return api.put<void>(`/admin/product/${id}/status`, { status })
   },
 
   // ========== SKU ==========
   getSkus(spuId: number) {
-    return api.get<Sku[]>(`/admin/spu/${spuId}/sku`)
+    return api.get<Sku[]>(`/admin/product/${spuId}/sku`)
   },
   createSku(data: Partial<Sku>) {
     return api.post<Sku>('/admin/sku', data)
@@ -38,16 +38,16 @@ export const productApi = {
 
   // ========== 分类 ==========
   categories() {
-    return api.get<ProductCategory[]>('/admin/category')
+    return api.get<ProductCategory[]>('/admin/product/categories')
   },
   createCategory(data: Partial<ProductCategory>) {
-    return api.post<void>('/admin/category', data)
+    return api.post<void>('/admin/product/category', data)
   },
   updateCategory(id: number, data: Partial<ProductCategory>) {
-    return api.put<void>(`/admin/category/${id}`, data)
+    return api.put<void>(`/admin/product/category/${id}`, data)
   },
   deleteCategory(id: number) {
-    return api.delete<void>(`/admin/category/${id}`)
+    return api.delete<void>(`/admin/product/category/${id}`)
   },
 
   // ========== 规格 ==========
