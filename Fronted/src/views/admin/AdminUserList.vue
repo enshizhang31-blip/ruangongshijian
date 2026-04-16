@@ -5,7 +5,8 @@ import { usePageQuery } from '@/composables'
 import { formatDate } from '@/utils/format'
 import { Table, Button, Input, Space, Tag, Card, Modal, Form, FormItem, Select, Popconfirm, Message, Spin, Empty } from '@arco-design/web-vue'
 import type { AdminUser, Department, Role } from '@/types'
-import { PlusIcon, PencilIcon, KeyIcon, ShieldCheckIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, PencilIcon, KeyIcon, ShieldCheckIcon, ChevronRightIcon, ChevronLeftIcon, ArrowsRightLeftIcon } from '@heroicons/vue/24/outline'
+import draggable from 'vuedraggable'
 
 const { loading, error, list, total, query, load, setPage, setKeyword } = usePageQuery(adminApi.list)
 const keyword = ref('')
@@ -42,6 +43,10 @@ const allRoutes = [
     '/statistics',
     '/system', '/system/user', '/system/role',
 ]
+
+// 拖拽专用：可用列表（排除已选）
+const availablePermissions = ref<string[]>([...allPermissions])
+const availableRoutes = ref<string[]>([...allRoutes])
 
 const form = reactive<{
     id?: number
@@ -197,8 +202,13 @@ async function handleOpenPermModal(record: AdminUser) {
     showPermModal.value = true
     try {
         const res = await adminApi.getPermissions(record.id!)
-        userPermissions.value = res.permissions || []
-        userRoutes.value = res.routes || []
+        const perms = res.permissions || []
+        const routes = res.routes || []
+        userPermissions.value = perms
+        userRoutes.value = routes
+        // 初始化可用列表：排除已选
+        availablePermissions.value = allPermissions.filter(p => !perms.includes(p))
+        availableRoutes.value = allRoutes.filter(r => !routes.includes(r))
     } catch (e: any) {
         Message.error('获取权限失败')
     } finally {
@@ -221,21 +231,68 @@ async function handleSavePerm() {
     }
 }
 
-function togglePermission(p: string) {
-    const idx = userPermissions.value.indexOf(p)
-    if (idx >= 0) {
-        userPermissions.value.splice(idx, 1)
-    } else {
+// ---- 拖拽辅助函数（按钮备选操作） ----
+function addPermission(p: string) {
+    if (!userPermissions.value.includes(p)) {
         userPermissions.value.push(p)
+        availablePermissions.value = availablePermissions.value.filter(x => x !== p)
+    }
+}
+
+function removePermission(p: string) {
+    userPermissions.value = userPermissions.value.filter(x => x !== p)
+    if (allPermissions.includes(p) && !availablePermissions.value.includes(p)) {
+        availablePermissions.value.push(p)
+    }
+}
+
+function addRoute(r: string) {
+    if (!userRoutes.value.includes(r)) {
+        userRoutes.value.push(r)
+        availableRoutes.value = availableRoutes.value.filter(x => x !== r)
+    }
+}
+
+function removeRoute(r: string) {
+    userRoutes.value = userRoutes.value.filter(x => x !== r)
+    if (allRoutes.includes(r) && !availableRoutes.value.includes(r)) {
+        availableRoutes.value.push(r)
+    }
+}
+
+function selectAllPermissions() {
+    userPermissions.value = [...allPermissions]
+    availablePermissions.value = []
+}
+
+function clearAllPermissions() {
+    availablePermissions.value = [...allPermissions]
+    userPermissions.value = []
+}
+
+function selectAllRoutes() {
+    userRoutes.value = [...allRoutes]
+    availableRoutes.value = []
+}
+
+function clearAllRoutes() {
+    availableRoutes.value = [...allRoutes]
+    userRoutes.value = []
+}
+
+function togglePermission(p: string) {
+    if (userPermissions.value.includes(p)) {
+        removePermission(p)
+    } else {
+        addPermission(p)
     }
 }
 
 function toggleRoute(r: string) {
-    const idx = userRoutes.value.indexOf(r)
-    if (idx >= 0) {
-        userRoutes.value.splice(idx, 1)
+    if (userRoutes.value.includes(r)) {
+        removeRoute(r)
     } else {
-        userRoutes.value.push(r)
+        addRoute(r)
     }
 }
 </script>
@@ -350,22 +407,140 @@ function toggleRoute(r: string) {
     </Modal>
 
     <!-- 权限编辑弹窗 -->
-    <Modal v-model:visible="showPermModal" title="编辑权限" :on-before-ok="handleSavePerm" :width="600" :loading="permLoading">
-        <Form :model="{}" layout="vertical">
-            <FormItem label="操作权限">
-                <div class="flex flex-wrap gap-2">
-                    <Tag v-for="p in allPermissions" :key="p" :color="userPermissions.includes(p) ? 'green' : 'gray'" class="cursor-pointer" @click="togglePermission(p)">
-                        {{ p }}
-                    </Tag>
+    <Modal v-model:visible="showPermModal" title="编辑权限" :on-before-ok="handleSavePerm" :width="820" :loading="permLoading">
+        <div class="flex flex-col gap-6">
+
+            <!-- 操作权限 -->
+            <section>
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2 font-semibold text-gray-700">
+                        <ShieldCheckIcon class="w-5 h-5 text-blue-500" />
+                        操作权限
+                    </div>
+                    <Space>
+                        <Button size="mini" type="outline" @click="selectAllPermissions">全选</Button>
+                        <Button size="mini" type="outline" status="danger" @click="clearAllPermissions">清空</Button>
+                    </Space>
                 </div>
-            </FormItem>
-            <FormItem label="路由权限">
-                <div class="flex flex-wrap gap-2">
-                    <Tag v-for="r in allRoutes" :key="r" :color="userRoutes.includes(r) ? 'blue' : 'gray'" class="cursor-pointer" @click="toggleRoute(r)">
-                        {{ r }}
-                    </Tag>
+                <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 items-stretch">
+                    <!-- 可用权限 -->
+                    <div class="border border-dashed border-gray-300 rounded-xl p-3 bg-gray-50 flex flex-col min-h-[220px]">
+                        <div class="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wide">
+                            可用权限 ({{ availablePermissions.length }})
+                        </div>
+                        <draggable
+                            v-model="availablePermissions"
+                            :group="{ name: 'perm', pull: 'clone', put: false }"
+                            :sort="false"
+                            item-key="(item: string) => item"
+                            class="flex-1 overflow-y-auto space-y-1"
+                        >
+                            <template #item="{ element }">
+                                <div
+                                    class="flex items-center justify-between px-3 py-1.5 bg-white border border-gray-100 rounded-lg text-sm cursor-grab hover:border-blue-400 hover:text-blue-600 hover:shadow-sm transition-all group"
+                                    @click="addPermission(element)"
+                                >
+                                    <span class="font-mono text-xs">{{ element }}</span>
+                                    <ChevronRightIcon class="w-4 h-4 text-gray-300 group-hover:text-blue-500 flex-shrink-0" />
+                                </div>
+                            </template>
+                        </draggable>
+                    </div>
+                    <!-- 箭头指示 -->
+                    <div class="hidden md:flex flex-col items-center justify-center text-gray-300 py-4">
+                        <ArrowsRightLeftIcon class="w-5 h-5" />
+                    </div>
+                    <!-- 已选权限 -->
+                    <div class="border border-blue-200 rounded-xl p-3 bg-blue-50/40 flex flex-col min-h-[220px]">
+                        <div class="text-xs font-medium text-blue-500 mb-2 uppercase tracking-wide">
+                            已选权限 ({{ userPermissions.length }})
+                        </div>
+                        <draggable
+                            v-model="userPermissions"
+                            group="perm"
+                            item-key="(item: string) => item"
+                            class="flex-1 overflow-y-auto space-y-1"
+                        >
+                            <template #item="{ element }">
+                                <div
+                                    class="flex items-center justify-between px-3 py-1.5 bg-white border border-blue-100 rounded-lg text-sm cursor-grab hover:border-red-400 hover:text-red-500 hover:shadow-sm transition-all group"
+                                    @click="removePermission(element)"
+                                >
+                                    <span class="font-mono text-xs text-blue-700">{{ element }}</span>
+                                    <ChevronLeftIcon class="w-4 h-4 text-gray-300 group-hover:text-red-400 flex-shrink-0" />
+                                </div>
+                            </template>
+                        </draggable>
+                    </div>
                 </div>
-            </FormItem>
-        </Form>
+            </section>
+
+            <div class="border-t border-gray-100" />
+
+            <!-- 路由权限 -->
+            <section>
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2 font-semibold text-gray-700">
+                        <ArrowsRightLeftIcon class="w-5 h-5 text-purple-500" />
+                        路由权限
+                    </div>
+                    <Space>
+                        <Button size="mini" type="outline" @click="selectAllRoutes">全选</Button>
+                        <Button size="mini" type="outline" status="danger" @click="clearAllRoutes">清空</Button>
+                    </Space>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 items-stretch">
+                    <!-- 可用路由 -->
+                    <div class="border border-dashed border-gray-300 rounded-xl p-3 bg-gray-50 flex flex-col min-h-[180px]">
+                        <div class="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wide">
+                            可用路由 ({{ availableRoutes.length }})
+                        </div>
+                        <draggable
+                            v-model="availableRoutes"
+                            :group="{ name: 'route', pull: 'clone', put: false }"
+                            :sort="false"
+                            item-key="(item: string) => item"
+                            class="flex-1 overflow-y-auto space-y-1"
+                        >
+                            <template #item="{ element }">
+                                <div
+                                    class="flex items-center justify-between px-3 py-1.5 bg-white border border-gray-100 rounded-lg text-sm cursor-grab hover:border-purple-400 hover:text-purple-600 hover:shadow-sm transition-all group"
+                                    @click="addRoute(element)"
+                                >
+                                    <span class="font-mono text-xs">{{ element }}</span>
+                                    <ChevronRightIcon class="w-4 h-4 text-gray-300 group-hover:text-purple-500 flex-shrink-0" />
+                                </div>
+                            </template>
+                        </draggable>
+                    </div>
+                    <!-- 箭头指示 -->
+                    <div class="hidden md:flex flex-col items-center justify-center text-gray-300 py-4">
+                        <ArrowsRightLeftIcon class="w-5 h-5" />
+                    </div>
+                    <!-- 已选路由 -->
+                    <div class="border border-purple-200 rounded-xl p-3 bg-purple-50/40 flex flex-col min-h-[180px]">
+                        <div class="text-xs font-medium text-purple-500 mb-2 uppercase tracking-wide">
+                            已选路由 ({{ userRoutes.length }})
+                        </div>
+                        <draggable
+                            v-model="userRoutes"
+                            group="route"
+                            item-key="(item: string) => item"
+                            class="flex-1 overflow-y-auto space-y-1"
+                        >
+                            <template #item="{ element }">
+                                <div
+                                    class="flex items-center justify-between px-3 py-1.5 bg-white border border-purple-100 rounded-lg text-sm cursor-grab hover:border-red-400 hover:text-red-500 hover:shadow-sm transition-all group"
+                                    @click="removeRoute(element)"
+                                >
+                                    <span class="font-mono text-xs text-purple-700">{{ element }}</span>
+                                    <ChevronLeftIcon class="w-4 h-4 text-gray-300 group-hover:text-red-400 flex-shrink-0" />
+                                </div>
+                            </template>
+                        </draggable>
+                    </div>
+                </div>
+            </section>
+        </div>
     </Modal>
 </template>
