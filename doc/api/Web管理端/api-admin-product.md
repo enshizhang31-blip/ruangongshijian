@@ -384,6 +384,8 @@
 
 ### GET /api/admin/spec - 规格列表
 
+返回所有规格名称及其规格值。
+
 ### 响应
 
 ```json
@@ -394,14 +396,210 @@
     {
       "id": 1,
       "name": "颜色",
+      "categoryId": 1,
       "sort": 1,
       "status": 1,
       "values": [
-        {"id": 1, "value": "黑色", "sort": 1},
-        {"id": 2, "value": "白色", "sort": 2}
+        {"id": 1, "specId": 1, "value": "黑色", "sort": 1},
+        {"id": 2, "specId": 1, "value": "白色", "sort": 2}
       ]
     }
   ]
+}
+```
+
+---
+
+### POST /api/admin/spec - 新增规格名称
+
+### 请求
+
+- Method: `POST`
+- Headers: `Authorization: Bearer {token}`
+- Content-Type: `application/json`
+
+**请求参数：**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| name | string | 是 | 规格名称，如"颜色" |
+| categoryId | long | 否 | 关联分类ID |
+| sort | int | 否 | 排序，默认0 |
+
+**请求示例：**
+
+```json
+{
+  "name": "颜色",
+  "categoryId": 1,
+  "sort": 1
+}
+```
+
+### 响应
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1
+  }
+}
+```
+
+---
+
+### PUT /api/admin/spec/{id} - 编辑规格名称
+
+### 请求
+
+- Method: `PUT`
+- Headers: `Authorization: Bearer {token}`
+- Content-Type: `application/json`
+
+**请求参数：**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| name | string | 是 | 规格名称 |
+| categoryId | long | 否 | 关联分类ID |
+| sort | int | 否 | 排序 |
+| status | int | 否 | 状态：0禁用 1启用 |
+
+### 响应
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+---
+
+### DELETE /api/admin/spec/{id} - 删除规格名称
+
+**功能说明**：删除规格名称会级联删除所有关联的规格值。
+
+### 请求
+
+- Method: `DELETE`
+- Headers: `Authorization: Bearer {token}`
+
+### 响应
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+---
+
+### GET /api/admin/spec/{id}/value - 规格值列表
+
+获取指定规格的所有规格值。
+
+### 响应
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {"id": 1, "specId": 1, "value": "黑色", "sort": 1},
+    {"id": 2, "specId": 1, "value": "白色", "sort": 2}
+  ]
+}
+```
+
+---
+
+### POST /api/admin/spec/{id}/value - 新增规格值
+
+为指定规格添加规格值。
+
+### 请求
+
+- Method: `POST`
+- Headers: `Authorization: Bearer {token}`
+- Content-Type: `application/json`
+
+**请求参数：**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| value | string | 是 | 规格值，如"黑色" |
+| sort | int | 否 | 排序，默认0 |
+
+**请求示例：**
+
+```json
+{
+  "value": "红色",
+  "sort": 3
+}
+```
+
+### 响应
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 3
+  }
+}
+```
+
+---
+
+### PUT /api/admin/spec/value/{id} - 编辑规格值
+
+### 请求
+
+- Method: `PUT`
+- Headers: `Authorization: Bearer {token}`
+- Content-Type: `application/json`
+
+**请求参数：**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| value | string | 否 | 规格值 |
+| sort | int | 否 | 排序 |
+
+### 响应
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+---
+
+### DELETE /api/admin/spec/value/{id} - 删除规格值
+
+### 请求
+
+- Method: `DELETE`
+- Headers: `Authorization: Bearer {token}`
+
+### 响应
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
 }
 ```
 
