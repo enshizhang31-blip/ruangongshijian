@@ -21,19 +21,19 @@
 
 | 方法 | 路径 | 说明 | 权限 |
 |------|------|------|------|
-| GET | `/api/admin/spu/{spuId}/sku` | 获取SPU下的所有SKU | spu:view |
+| GET | `/api/admin/product/{spuId}/sku` | 获取SPU下的所有SKU | spu:view |
 | POST | `/api/admin/sku` | 新增SKU | sku:add |
-| PUT | `/api/admin/sku/{id}` | 编辑SKU | sku:edit |
+| PUT | `/api/admin/sku` | 编辑SKU | sku:edit |
 | DELETE | `/api/admin/sku/{id}` | 删除SKU | sku:delete |
 
 ### 分类管理
 
 | 方法 | 路径 | 说明 | 权限 |
 |------|------|------|------|
-| GET | `/api/admin/category` | 分类树 | category:view |
-| POST | `/api/admin/category` | 新增分类 | category:add |
-| PUT | `/api/admin/category/{id}` | 编辑分类 | category:edit |
-| DELETE | `/api/admin/category/{id}` | 删除分类 | category:delete |
+| GET | `/api/admin/product/categories` | 分类列表 | category:view |
+| POST | `/api/admin/product/category` | 新增分类 | category:add |
+| PUT | `/api/admin/product/category/{id}` | 编辑分类 | category:edit |
+| DELETE | `/api/admin/product/category/{id}` | 删除分类 | category:delete |
 
 ### 规格管理
 
@@ -47,6 +47,12 @@
 | POST | `/api/admin/spec/{id}/value` | 新增规格值 | spec:add |
 | PUT | `/api/admin/spec/value/{id}` | 编辑规格值 | spec:edit |
 | DELETE | `/api/admin/spec/value/{id}` | 删除规格值 | spec:delete |
+
+### 模拟数据生成
+
+| 方法 | 路径 | 说明 | 权限 |
+|------|------|------|------|
+| POST | `/api/admin/product/mock-data` | 批量生成商品、SKU、规格值和 SN 码（开发辅助） | spu:add / sku:add / spec:add |
 
 ### 多语言翻译
 
@@ -239,9 +245,67 @@
 
 ---
 
+### POST /api/admin/product/mock-data - 批量生成模拟数据
+
+### 说明
+
+该接口用于开发和联调，默认会批量生成：
+
+- 商品（SPU）
+- SKU
+- 规格名称和规格值
+- SN 码
+
+### 请求
+
+- Method: `POST`
+- Headers: `Authorization: Bearer {token}`
+- Content-Type: `application/json`
+
+**请求参数：**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| goodsCount | int | 否 | 商品数量，默认20 |
+| skuPerGoods | int | 否 | 每个商品生成的SKU数量，默认4 |
+| snPerSku | int | 否 | 每个SKU生成的SN数量，默认5 |
+| specCount | int | 否 | 规格名称数量，默认3 |
+| valuesPerSpec | int | 否 | 每个规格的规格值数量，默认6 |
+
+**请求示例：**
+
+```json
+{
+  "goodsCount": 50,
+  "skuPerGoods": 6,
+  "snPerSku": 20,
+  "specCount": 4,
+  "valuesPerSpec": 8
+}
+```
+
+### 响应
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "batchCode": "20260508123045-321",
+    "goodsCount": 50,
+    "skuCount": 300,
+    "snCount": 6000,
+    "categoryCount": 5,
+    "specCount": 4
+  }
+}
+```
+
+---
+
 ## SKU管理接口
 
-### GET /api/admin/spu/{spuId}/sku - 获取SPU下的SKU
+### GET /api/admin/product/{spuId}/sku - 获取SPU下的SKU
 
 ### 响应
 
