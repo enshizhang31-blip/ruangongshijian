@@ -231,7 +231,6 @@ public class ProductMockDataServiceImpl implements ProductMockDataService {
         return goods;
     }
 
-    private void createSnCodes(Sku sku, Goods goods, int snPerSku, int skuIndex) {
     private void createSnCodes(Sku sku, Goods goods, int snPerSku, int skuIndex, AtomicInteger snCount) {
         for (int i = 0; i < snPerSku; i++) {
             SnCode snCode = new SnCode();

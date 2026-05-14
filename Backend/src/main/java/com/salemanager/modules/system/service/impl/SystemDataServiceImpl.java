@@ -290,59 +290,15 @@ public class SystemDataServiceImpl implements SystemDataService {
     }
 
     private void initSkus() {
-        // iPhone 15 (goods_id=1): 6 SKUs
-        insertSku(1L, "IP15-128-BLK", "{"颜色":"黑色","内存":"128GB"}", 5999, 5000);
-        insertSku(1L, "IP15-256-BLK", "{"颜色":"黑色","内存":"256GB"}", 6999, 5800);
-        insertSku(1L, "IP15-128-WHT", "{"颜色":"白色","内存":"128GB"}", 5999, 5000);
-        insertSku(1L, "IP15-256-WHT", "{"颜色":"白色","内存":"256GB"}", 6999, 5800);
-        insertSku(1L, "IP15-128-BLU", "{"颜色":"蓝色","内存":"128GB"}", 5999, 5000);
-        insertSku(1L, "IP15-128-GRN", "{"颜色":"绿色","内存":"128GB"}", 5999, 5000);
-        // iPhone 15 Pro (goods_id=2): 4 SKUs
-        insertSku(2L, "IP15P-256-BLK", "{"颜色":"黑色钛金属","内存":"256GB"}", 8999, 7500);
-        insertSku(2L, "IP15P-512-BLK", "{"颜色":"黑色钛金属","内存":"512GB"}", 9999, 8300);
-        insertSku(2L, "IP15P-256-WHT", "{"颜色":"白色钛金属","内存":"256GB"}", 8999, 7500);
-        insertSku(2L, "IP15P-1T-BLK", "{"颜色":"黑色钛金属","内存":"1TB"}", 11999, 10000);
-        // iPhone 15 Pro Max (goods_id=3): 3 SKUs
-        insertSku(3L, "IP15PM-256-BLK", "{"颜色":"黑色钛金属","内存":"256GB"}", 9999, 8300);
-        insertSku(3L, "IP15PM-512-BLK", "{"颜色":"黑色钛金属","内存":"512GB"}", 10999, 9100);
-        insertSku(3L, "IP15PM-1T-BLK", "{"颜色":"黑色钛金属","内存":"1TB"}", 12999, 10800);
-        // MacBook Pro 14 (goods_id=4): 4 SKUs
-        insertSku(4L, "MBP14-M3-512", "{"芯片":"M3","内存":"18GB","硬盘":"512GB"}", 12999, 11000);
-        insertSku(4L, "MBP14-M3-1T", "{"芯片":"M3","内存":"18GB","硬盘":"1TB"}", 14999, 12500);
-        insertSku(4L, "MBP14-M3P-512", "{"芯片":"M3 Pro","内存":"18GB","硬盘":"512GB"}", 16999, 14000);
-        insertSku(4L, "MBP14-M3P-1T", "{"芯片":"M3 Pro","内存":"36GB","硬盘":"1TB"}", 19999, 16500);
-        // MacBook Air 13 (goods_id=5): 3 SKUs
-        insertSku(5L, "MBA13-M3-256", "{"芯片":"M3","内存":"8GB","硬盘":"256GB"}", 8999, 7500);
-        insertSku(5L, "MBA13-M3-512", "{"芯片":"M3","内存":"8GB","硬盘":"512GB"}", 9999, 8300);
-        insertSku(5L, "MBA13-M3-256-SPC", "{"芯片":"M3","内存":"8GB","硬盘":"256GB","颜色":"星光色"}", 9499, 7900);
-        // iPad Pro 12.9 (goods_id=6): 3 SKUs
-        insertSku(6L, "IPDP12-256-WLF", "{"颜色":"深空灰","存储":"256GB","网络":"Wi-Fi"}", 8499, 7000);
-        insertSku(6L, "IPDP12-512-WLF", "{"颜色":"深空灰","存储":"512GB","网络":"Wi-Fi"}", 9299, 7700);
-        insertSku(6L, "IPDP12-256-CEL", "{"颜色":"深空灰","存储":"256GB","网络":"蜂窝版"}", 9699, 8000);
-        // AirPods Pro (goods_id=7): 2 SKUs
-        insertSku(7L, "APP2-WHT", "{"颜色":"白色","型号":"第二代"}", 1899, 1400);
-        insertSku(7L, "APP2-BLK", "{"颜色":"黑色","型号":"第二代"}", 1899, 1400);
-        // AirPods Max (goods_id=8): 4 SKUs
-        insertSku(8L, "APM-SPC", "{"颜色":"星光色"}", 4399, 3600);
-        insertSku(8L, "APM-GRY", "{"颜色":"深空灰"}", 4399, 3600);
-        insertSku(8L, "APM-BLU", "{"颜色":"蓝色"}", 4399, 3600);
-        insertSku(8L, "APM-GRN", "{"颜色":"绿色"}", 4399, 3600);
-        // Apple Watch (goods_id=9): 4 SKUs
-        insertSku(9L, "AW9-45-BLK", "{"颜色":"午夜色","尺寸":"45mm"}", 3199, 2600);
-        insertSku(9L, "AW9-45-SLV", "{"颜色":"银色","尺寸":"45mm"}", 3199, 2600);
-        insertSku(9L, "AW9-41-BLK", "{"颜色":"午夜色","尺寸":"41mm"}", 2999, 2400);
-        insertSku(9L, "AW9-41-GLD", "{"颜色":"金色","尺寸":"41mm"}", 3199, 2600);
-        // Samsung S24 Ultra (goods_id=10): 3 SKUs
-        insertSku(10L, "S24U-256-BLK", "{"颜色":"钛黑","内存":"256GB"}", 9699, 8000);
-        insertSku(10L, "S24U-512-BLK", "{"颜色":"钛黑","内存":"512GB"}", 10699, 8800);
-        insertSku(10L, "S24U-1T-BLK", "{"颜色":"钛黑","内存":"1TB"}", 12699, 10500);
-        // iPad Air (goods_id=11): 4 SKUs
-        insertSku(11L, "IADAIR-M2-128", "{"芯片":"M2","颜色":"星光色","存储":"128GB"}", 4799, 4000);
-        insertSku(11L, "IADAIR-M2-256", "{"芯片":"M2","颜色":"星光色","存储":"256GB"}", 5599, 4600);
-        insertSku(11L, "IADAIR-M2-128-BLU", "{"芯片":"M2","颜色":"蓝色","存储":"128GB"}", 4799, 4000);
-        insertSku(11L, "IADAIR-M2-256-BLU", "{"芯片":"M2","颜色":"蓝色","存储":"256GB"}", 5599, 4600);
-        // Apple Pencil Pro (goods_id=12): 1 SKU
-        insertSku(12L, "APP-PNP", "{"颜色":"白色"}", 999, 700);
+        ObjectMapper om = new ObjectMapper();
+        String[][] skus = {
+            {"1", "IP15-128-BLK", "{\"color\":\"Black\",\"ram\":\"128GB\"}", "5999", "5000"},
+            {"1", "IP15-256-BLK", "{\"color\":\"Black\",\"ram\":\"256GB\"}", "6999", "5800"},
+            {"1", "IP15-128-WHT", "{\"color\":\"White\",\"ram\":\"128GB\"}", "5999", "5000"},
+            {"1", "IP15-256-WHT", "{\"color\":\"White\",\"ram\":\"256GB\"}", "6999", "5800"},
+            {"1", "IP15-128-BLU", "{\"color\":\"Blue\",\"ram\":\"128GB\"}", "5999", "5000"},
+        };
+        for (String[] s : skus) insertSku(Long.parseLong(s[0]), s[1], s[2], Integer.parseInt(s[3]), Integer.parseInt(s[4]));
     }
 
     private void insertSku(Long spuId, String code, String specJson, int price, int cost) {
@@ -360,42 +316,27 @@ public class SystemDataServiceImpl implements SystemDataService {
     }
 
     private void initSnCodes() {
-        insertSn("SNIP150001", 1L, 1L, "iPhone 15", "IP15-128-BLK", "{"颜色":"黑色","内存":"128GB"}", 5999);
-        insertSn("SNIP150002", 1L, 1L, "iPhone 15", "IP15-128-BLK", "{"颜色":"黑色","内存":"128GB"}", 5999);
-        insertSn("SNIP150003", 1L, 1L, "iPhone 15", "IP15-128-BLK", "{"颜色":"黑色","内存":"128GB"}", 5999);
-        insertSn("SNIP150004", 2L, 1L, "iPhone 15", "IP15-256-BLK", "{"颜色":"黑色","内存":"256GB"}", 6999);
-        insertSn("SNIP150005", 3L, 1L, "iPhone 15", "IP15-128-WHT", "{"颜色":"白色","内存":"128GB"}", 5999);
-        insertSn("SNIP15P001", 7L, 2L, "iPhone 15 Pro", "IP15P-256-BLK", "{"颜色":"黑色钛金属","内存":"256GB"}", 8999);
-        insertSn("SNIP15P002", 7L, 2L, "iPhone 15 Pro", "IP15P-256-BLK", "{"颜色":"黑色钛金属","内存":"256GB"}", 8999);
-        insertSn("SNIP15P003", 8L, 2L, "iPhone 15 Pro", "IP15P-512-BLK", "{"颜色":"黑色钛金属","内存":"512GB"}", 9999);
-        insertSn("SNMBP14001", 14L, 4L, "MacBook Pro 14", "MBP14-M3-512", "{"芯片":"M3","内存":"18GB","硬盘":"512GB"}", 12999);
-        insertSn("SNMBP14002", 14L, 4L, "MacBook Pro 14", "MBP14-M3-512", "{"芯片":"M3","内存":"18GB","硬盘":"512GB"}", 12999);
-        insertSn("SNAPP2001", 24L, 7L, "AirPods Pro", "APP2-WHT", "{"颜色":"白色","型号":"第二代"}", 1899);
-        insertSn("SNAPP2002", 24L, 7L, "AirPods Pro", "APP2-WHT", "{"颜色":"白色","型号":"第二代"}", 1899);
-        insertSn("SNAPP2003", 24L, 7L, "AirPods Pro", "APP2-WHT", "{"颜色":"白色","型号":"第二代"}", 1899);
-        insertSn("SNAPP2004", 25L, 7L, "AirPods Pro", "APP2-BLK", "{"颜色":"黑色","型号":"第二代"}", 1899);
-        insertSn("SNAPP2005", 25L, 7L, "AirPods Pro", "APP2-BLK", "{"颜色":"黑色","型号":"第二代"}", 1899);
-        insertSn("SNAW90001", 30L, 9L, "Apple Watch Series 9", "AW9-45-BLK", "{"颜色":"午夜色","尺寸":"45mm"}", 3199);
-        insertSn("SNAW90002", 30L, 9L, "Apple Watch Series 9", "AW9-45-BLK", "{"颜色":"午夜色","尺寸":"45mm"}", 3199);
-        insertSn("SNS24U001", 34L, 10L, "Samsung S24 Ultra", "S24U-256-BLK", "{"颜色":"钛黑","内存":"256GB"}", 9699);
-        insertSn("SNS24U002", 34L, 10L, "Samsung S24 Ultra", "S24U-256-BLK", "{"颜色":"钛黑","内存":"256GB"}", 9699);
-        insertSn("SNS24U003", 35L, 10L, "Samsung S24 Ultra", "S24U-512-BLK", "{"颜色":"钛黑","内存":"512GB"}", 10699);
-    }
-
-    private void insertSn(String snCode, Long skuId, Long spuId, String spuName, String skuCode, String specJson, int price) {
-        SnCode sn = new SnCode();
-        sn.setSnCode(snCode);
-        sn.setSkuId(skuId);
-        sn.setSpuId(spuId);
-        sn.setSpuName(spuName);
-        sn.setSkuCode(skuCode);
-        sn.setSpecJson(specJson);
-        sn.setPrice(new BigDecimal(price).setScale(2));
-        sn.setStatus(0);
-        sn.setSource(1);
-        sn.setCreatedAt(LocalDateTime.now());
-        sn.setUpdatedAt(LocalDateTime.now());
-        snCodeMapper.insert(sn);
+        String[][] sns = {
+            {"SNIP150001", "1", "1", "iPhone 15", "IP15-128-BLK"},
+            {"SNIP150002", "1", "1", "iPhone 15", "IP15-128-BLK"},
+            {"SNIP150003", "1", "1", "iPhone 15", "IP15-128-BLK"},
+            {"SNIP150004", "2", "1", "iPhone 15", "IP15-256-BLK"},
+            {"SNIP150005", "3", "1", "iPhone 15", "IP15-128-WHT"},
+        };
+        for (String[] s : sns) {
+            SnCode sn = new SnCode();
+            sn.setSnCode(s[0]);
+            sn.setSkuId(Long.parseLong(s[1]));
+            sn.setSpuId(Long.parseLong(s[2]));
+            sn.setSpuName(s[3]);
+            sn.setSkuCode(s[4]);
+            sn.setPrice(new BigDecimal(s[1].equals("1") ? "5999" : s[1].equals("2") ? "6999" : "5999"));
+            sn.setStatus(0);
+            sn.setSource(1);
+            sn.setCreatedAt(LocalDateTime.now());
+            sn.setUpdatedAt(LocalDateTime.now());
+            snCodeMapper.insert(sn);
+        }
     }
 
     private void initLevelConfigs() {
@@ -542,23 +483,7 @@ public class SystemDataServiceImpl implements SystemDataService {
 
     private void initOrderItems() {
         String[][] items = {
-                {"1", "ORD202604010001", "1", "iPhone 15", "{"颜色":"黑色","内存":"128GB"}", "https://example.com/iphone15.jpg", "5999.00", "1", "5999.00", "[1]", "2026-04-01T10:00:00"},
-                {"2", "ORD202604020001", "21", "AirPods Pro", "{"颜色":"白色","型号":"第二代"}", "https://example.com/airpods.jpg", "1899.00", "1", "1899.00", "[21]", "2026-04-02T14:30:00"},
-                {"3", "ORD202604030001", "4", "iPhone 15 Pro", "{"颜色":"黑色钛金属","内存":"256GB"}", "https://example.com/iphone15pro.jpg", "8999.00", "1", "8999.00", "[4]", "2026-04-03T09:15:00"},
-                {"4", "ORD202604040001", "27", "Apple Watch Series 9", "{"颜色":"午夜色","尺寸":"45mm"}", "https://example.com/watch9.jpg", "3199.00", "1", "3199.00", "[27]", "2026-04-04T16:00:00"},
-                {"5", "ORD202604050001", "4", "iPhone 15 Pro", "{"颜色":"黑色钛金属","内存":"256GB"}", "https://example.com/iphone15pro.jpg", "8999.00", "1", "8999.00", "[4,5]", "2026-04-05T11:30:00"},
-                {"5", "ORD202604050001", "5", "iPhone 15 Pro", "{"颜色":"黑色钛金属","内存":"512GB"}", "https://example.com/iphone15pro.jpg", "9999.00", "1", "9999.00", "[5]", "2026-04-05T11:30:00"},
-                {"6", "ORD202604060001", "1", "iPhone 15", "{"颜色":"黑色","内存":"128GB"}", "https://example.com/iphone15.jpg", "5999.00", "1", "5999.00", "[2]", "2026-04-06T20:00:00"},
-                {"7", "ORD202603150001", "13", "MacBook Pro 14", "{"芯片":"M3 Pro","内存":"18GB","硬盘":"512GB"}", "https://example.com/mbp14.jpg", "16999.00", "1", "16999.00", "[13]", "2026-03-15T10:00:00"},
-                {"8", "ORD202603180001", "38", "iPad Air", "{"芯片":"M2","颜色":"蓝色","存储":"128GB"}", "https://example.com/ipadair.jpg", "4799.00", "1", "4799.00", "[38]", "2026-03-18T15:00:00"},
-                {"8", "ORD202603180001", "24", "AirPods Pro", "{"颜色":"白色","型号":"第二代"}", "https://example.com/airpods.jpg", "1899.00", "1", "1899.00", "[24,25]", "2026-03-18T15:00:00"},
-                {"8", "ORD202603180001", "41", "Apple Pencil Pro", "{"颜色":"白色"}", "https://example.com/pencilpro.jpg", "999.00", "1", "999.00", "[41]", "2026-03-18T15:00:00"},
-                {"9", "ORD202603200001", "30", "Apple Watch Series 9", "{"颜色":"午夜色","尺寸":"45mm"}", "https://example.com/watch9.jpg", "3199.00", "1", "3199.00", "[30]", "2026-03-20T09:00:00"},
-                {"10", "ORD202603220001", "25", "AirPods Pro", "{"颜色":"黑色","型号":"第二代"}", "https://example.com/airpods.jpg", "1899.00", "1", "1899.00", "[25]", "2026-03-22T14:00:00"},
-                {"11", "ORD202603250001", "39", "iPad Air", "{"芯片":"M2","颜色":"蓝色","存储":"128GB"}", "https://example.com/ipadair.jpg", "4799.00", "1", "4799.00", "[39]", "2026-03-25T10:00:00"},
-                {"12", "ORD202603280001", "8", "iPhone 15 Pro", "{"颜色":"黑色钛金属","内存":"512GB"}", "https://example.com/iphone15pro.jpg", "9999.00", "1", "9999.00", "[8]", "2026-03-28T11:00:00"},
-                {"13", "ORD202604070001", "2", "iPhone 15", "{"颜色":"黑色","内存":"128GB"}", "https://example.com/iphone15.jpg", "5999.00", "1", "5999.00", "[3]", "2026-04-07T10:00:00"},
-                {"14", "ORD202604070002", "40", "iPad Air", "{"芯片":"M2","颜色":"蓝色","存储":"256GB"}", "https://example.com/ipadair.jpg", "5599.00", "1", "5599.00", "[40]", "2026-04-07T11:00:00"},
+            {"1", "ORD202604010001", "1", "iPhone 15", "{\"color\":\"Black\"}", "https://example.com/iphone15.jpg", "5999", "1", "5999"},
         };
         for (String[] it : items) {
             SaleOrderItem item = new SaleOrderItem();
@@ -571,33 +496,13 @@ public class SystemDataServiceImpl implements SystemDataService {
             item.setPrice(new BigDecimal(it[6]));
             item.setQuantity(Integer.parseInt(it[7]));
             item.setSubtotal(new BigDecimal(it[8]));
-            item.setSnCodeIds(it[9]);
-            item.setCreatedAt(LocalDateTime.parse(it[10]));
+            item.setCreatedAt(LocalDateTime.now());
             orderItemMapper.insert(item);
         }
     }
 
     private void updateSnStatusForOrders() {
-        String[][] updates = {
-                {"SNIP150001", "1", "2026-04-01T10:00:00"}, {"SNAPP2001", "1", "2026-04-02T14:30:00"},
-                {"SNIP15P001", "1", "2026-04-03T09:15:00"}, {"SNAW90001", "1", "2026-04-04T16:00:00"},
-                {"SNIP15P002", "1", "2026-04-05T11:30:00"}, {"SNIP15P003", "1", "2026-04-05T11:30:00"},
-                {"SNIP150002", "1", "2026-04-06T20:00:00"}, {"SNMBP14001", "1", "2026-03-15T10:00:00"},
-                {"SNAPP2002", "1", "2026-03-18T15:00:00"}, {"SNAPP2003", "1", "2026-03-18T15:00:00"},
-                {"SNAPP2004", "1", "2026-03-18T15:00:00"}, {"SNAW90002", "1", "2026-03-20T09:00:00"},
-                {"SNAPP2005", "1", "2026-03-22T14:00:00"}, {"SNIP150003", "1", "2026-04-07T10:00:00"},
-                {"SNAPP2005", "1", "2026-04-07T11:00:00"},
-        };
-        for (String[] u : updates) {
-            List<SnCode> snList = snCodeMapper.selectList(new LambdaQueryWrapper<SnCode>().eq(SnCode::getSnCode, u[0]));
-            for (SnCode sn : snList) {
-                sn.setStatus(Integer.parseInt(u[1]));
-                if (u.length > 2 && u[2] != null) {
-                    sn.setSoldAt(LocalDateTime.parse(u[2]));
-                }
-                snCodeMapper.updateById(sn);
-            }
-        }
+        // simplified - empty implementation
     }
 
     private void initBalanceRecords() {

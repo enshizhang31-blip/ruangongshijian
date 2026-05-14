@@ -34,3 +34,33 @@ server:
 jwt:
   secret: sale-manager-jwt-secret-key-2026
   expiration: 86400000
+
+# MongoDB
+spring:
+  data:
+    mongodb:
+      uri: mongodb://salemanager:salemanager123@localhost:27017/sale_manager_i18n?authSource=admin
+    redis:
+      host: localhost
+      port: 6379
+
+# i18n
+i18n:
+  default-locale: zh-CN
+  supported-locales:
+    - zh-CN
+    - en-US
+    - ja-JP
+  fallback-chain:
+    zh-TW:
+      - zh-CN
+      - en-US
+    ja-JP:
+      - en-US
+      - zh-CN
+    en-US:
+      - zh-CN
+  cache:
+    unit-ttl: 3600
+    entity-ttl: 3600
+    status-ttl: 1800
