@@ -2,9 +2,9 @@ spring:
   application:
     name: Backend
   datasource:
-    url: jdbc:mysql://localhost:3306/sale_manager?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: root
-    password: root123
+    url: jdbc:mysql://8.137.32.18:3306/sale_manager?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: salemanager
+    password: Sm@MySQL2026!User
     driver-class-name: com.mysql.cj.jdbc.Driver
   servlet:
     multipart:
@@ -15,6 +15,15 @@ spring:
     time-zone: Asia/Shanghai
     serialization:
       write-dates-as-timestamps: false
+  data:
+    mongodb:
+      uri: mongodb://salemanager:Sm@Mongo2026!Admin@8.137.32.18:27017/sale_manager_i18n?authSource=admin
+    redis:
+      host: 8.137.32.18
+      port: 6379
+      password: Sm@Redis2026!Cache
+
+mybatis-plus:
   global-config:
     db-config:
       id-type: auto
@@ -35,14 +44,7 @@ jwt:
   secret: sale-manager-jwt-secret-key-2026
   expiration: 86400000
 
-# MongoDB
-spring:
-  data:
-    mongodb:
-      uri: mongodb://salemanager:salemanager123@localhost:27017/sale_manager_i18n?authSource=admin
-    redis:
-      host: localhost
-      port: 6379
+# MongoDB/Redis 配置已合并到上方 spring 块中
 
 # i18n
 i18n:
@@ -58,7 +60,6 @@ i18n:
     ja-JP:
       - en-US
       - zh-CN
-    en-US:
       - zh-CN
   cache:
     unit-ttl: 3600
