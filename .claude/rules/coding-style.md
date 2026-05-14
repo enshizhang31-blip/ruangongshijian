@@ -380,7 +380,7 @@ log.error("订单创建失败", e);
 log.info("创建订单成功, orderId={}, userId={}", orderId, userId);
 
 // ❌ 敏感信息不记录
-log.info("用户密码: {}", password);  // 禁止！
+log.info("用户: {}", password);  // 禁止！
 log.info("Token: {}", token);        // 禁止！
 ```
 
