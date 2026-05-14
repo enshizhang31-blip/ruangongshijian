@@ -1,7 +1,7 @@
 ﻿#!/bin/bash
 # ============================================
 # 服务器端部署脚本
-# 前提: 已手动上传 app.jar + application-prod.yml + sql/ + mongo-init.js
+# 前提: 已手动上传 app.jar 到此目录
 # 用法: bash deploy.sh
 # ============================================
 set -e
@@ -22,7 +22,7 @@ echo ""
 echo "===== 3. 启动后端 ====="
 cd "$DEPLOY_DIR"
 mkdir -p logs
-nohup java -jar $JAR --spring.profiles.active=prod > logs/app.log 2>&1 &
+nohup java -jar $JAR > logs/app.log 2>&1 &
 sleep 5
 
 echo ""
