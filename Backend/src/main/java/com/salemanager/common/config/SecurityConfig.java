@@ -69,6 +69,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 登录接口不需要认证
                         .requestMatchers("/api/admin/auth/login").permitAll()
+                        // 数据管理接口（开发调试用）
+                        .requestMatchers("/api/admin/system/data/**").permitAll()
                         // 其他接口需要认证
                         .anyRequest().authenticated())
                 // 认证失败返回401

@@ -47,6 +47,11 @@ public interface UserService {
     void resetPassword(Long id);
 
     /**
+     * 修改密码
+     */
+    void modifyPassword(Long id, String oldPassword, String newPassword);
+
+    /**
      * 获取员工权限
      */
     Map<String, Object> getUserPermissions(Long id);

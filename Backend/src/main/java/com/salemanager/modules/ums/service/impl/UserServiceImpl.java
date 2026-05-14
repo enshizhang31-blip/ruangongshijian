@@ -219,6 +219,34 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
+    public void modifyPassword(Long id, String oldPassword, String newPassword) {
+        log.info("modifyPassword id={}", id);
+        if (id == null || id <= 0) {
+            throw new BusinessException(400, "员工ID无效");
+        }
+        if (!StringUtils.hasText(oldPassword) || !StringUtils.hasText(newPassword)) {
+            throw new BusinessException(400, "密码不能为空");
+        }
+
+        AdminUser user = adminUserMapper.selectById(id);
+        if (user == null) {
+            log.warn("员工不存在 id={}", id);
+            throw new BusinessException(404, "员工不存在");
+        }
+
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            log.warn("旧密码错误 id={}", id);
+            throw new BusinessException(400, "旧密码错误");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setUpdatedAt(LocalDateTime.now());
+        adminUserMapper.updateById(user);
+        log.info("密码修改成功 id={}", id);
+    }
+
+    @Override
     public Map<String, Object> getUserPermissions(Long id) {
         log.info("getUserPermissions id={}", id);
         if (id == null || id <= 0) {
