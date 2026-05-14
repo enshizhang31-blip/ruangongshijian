@@ -7,6 +7,7 @@ export interface Product {
   brand?: string
   imageUrl?: string
   images?: string
+  shortDesc?: string
   description?: string
   status: number // 0:下架 1:上架
   skuCount?: number

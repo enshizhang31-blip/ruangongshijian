@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { productApi } from '@/api'
-import { Table, Button, Input, Space, Card, Modal, Message, Empty, Select, Popconfirm } from '@arco-design/web-vue'
+import { Table, Button, Input, Space, Card, Modal, Message, Empty, Select, Popconfirm, Tag } from '@arco-design/web-vue'
 import type { Spec, SpecValue } from '@/types'
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
@@ -140,7 +140,9 @@ async function handleDeleteValue(specId: number, valueId: number) {
         <p class="text-sm text-gray-500 mt-1">管理商品规格名称和规格值</p>
       </div>
       <Button type="primary" @click="handleAddSpec">
-        <template #icon><PlusIcon class="w-4 h-4" /></template>
+        <template #icon>
+          <PlusIcon class="w-4 h-4" />
+        </template>
         新增规格
       </Button>
     </div>
@@ -162,7 +164,8 @@ async function handleDeleteValue(specId: number, valueId: number) {
           <template v-else-if="column.dataIndex === 'values'">
             <div v-if="valueLoading[record.id]" class="text-gray-400">加载中...</div>
             <Space v-else wrap>
-              <Tag v-for="v in (specValues[record.id] || [])" :key="v.id" closable @close="handleDeleteValue(record.id, v.id)">
+              <Tag v-for="v in (specValues[record.id] || [])" :key="v.id" closable
+                @close="handleDeleteValue(record.id, v.id)">
                 {{ v.value }}
               </Tag>
               <Button type="text" size="small" @click="handleAddValue(record.id)">+ 添加</Button>
@@ -184,7 +187,8 @@ async function handleDeleteValue(specId: number, valueId: number) {
   </div>
 
   <!-- 规格名称弹窗 -->
-  <Modal v-model:visible="showSpecModal" :title="isSpecEdit ? '编辑规格' : '新增规格'" :on-before-ok="handleSubmitSpec" :width="400">
+  <Modal v-model:visible="showSpecModal" :title="isSpecEdit ? '编辑规格' : '新增规格'" :on-before-ok="handleSubmitSpec"
+    :width="400">
     <div class="flex items-center gap-4">
       <div class="w-20 text-sm text-gray-500">规格名称</div>
       <Input v-model="specForm.name" placeholder="如：颜色、尺寸、内存" class="flex-1" />
@@ -192,7 +196,8 @@ async function handleDeleteValue(specId: number, valueId: number) {
   </Modal>
 
   <!-- 规格值弹窗 -->
-  <Modal v-model:visible="showValueModal" :title="isValueEdit ? '编辑规格值' : '新增规格值'" :on-before-ok="handleSubmitValue" :width="400">
+  <Modal v-model:visible="showValueModal" :title="isValueEdit ? '编辑规格值' : '新增规格值'" :on-before-ok="handleSubmitValue"
+    :width="400">
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-4">
         <div class="w-20 text-sm text-gray-500">规格值</div>

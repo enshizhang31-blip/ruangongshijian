@@ -75,4 +75,14 @@ export const productApi = {
   deleteSpecValue(id: number) {
     return api.delete<void>(`/admin/spec/value/${id}`)
   },
+
+  generateMockData(data: {
+    goodsCount?: number
+    skuPerGoods?: number
+    snPerSku?: number
+    specCount?: number
+    valuesPerSpec?: number
+  }) {
+    return api.post<Record<string, number | string>>('/admin/product/mock-data', data)
+  },
 }
