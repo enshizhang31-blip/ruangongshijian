@@ -11,6 +11,7 @@ export interface Product {
   description?: string
   status: number // 0:下架 1:上架
   skuCount?: number
+  stockCount?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -53,4 +54,13 @@ export interface SpecValue {
   specId: number
   value: string
   sort?: number
+}
+
+// 批量生成SKU参数
+export interface BatchGenerateSkuParams {
+  spuId: number
+  specIds: number[]
+  codePrefix?: string
+  defaultPrice?: number
+  defaultCostPrice?: number
 }

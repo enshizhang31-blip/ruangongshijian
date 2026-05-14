@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, h } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { productApi } from '@/api'
 import { formatMoney } from '@/utils/format'
 import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Message, Empty, Select } from '@arco-design/web-vue'
@@ -8,6 +8,7 @@ import type { Sku, Product } from '@/types'
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
+const router = useRouter()
 const spuId = computed(() => Number(route.query.spuId) || 0)
 const spuName = ref(route.query.spuName as string || '')
 
@@ -206,6 +207,7 @@ function renderSpecJson(specJson: string | undefined) {
               <Button type="text" size="small" @click="handleEdit(record)">
                 <PencilIcon class="w-4 h-4" />
               </Button>
+              <Button type="text" size="small" class="text-purple-600" @click="router.push(`/sn/sku/${record.id}?spuId=${record.spuId}`)">SN码</Button>
               <Popconfirm title="确定删除该SKU？" @ok="handleDelete(record.id)">
                 <Button type="text" status="danger" size="small">删除</Button>
               </Popconfirm>

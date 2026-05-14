@@ -1,5 +1,5 @@
 import api from './request'
-import type { Product, ProductCategory, Sku, Spec, SpecValue, PageQuery } from '@/types'
+import type { Product, ProductCategory, Sku, Spec, SpecValue, PageQuery, BatchGenerateSkuParams } from '@/types'
 
 export const productApi = {
   // ========== SPU (商品) ==========
@@ -34,6 +34,9 @@ export const productApi = {
   },
   deleteSku(id: number) {
     return api.delete<void>(`/admin/sku/${id}`)
+  },
+  batchGenerateSkus(data: BatchGenerateSkuParams) {
+    return api.post<Sku[]>('/admin/sku/batch-generate', data)
   },
 
   // ========== 分类 ==========

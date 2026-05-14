@@ -45,6 +45,11 @@ const router = createRouter({
           component: () => import('@/views/sn/SnList.vue'),
         },
         {
+          path: '/sn/sku/:skuId',
+          name: 'SkuSnCode',
+          component: () => import('@/views/sn/SkuSnCodeView.vue'),
+        },
+        {
           path: '/customer',
           name: 'Customer',
           component: () => import('@/views/customer/CustomerList.vue'),

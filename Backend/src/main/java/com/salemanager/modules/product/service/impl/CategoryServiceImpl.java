@@ -3,6 +3,8 @@ package com.salemanager.modules.product.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.salemanager.common.exception.BusinessException;
 import com.salemanager.modules.product.mapper.GoodsCategoryMapper;
+import com.salemanager.modules.product.mapper.GoodsMapper;
+import com.salemanager.modules.product.model.Goods;
 import com.salemanager.modules.product.model.GoodsCategory;
 import com.salemanager.modules.product.param.CategoryParam;
 import com.salemanager.modules.product.service.CategoryService;
@@ -25,6 +27,9 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Autowired
     private GoodsCategoryMapper categoryMapper;
+
+    @Autowired
+    private GoodsMapper goodsMapper;
 
     @Override
     public List<GoodsCategory> getCategoryList() {
@@ -101,6 +106,14 @@ public class CategoryServiceImpl implements CategoryService {
         if (category == null) {
             log.warn("分类不存在 id={}", id);
             throw new BusinessException("分类不存在");
+        }
+
+        // 检查分类下是否有SPU
+        Long goodsCount = goodsMapper.selectCount(
+                new LambdaQueryWrapper<Goods>().eq(Goods::getCategoryId, id));
+        if (goodsCount > 0) {
+            throw new BusinessException(
+                    String.format("该分类下有 %d 个商品，无法删除", goodsCount));
         }
 
         categoryMapper.deleteById(id);

@@ -8,12 +8,23 @@ import {
     IconBulb,
     IconRobot,
     IconFire,
+    IconLanguage,
 } from '@arco-design/web-vue/es/icon'
 
 const route = useRoute()
 
-const selectedKey = computed(() => route.path)
-const defaultOpenKeys = computed(() => route.path.startsWith('/product') ? ['/product'] : [])
+const selectedKey = computed(() => {
+  const p = route.path
+  if (p.startsWith('/sn/sku/')) return '/sn/sku'
+  return p
+})
+const defaultOpenKeys = computed(() => {
+  const p = route.path
+  if (p.startsWith('/product')) return ['/product']
+  if (p.startsWith('/sn')) return ['/sn']
+  if (p.startsWith('/i18n')) return ['/i18n']
+  return []
+})
 </script>
 
 <template>
@@ -45,15 +56,34 @@ const defaultOpenKeys = computed(() => route.path.startsWith('/product') ? ['/pr
                     </MenuItem>
                     <MenuItem key="/product/spec">
                     <router-link to="/product/spec" class="menu-link-inline">规格管理</router-link>
+                    </Menu
+
+                <SubMenu key="/i18n">
+                    <template #title>
+                        <IconLanguage />
+                        多语言
+                    </template>
+                    <MenuItem key="/i18n/status">
+                    <router-link to="/i18n/status" class="menu-link-inline">翻译状态</router-link>
                     </MenuItem>
+                    <MenuItem key="/i18n">
+                    <router-link to="/i18n" class="menu-link-inline">翻译编辑</router-link>
+                    </MenuItem>
+                </SubMenu>Item>
                 </SubMenu>
 
-                <MenuItem key="/sn">
-                <router-link to="/sn" class="menu-link">
-                    <IconBulb />
-                    SN码管理
-                </router-link>
-                </MenuItem>
+                <SubMenu key="/sn">
+                    <template #title>
+                        <IconBulb />
+                        SN码管理
+                    </template>
+                    <MenuItem key="/sn">
+                    <router-link to="/sn" class="menu-link-inline">SN码列表</router-link>
+                    </MenuItem>
+                    <MenuItem key="/sn/sku">
+                    <router-link to="/sn/sku/0" class="menu-link-inline">SN码(按SKU)</router-link>
+                    </MenuItem>
+                </SubMenu>
 
                 <MenuItem key="/customer">
                 <router-link to="/customer" class="menu-link">

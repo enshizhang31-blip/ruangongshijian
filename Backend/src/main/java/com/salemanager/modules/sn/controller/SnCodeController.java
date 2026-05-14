@@ -151,4 +151,64 @@ public class SnCodeController {
         List<SnCode> list = snCodeService.getSnCodesByGoodsId(goodsId);
         return Result.success(list);
     }
+
+    /**
+     * 按SKU ID获取SN码列表
+     */
+    @GetMapping("/code/sku/{skuId}")
+    public Result<Map<String, Object>> getSnCodesBySkuId(
+            @PathVariable Long skuId,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        log.info("getSnCodesBySkuId skuId={}, page={}, pageSize={}", skuId, page, pageSize);
+        List<SnCode> list = snCodeService.getSnCodesBySkuId(skuId, page, pageSize);
+        Long total = snCodeService.getSnCodeCountBySkuId(skuId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", list);
+        result.put("pagination", Map.of("page", page, "pageSize", pageSize, "total", total));
+        return Result.success(result);
+    }
+
+    /**
+     * 获取SKU的SN码状态统计
+     */
+    @GetMapping("/code/sku/{skuId}/stats")
+    public Result<Map<String, Long>> getSnCodeStatsBySkuId(@PathVariable Long skuId) {
+        log.info("getSnCodeStatsBySkuId skuId={}", skuId);
+        Map<String, Long> stats = snCodeService.getSnCodeStatsBySkuId(skuId);
+        return Result.success(stats);
+    }
+
+    /**
+     * 作废SN码
+     */
+    @PostMapping("/code/{id}/void")
+    public Result<Void> voidSnCode(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
+        String remark = body != null ? body.get("remark") : null;
+        log.info("voidSnCode id={}", id);
+        snCodeService.voidSnCode(id, remark);
+        return Result.success();
+    }
+
+    /**
+     * 退货申请（已售→退货中）
+     */
+    @PostMapping("/code/{id}/return")
+    public Result<Void> applyReturnSnCode(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
+        String remark = body != null ? body.get("remark") : null;
+        log.info("applyReturnSnCode id={}", id);
+        snCodeService.applyReturnSnCode(id, remark);
+        return Result.success();
+    }
+
+    /**
+     * 退货完成（退货中→已退货，重新入库）
+     */
+    @PostMapping("/code/{id}/return-complete")
+    public Result<Void> completeReturnSnCode(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
+        String remark = body != null ? body.get("remark") : null;
+        log.info("completeReturnSnCode id={}", id);
+        snCodeService.completeReturnSnCode(id, remark);
+        return Result.success();
+    }
 }

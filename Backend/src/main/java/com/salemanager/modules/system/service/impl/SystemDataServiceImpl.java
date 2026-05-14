@@ -152,9 +152,10 @@ public class SystemDataServiceImpl implements SystemDataService {
     }
 
     private void initRoles() {
+        if (roleMapper.selectCount(new LambdaQueryWrapper<>()) > 0) return;
         roleMapper.insert(buildRole("超级管理员", "SUPER_ADMIN", "拥有所有权限",
                 "[\"spu:view\",\"spu:add\",\"spu:edit\",\"spu:delete\",\"spu:import\",\"spu:export\",\"spu:status\",\"sku:view\",\"sku:add\",\"sku:edit\",\"sku:delete\",\"category:view\",\"category:add\",\"category:edit\",\"category:delete\",\"spec:view\",\"spec:add\",\"spec:edit\",\"spec:delete\",\"sn:view\",\"sn:add\",\"sn:import\",\"sn:export\",\"sn:generate\",\"sn:query\",\"sn:status\",\"customer:view\",\"customer:detail\",\"customer:edit\",\"customer:balance\",\"customer:points\",\"customer:disable\",\"order:view\",\"order:detail\",\"order:process\",\"order:refund\",\"statistics:view\",\"system:user\",\"system:role\",\"system:menu\",\"system:log\"]",
-                "[\"/dashboard\",\"/product\",\"/product/list\",\"/sn\",\"/sn/list\",\"/order\",\"/order/list\",\"/customer\",\"/customer/list\",\"/statistics\",\"/system\",\"/system/user\",\"/system/role\"]"));
+                "[\"/dashboard\",\"/product\",\"/product/list\",\"/sn\",\"/sn/list\",\"/order\",\"/order/list\",\"/customer\",\"/customer/list\",\"/statistics\",\"/system\",\"/system/user\",\"/system/role\",\"/i18n\",\"/i18n/status\"]"));
         roleMapper.insert(buildRole("运营主管", "OPERATOR", "商品、订单、客户、数据统计管理",
                 "[\"spu:view\",\"spu:add\",\"spu:edit\",\"spu:delete\",\"spu:import\",\"spu:export\",\"sku:view\",\"sku:add\",\"sku:edit\",\"sku:delete\",\"sn:view\",\"sn:add\",\"sn:import\",\"sn:export\",\"sn:query\",\"category:view\",\"category:add\",\"category:edit\",\"order:view\",\"order:edit\",\"customer:view\",\"customer:add\",\"customer:edit\",\"statistics:view\"]",
                 "[\"/dashboard\",\"/product\",\"/sn\",\"/order\",\"/customer\",\"/statistics\"]"));
@@ -178,6 +179,7 @@ public class SystemDataServiceImpl implements SystemDataService {
     }
 
     private void initAdminUser() {
+        if (adminUserMapper.selectCount(new LambdaQueryWrapper<>()) > 0) return;
         AdminUser admin = new AdminUser();
         admin.setUsername("admin");
         admin.setPassword(ADMIN_BCRYPT);
@@ -191,6 +193,7 @@ public class SystemDataServiceImpl implements SystemDataService {
     }
 
     private void initMenus() {
+        if (menuMapper.selectCount(new LambdaQueryWrapper<>()) > 0) return;
         List<Menu> menus = new ArrayList<>();
         menus.add(buildMenu("仪表盘", "/dashboard", "dashboard/index", "HomeIcon", 1, 0L, 1, "dashboard:view"));
         menus.add(buildMenu("商品管理", "/product", null, "CubeIcon", 2, 0L, 1, "product:view"));
@@ -205,6 +208,9 @@ public class SystemDataServiceImpl implements SystemDataService {
         menus.add(buildMenu("系统管理", "/system", null, "Cog6ToothIcon", 100, 0L, 1, "system:view"));
         menus.add(buildMenu("员工管理", "/system/user", "system/UserList", null, 1, 11L, 1, "system:user"));
         menus.add(buildMenu("角色管理", "/system/role", "system/RoleList", null, 2, 11L, 1, "system:role"));
+        menus.add(buildMenu("多语言", "/i18n", null, "IconLanguage", 200, 0L, 1, "i18n:view"));
+        menus.add(buildMenu("翻译编辑", "/i18n", "i18n/I18nEditor", null, 1, 0L, 1, "i18n:edit"));
+        menus.add(buildMenu("翻译状态", "/i18n/status", "i18n/I18nStatus", null, 2, 0L, 1, "i18n:status"));
         for (Menu menu : menus) {
             menuMapper.insert(menu);
         }
@@ -228,6 +234,7 @@ public class SystemDataServiceImpl implements SystemDataService {
     // ==================== product init ====================
 
     private void initCategories() {
+        if (categoryMapper.selectCount(new LambdaQueryWrapper<>()) > 0) return;
         String[][] cats = {{"手机", "0", "1"}, {"电脑", "0", "2"}, {"平板", "0", "3"}, {"配件", "0", "4"}, {"智能穿戴", "0", "5"}};
         for (String[] c : cats) {
             insertCategory(c[0], 0L, Integer.parseInt(c[2]));
@@ -351,7 +358,7 @@ public class SystemDataServiceImpl implements SystemDataService {
         cfg.setLevel(level);
         cfg.setName(name);
         cfg.setConsumeThreshold(new BigDecimal(threshold).setScale(2));
-        cfg.setDiscount(new BigDecimal(discount).setScale(2));
+        cfg.setDiscount(new BigDecimal(discount).setScale(2, java.math.RoundingMode.HALF_UP));
         cfg.setPointsRate(rate);
         cfg.setStatus(1);
         cfg.setCreatedAt(LocalDateTime.now());

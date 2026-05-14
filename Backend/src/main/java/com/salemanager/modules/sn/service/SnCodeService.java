@@ -75,4 +75,34 @@ public interface SnCodeService {
      * 按商品ID获取SN码列表
      */
     List<SnCode> getSnCodesByGoodsId(Long goodsId);
+
+    /**
+     * 按SKU ID获取SN码列表
+     */
+    List<SnCode> getSnCodesBySkuId(Long skuId, Integer page, Integer pageSize);
+
+    /**
+     * 按SKU ID获取SN码总数
+     */
+    Long getSnCodeCountBySkuId(Long skuId);
+
+    /**
+     * 获取SKU的SN码状态统计（在库/已售/作废/退货中/已退货）
+     */
+    Map<String, Long> getSnCodeStatsBySkuId(Long skuId);
+
+    /**
+     * 作废SN码（状态→2）
+     */
+    void voidSnCode(Long id, String remark);
+
+    /**
+     * 退货申请（状态 1→3）
+     */
+    void applyReturnSnCode(Long id, String remark);
+
+    /**
+     * 退货完成（状态 3→4，退回在库）
+     */
+    void completeReturnSnCode(Long id, String remark);
 }

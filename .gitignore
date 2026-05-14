@@ -46,6 +46,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Environment (contains secrets)
+.env
+Backend/.env
+
+# Deploy
+Backend/deploy/app.jar
+Backend/deploy/.env
+*.env
+!.env.example
+
 # Build
 *.tsbuildinfo
 .eslintcache

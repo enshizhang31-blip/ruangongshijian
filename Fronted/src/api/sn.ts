@@ -29,4 +29,24 @@ export const snApi = {
     getByGoodsId(goodsId: number) {
         return api.get<SnCode[]>(`/admin/sn/code/goods/${goodsId}`)
     },
+    // 按SKU ID获取SN码列表
+    getBySkuId(skuId: number, params?: PageQuery) {
+        return api.get<PageResult<SnCode>>(`/admin/sn/code/sku/${skuId}`, { params })
+    },
+    // 获取SKU的SN码状态统计
+    getStatsBySkuId(skuId: number) {
+        return api.get<Record<string, number>>(`/admin/sn/code/sku/${skuId}/stats`)
+    },
+    // 作废SN码
+    voidCode(id: number, remark?: string) {
+        return api.post<void>(`/admin/sn/code/${id}/void`, { remark })
+    },
+    // 退货申请
+    applyReturn(id: number, remark?: string) {
+        return api.post<void>(`/admin/sn/code/${id}/return`, { remark })
+    },
+    // 退货完成
+    completeReturn(id: number, remark?: string) {
+        return api.post<void>(`/admin/sn/code/${id}/return-complete`, { remark })
+    },
 }

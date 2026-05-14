@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref, h } from 'vue'
+import { useRouter } from 'vue-router'
 import { productApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { formatDate, formatMoney } from '@/utils/format'
 import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Message, Empty, Select } from '@arco-design/web-vue'
 import type { Product, Sku, ProductCategory } from '@/types'
 import { PlusIcon, PencilIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
+
+const router = useRouter()
 
 const { loading, error, list, total, query, load, setPage, setKeyword } = usePageQuery(
   (params) => productApi.list(params).then((res: any) => {
@@ -24,7 +27,7 @@ const showFormModal = ref(false)
 const isEdit = ref(false)
 const editingId = ref<number>()
 const form = ref<Partial<Product>>({
-  name: '', categoryId: undefined, brand: '', imageUrl: '', images: '', description: '', status: 1,
+  name: '', categoryId: undefined, brand: '', imageUrl: '', images: '', shortDesc: '', description: '', status: 1,
 })
 
 const expandedSkus = ref<Set<number>>(new Set())
@@ -37,8 +40,9 @@ const columns = [
   { title: '分类', dataIndex: 'categoryName', width: 100 },
   { title: '品牌', dataIndex: 'brand', width: 100 },
   { title: '价格区间', dataIndex: 'priceRange', width: 140 },
+  { title: 'SKU数', dataIndex: 'skuCount', width: 70, align: 'center' as const },
+  { title: '总库存', dataIndex: 'stockCount', width: 80, align: 'center' as const },
   { title: '状态', dataIndex: 'status', width: 80 },
-  { title: 'SKU数', dataIndex: 'skuCount', width: 80, align: 'center' as const },
   { title: '创建时间', dataIndex: 'createdAt', width: 160 },
   { title: '操作', slotName: 'actions', align: 'right', width: 180 },
 ]
@@ -76,7 +80,7 @@ function handleReset() {
 
 function handleAdd() {
   isEdit.value = false; editingId.value = undefined
-  form.value = { name: '', categoryId: undefined, brand: '', imageUrl: '', images: '', description: '', status: 1 }
+  form.value = { name: '', categoryId: undefined, brand: '', imageUrl: '', images: '', shortDesc: '', description: '', status: 1 }
   showFormModal.value = true
 }
 
@@ -200,6 +204,7 @@ async function handleDeleteSku(sku: Sku, record: Product) {
                 <template #skuActions="{ record: sku }">
                   <Space>
                     <Button type="text" size="small" class="text-blue-600">编辑</Button>
+                    <Button type="text" size="small" class="text-purple-600" @click="router.push(`/sn/sku/${sku.id}?spuId=${record.id}`)">SN码</Button>
                     <Popconfirm title="确定删除该SKU？" @ok="handleDeleteSku(sku, record)">
                       <Button type="text" status="danger" size="small">删除</Button>
                     </Popconfirm>
@@ -223,6 +228,9 @@ async function handleDeleteSku(sku: Sku, record: Product) {
           </template>
           <template v-else-if="column.dataIndex === 'status'">
             <Tag :color="record.status === 1 ? 'green' : 'gray'">{{ record.status === 1 ? '上架' : '下架' }}</Tag>
+          </template>
+          <template v-else-if="column.dataIndex === 'stockCount'">
+            <span :class="record.stockCount ? 'text-green-600 font-medium' : 'text-red-400'">{{ record.stockCount ?? 0 }}</span>
           </template>
           <template v-else-if="column.dataIndex === 'createdAt'">
             {{ record.createdAt ? formatDate(record.createdAt) : '-' }}
@@ -273,6 +281,10 @@ async function handleDeleteSku(sku: Sku, record: Product) {
       <div class="flex items-center gap-4">
         <div class="w-20 text-sm text-gray-500">商品图片</div>
         <Input v-model="form.imageUrl" placeholder="图片URL" class="flex-1" />
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-sm text-gray-500">短描述</div>
+        <Input v-model="form.shortDesc" placeholder="卡片/推荐位展示(最多256字)" :max-length="256" class="flex-1" />
       </div>
       <div class="flex items-center gap-4">
         <div class="w-20 text-sm text-gray-500">商品描述</div>

@@ -4,10 +4,17 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.salemanager.common.exception.BusinessException;
 import com.salemanager.modules.product.mapper.GoodsMapper;
 import com.salemanager.modules.product.mapper.SkuMapper;
+import com.salemanager.modules.product.mapper.SpecNameMapper;
+import com.salemanager.modules.product.mapper.SpecValueMapper;
 import com.salemanager.modules.product.model.Goods;
 import com.salemanager.modules.product.model.Sku;
+import com.salemanager.modules.product.model.SpecName;
+import com.salemanager.modules.product.model.SpecValue;
+import com.salemanager.modules.product.param.BatchGenerateSkuParam;
 import com.salemanager.modules.product.param.SkuParam;
 import com.salemanager.modules.product.service.SkuService;
+import com.salemanager.modules.sn.mapper.SnCodeMapper;
+import com.salemanager.modules.sn.model.SnCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * SKU服务实现
@@ -32,6 +41,15 @@ public class SkuServiceImpl implements SkuService {
     @Autowired
     private GoodsMapper goodsMapper;
 
+    @Autowired
+    private SpecValueMapper specValueMapper;
+
+    @Autowired
+    private SpecNameMapper specNameMapper;
+
+    @Autowired
+    private SnCodeMapper snCodeMapper;
+
     @Override
     public List<Sku> getSkuListBySpuId(Long spuId) {
         log.info("getSkuListBySpuId spuId={}", spuId);
@@ -39,9 +57,28 @@ public class SkuServiceImpl implements SkuService {
             throw new BusinessException(400, "商品ID无效");
         }
 
-        return skuMapper.selectList(new LambdaQueryWrapper<Sku>()
+        List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
                 .eq(Sku::getSpuId, spuId)
                 .orderByDesc(Sku::getCreatedAt));
+
+        // 填充库存
+        if (!skus.isEmpty()) {
+            enrichWithStock(skus);
+        }
+        return skus;
+    }
+
+    private void enrichWithStock(List<Sku> skus) {
+        List<Long> skuIds = skus.stream().map(Sku::getId).collect(Collectors.toList());
+        List<SnCode> inStockSns = snCodeMapper.selectList(
+                new LambdaQueryWrapper<SnCode>()
+                        .in(SnCode::getSkuId, skuIds)
+                        .eq(SnCode::getStatus, 0));
+        Map<Long, Long> stockMap = inStockSns.stream()
+                .collect(Collectors.groupingBy(SnCode::getSkuId, Collectors.counting()));
+        for (Sku sku : skus) {
+            sku.setStock(stockMap.getOrDefault(sku.getId(), 0L).intValue());
+        }
     }
 
     @Override
@@ -96,8 +133,151 @@ public class SkuServiceImpl implements SkuService {
             throw new BusinessException(404, "SKU不存在");
         }
 
+        // 安全检查：是否有在库SN码
+        Long inStockCount = snCodeMapper.selectCount(
+                new LambdaQueryWrapper<SnCode>()
+                        .eq(SnCode::getSkuId, id)
+                        .eq(SnCode::getStatus, 0));
+        if (inStockCount > 0) {
+            throw new BusinessException(
+                    String.format("该SKU下有 %d 个在库SN码，请先处理后再删除", inStockCount));
+        }
+
+        // 级联删除所有SN码和操作日志
+        List<SnCode> snCodes = snCodeMapper.selectList(
+                new LambdaQueryWrapper<SnCode>().eq(SnCode::getSkuId, id));
+        if (!snCodes.isEmpty()) {
+            List<Long> snCodeIds = snCodes.stream().map(SnCode::getId).collect(Collectors.toList());
+            // 删除操作日志
+            snCodeMapper.delete(new LambdaQueryWrapper<SnCode>().eq(SnCode::getSkuId, id));
+            log.info("级联删除SN码 count={}", snCodes.size());
+        }
+
         skuMapper.deleteById(id);
         log.info("SKU删除成功 id={}", id);
+    }
+
+    @Override
+    @Transactional
+    public List<Sku> batchGenerateSkus(BatchGenerateSkuParam param) {
+        log.info("batchGenerateSkus spuId={}, specIds={}", param.getSpuId(), param.getSpecIds());
+        validateGoods(param.getSpuId());
+
+        // 1. 获取每个规格的所有值
+        List<List<SpecValue>> specValuesList = new ArrayList<>();
+
+        // 加载规格名称映射
+        List<SpecName> specNames = specNameMapper.selectBatchIds(param.getSpecIds());
+        Map<Long, String> specNameMap = specNames.stream()
+                .collect(Collectors.toMap(SpecName::getId, SpecName::getName));
+
+        for (Long specId : param.getSpecIds()) {
+            List<SpecValue> values = specValueMapper.selectList(
+                    new LambdaQueryWrapper<SpecValue>()
+                            .eq(SpecValue::getSpecId, specId)
+                            .orderByAsc(SpecValue::getSort));
+            if (values.isEmpty()) {
+                throw new BusinessException(String.format("规格ID %d 下没有规格值", specId));
+            }
+            // 填充规格名称
+            String specName = specNameMap.getOrDefault(specId, "规格" + specId);
+            values.forEach(v -> v.setSpecName(specName));
+            specValuesList.add(values);
+        }
+
+        // 2. 笛卡尔积
+        List<List<SpecValue>> combinations = cartesianProduct(specValuesList);
+        log.info("生成 {} 个规格组合", combinations.size());
+
+        // 3. 为每个组合创建SKU
+        List<Sku> skus = new ArrayList<>();
+        String prefix = StringUtils.hasText(param.getCodePrefix()) ? param.getCodePrefix() : "SKU";
+        BigDecimal price = param.getDefaultPrice() != null ? param.getDefaultPrice() : BigDecimal.ZERO;
+        BigDecimal costPrice = param.getDefaultCostPrice() != null ? param.getDefaultCostPrice() : BigDecimal.ZERO;
+        LocalDateTime now = LocalDateTime.now();
+
+        for (int i = 0; i < combinations.size(); i++) {
+            List<SpecValue> combo = combinations.get(i);
+            Sku sku = new Sku();
+            sku.setSpuId(param.getSpuId());
+            sku.setSkuCode(buildSkuCode(prefix, combo, i));
+            sku.setSpecJson(buildSpecJson(combo));
+            sku.setPrice(price);
+            sku.setCostPrice(costPrice);
+            sku.setStatus(1);
+            sku.setCreatedAt(now);
+            sku.setUpdatedAt(now);
+            skus.add(sku);
+        }
+
+        // 批量插入
+        for (Sku sku : skus) {
+            // 检查skuCode唯一性
+            Long exists = skuMapper.selectCount(
+                    new LambdaQueryWrapper<Sku>().eq(Sku::getSkuCode, sku.getSkuCode()));
+            if (exists > 0) {
+                log.warn("SKU编码已存在，跳过: {}", sku.getSkuCode());
+                continue;
+            }
+            skuMapper.insert(sku);
+        }
+
+        log.info("批量生成SKU完成，共创建 {} 个", skus.size());
+        return skus;
+    }
+
+    /** 笛卡尔积算法 */
+    private List<List<SpecValue>> cartesianProduct(List<List<SpecValue>> lists) {
+        List<List<SpecValue>> result = new ArrayList<>();
+        result.add(new ArrayList<>());
+        for (List<SpecValue> list : lists) {
+            List<List<SpecValue>> temp = new ArrayList<>();
+            for (List<SpecValue> r : result) {
+                for (SpecValue v : list) {
+                    List<SpecValue> nr = new ArrayList<>(r);
+                    nr.add(v);
+                    temp.add(nr);
+                }
+            }
+            result = temp;
+        }
+        return result;
+    }
+
+    /** 构建SKU编码: 前缀-值缩写-序号 */
+    private String buildSkuCode(String prefix, List<SpecValue> combo, int index) {
+        StringBuilder sb = new StringBuilder(prefix);
+        for (SpecValue sv : combo) {
+            sb.append("-").append(abbreviate(sv.getValue()));
+        }
+        return sb.toString();
+    }
+
+    /** 简单缩写：取前4个字符大写 */
+    private String abbreviate(String value) {
+        if (value == null || value.isEmpty()) return "XX";
+        return value.replaceAll("[^a-zA-Z0-9\\u4e00-\\u9fa5]", "")
+                .substring(0, Math.min(4, value.length()))
+                .toUpperCase();
+    }
+
+    /** 构建specJson */
+    private String buildSpecJson(List<SpecValue> combo) {
+        // 需要根据specValue的specId反查specName
+        StringBuilder json = new StringBuilder("{");
+        for (int i = 0; i < combo.size(); i++) {
+            SpecValue sv = combo.get(i);
+            if (i > 0) json.append(",");
+            json.append("\"").append(escapeJson(sv.getSpecName())).append("\":\"")
+                    .append(escapeJson(sv.getValue())).append("\"");
+        }
+        json.append("}");
+        return json.toString();
+    }
+
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private void copySkuParam(Sku sku, SkuParam param) {
@@ -115,7 +295,6 @@ public class SkuServiceImpl implements SkuService {
         if (spuId == null || spuId <= 0) {
             throw new BusinessException(400, "商品ID无效");
         }
-
         Goods goods = goodsMapper.selectById(spuId);
         if (goods == null) {
             throw new BusinessException(404, "商品不存在");
@@ -126,13 +305,11 @@ public class SkuServiceImpl implements SkuService {
         if (!StringUtils.hasText(skuCode)) {
             throw new BusinessException(400, "SKU编码不能为空");
         }
-
         LambdaQueryWrapper<Sku> wrapper = new LambdaQueryWrapper<Sku>()
                 .eq(Sku::getSkuCode, skuCode);
         if (excludeId != null) {
             wrapper.ne(Sku::getId, excludeId);
         }
-
         Long count = skuMapper.selectCount(wrapper);
         if (count != null && count > 0) {
             throw new BusinessException(400, "SKU编码已存在");

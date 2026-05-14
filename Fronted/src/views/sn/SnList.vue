@@ -86,7 +86,8 @@ function handleSearch() {
 
 function handleAdvancedSearch() {
     Object.assign(query.value, {
-        ...searchForm,
+        keyword: keyword.value || undefined,
+        status: searchForm.status,
         page: 1,
     })
     load()

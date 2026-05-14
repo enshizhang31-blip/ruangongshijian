@@ -278,6 +278,108 @@ public class SnCodeServiceImpl implements SnCodeService {
         return snCodeMapper.selectList(wrapper);
     }
 
+    @Override
+    public List<SnCode> getSnCodesBySkuId(Long skuId, Integer page, Integer pageSize) {
+        log.info("getSnCodesBySkuId skuId={}, page={}, pageSize={}", skuId, page, pageSize);
+        if (skuId == null || skuId <= 0) {
+            throw new BusinessException(400, "SKU ID无效");
+        }
+
+        LambdaQueryWrapper<SnCode> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SnCode::getSkuId, skuId);
+        wrapper.orderByDesc(SnCode::getCreatedAt);
+
+        IPage<SnCode> result = new Page<>(page, pageSize);
+        snCodeMapper.selectPage(result, wrapper);
+        return result.getRecords();
+    }
+
+    @Override
+    public Long getSnCodeCountBySkuId(Long skuId) {
+        LambdaQueryWrapper<SnCode> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SnCode::getSkuId, skuId);
+        return snCodeMapper.selectCount(wrapper);
+    }
+
+    @Override
+    public Map<String, Long> getSnCodeStatsBySkuId(Long skuId) {
+        log.info("getSnCodeStatsBySkuId skuId={}", skuId);
+        if (skuId == null || skuId <= 0) {
+            throw new BusinessException(400, "SKU ID无效");
+        }
+
+        List<SnCode> allSns = snCodeMapper.selectList(
+                new LambdaQueryWrapper<SnCode>().eq(SnCode::getSkuId, skuId));
+
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", (long) allSns.size());
+        stats.put("inStock", allSns.stream().filter(s -> s.getStatus() == 0).count());
+        stats.put("sold", allSns.stream().filter(s -> s.getStatus() == 1).count());
+        stats.put("voided", allSns.stream().filter(s -> s.getStatus() == 2).count());
+        stats.put("returning", allSns.stream().filter(s -> s.getStatus() == 3).count());
+        stats.put("returned", allSns.stream().filter(s -> s.getStatus() == 4).count());
+        return stats;
+    }
+
+    @Override
+    @Transactional
+    public void voidSnCode(Long id, String remark) {
+        log.info("voidSnCode id={}", id);
+        SnCode snCode = getSnCodeById(id);
+        Integer oldStatus = snCode.getStatus();
+
+        if (oldStatus != 0) {
+            throw new BusinessException("只能作废在库状态的SN码");
+        }
+
+        updateSnCodeStatus(id, 2);
+        logOperation(snCode.getId(), snCode.getSnCode(), snCode.getSkuId(),
+                "作废", oldStatus, 2, null, remark);
+        log.info("SN码作废成功 id={}", id);
+    }
+
+    @Override
+    @Transactional
+    public void applyReturnSnCode(Long id, String remark) {
+        log.info("applyReturnSnCode id={}", id);
+        SnCode snCode = getSnCodeById(id);
+        Integer oldStatus = snCode.getStatus();
+
+        if (oldStatus != 1) {
+            throw new BusinessException("只能对已售状态的SN码发起退货");
+        }
+
+        updateSnCodeStatus(id, 3);
+        logOperation(snCode.getId(), snCode.getSnCode(), snCode.getSkuId(),
+                "退货申请", oldStatus, 3, null, remark);
+        log.info("SN码退货申请成功 id={}", id);
+    }
+
+    @Override
+    @Transactional
+    public void completeReturnSnCode(Long id, String remark) {
+        log.info("completeReturnSnCode id={}", id);
+        SnCode snCode = getSnCodeById(id);
+        Integer oldStatus = snCode.getStatus();
+
+        if (oldStatus != 3) {
+            throw new BusinessException("只能对退货中状态的SN码完成退货");
+        }
+
+        updateSnCodeStatus(id, 4);
+        logOperation(snCode.getId(), snCode.getSnCode(), snCode.getSkuId(),
+                "退货完成", oldStatus, 4, null, remark);
+        log.info("SN码退货完成，重新入库 id={}", id);
+    }
+
+    private void updateSnCodeStatus(Long id, Integer status) {
+        LambdaUpdateWrapper<SnCode> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(SnCode::getId, id)
+                .set(SnCode::getStatus, status)
+                .set(SnCode::getUpdatedAt, LocalDateTime.now());
+        snCodeMapper.update(null, wrapper);
+    }
+
     private void logOperation(Long snCodeId, String snCode, Long skuId, String operation,
                               Integer fromStatus, Integer toStatus, Long operatorId, String remark) {
         SnCodeLog snCodeLog = new SnCodeLog();

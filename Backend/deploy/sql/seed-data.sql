@@ -30,4 +30,7 @@ INSERT IGNORE INTO menu (id, name, path, component, icon, sort, parent_id, type,
 (10, '数据统计', '/statistics', NULL, 'ChartBarIcon', 6, 0, 1, 'statistics:view', 1, NOW()),
 (11, '系统管理', '/system', NULL, 'Cog6ToothIcon', 100, 0, 1, 'system:view', 1, NOW()),
 (12, '员工管理', '/system/user', 'system/UserList', NULL, 1, 11, 1, 'system:user', 1, NOW()),
-(13, '角色管理', '/system/role', 'system/RoleList', NULL, 2, 11, 1, 'system:role', 1, NOW());
+(13, '角色管理', '/system/role', 'system/RoleList', NULL, 2, 11, 1, 'system:role', 1, NOW()),
+(14, '多语言', '/i18n', NULL, 'IconLanguage', 200, 0, 1, 'i18n:view', 1, NOW()),
+(15, '翻译编辑', '/i18n', 'i18n/I18nEditor', NULL, 1, 14, 1, 'i18n:edit', 1, NOW()),
+(16, '翻译状态', '/i18n/status', 'i18n/I18nStatus', NULL, 2, 14, 1, 'i18n:status', 1, NOW());

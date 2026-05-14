@@ -39,14 +39,16 @@ public class ProductController {
     @GetMapping
     public Result<Map<String, Object>> getProductList(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Integer status,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "20") Integer pageSize) {
 
-        log.info("getProductList keyword={}, status={}, page={}, pageSize={}", keyword, status, page, pageSize);
+        log.info("getProductList keyword={}, categoryId={}, status={}, page={}, pageSize={}",
+                keyword, categoryId, status, page, pageSize);
 
-        List<Goods> list = productService.getProductList(keyword, status, page, pageSize);
-        Long total = productService.getProductCount(keyword, status);
+        List<Goods> list = productService.getProductList(keyword, categoryId, status, page, pageSize);
+        Long total = productService.getProductCount(keyword, categoryId, status);
 
         Map<String, Object> result = new HashMap<>();
         result.put("list", list);
@@ -100,12 +102,23 @@ public class ProductController {
     }
 
     /**
-     * 删除商品
+     * 删除商品（级联删除SKU和SN码）
      */
     @DeleteMapping("/{id}")
     public Result<Void> deleteProduct(@PathVariable Long id) {
         log.info("deleteProduct id={}", id);
         productService.deleteProduct(id);
+        return Result.success();
+    }
+
+    /**
+     * 更新商品状态（上架/下架）
+     */
+    @PutMapping("/{id}/status")
+    public Result<Void> updateProductStatus(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Integer status = body.get("status") != null ? Integer.valueOf(body.get("status").toString()) : null;
+        log.info("updateProductStatus id={}, status={}", id, status);
+        productService.updateProductStatus(id, status);
         return Result.success();
     }
 }

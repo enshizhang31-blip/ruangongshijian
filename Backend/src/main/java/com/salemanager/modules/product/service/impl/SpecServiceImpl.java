@@ -2,8 +2,10 @@ package com.salemanager.modules.product.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.salemanager.common.exception.BusinessException;
+import com.salemanager.modules.product.mapper.SkuMapper;
 import com.salemanager.modules.product.mapper.SpecNameMapper;
 import com.salemanager.modules.product.mapper.SpecValueMapper;
+import com.salemanager.modules.product.model.Sku;
 import com.salemanager.modules.product.model.SpecName;
 import com.salemanager.modules.product.model.SpecValue;
 import com.salemanager.modules.product.param.SpecParam;
@@ -32,6 +34,9 @@ public class SpecServiceImpl implements SpecService {
 
     @Autowired
     private SpecValueMapper specValueMapper;
+
+    @Autowired
+    private SkuMapper skuMapper;
 
     @Override
     public List<SpecName> getSpecList() {
@@ -79,6 +84,14 @@ public class SpecServiceImpl implements SpecService {
     public void deleteSpec(Long id) {
         log.info("deleteSpec id={}", id);
         getSpecById(id);
+
+        // 检查规格值是否被SKU引用
+        List<SpecValue> values = specValueMapper.selectList(
+                new LambdaQueryWrapper<SpecValue>().eq(SpecValue::getSpecId, id));
+        for (SpecValue sv : values) {
+            checkSkuReference(sv);
+        }
+
         specValueMapper.delete(new LambdaQueryWrapper<SpecValue>().eq(SpecValue::getSpecId, id));
         specNameMapper.deleteById(id);
         log.info("规格删除成功 id={}", id);
@@ -131,9 +144,24 @@ public class SpecServiceImpl implements SpecService {
     @Transactional
     public void deleteSpecValue(Long id) {
         log.info("deleteSpecValue id={}", id);
-        getSpecValueById(id);
+        SpecValue specValue = getSpecValueById(id);
+
+        // 安全检查：规格值是否被SKU引用
+        checkSkuReference(specValue);
+
         specValueMapper.deleteById(id);
         log.info("规格值删除成功 id={}", id);
+    }
+
+    /** 检查规格值是否被SKU的specJson引用 */
+    private void checkSkuReference(SpecValue specValue) {
+        Long count = skuMapper.selectCount(
+                new LambdaQueryWrapper<Sku>()
+                        .like(Sku::getSpecJson, specValue.getValue()));
+        if (count != null && count > 0) {
+            throw new BusinessException(
+                    String.format("规格值\"%s\"已被 %d 个SKU使用，无法删除", specValue.getValue(), count));
+        }
     }
 
     private SpecName getSpecById(Long id) {
