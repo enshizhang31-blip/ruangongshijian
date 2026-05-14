@@ -26,7 +26,10 @@ public class ProductParam {
     @Size(max = 2000, message = "图片列表不能超过2000个字符")
     private String images;
 
-    @Size(max = 2000, message = "商品描述不能超过2000个字符")
+    @Size(max = 256, message = "短描述不能超过256个字符")
+    private String shortDesc;
+
+    @Size(max = 5000, message = "商品描述不能超过5000个字符")
     private String description;
 
     @Min(value = 0, message = "状态值无效")

@@ -14,22 +14,24 @@ public interface ProductService {
     /**
      * 获取商品列表
      *
-     * @param keyword  搜索关键词
-     * @param status   商品状态
-     * @param page     页码
-     * @param pageSize 每页数量
-     * @return 商品列表
+     * @param keyword    搜索关键词
+     * @param categoryId 分类ID（可选）
+     * @param status     商品状态
+     * @param page       页码
+     * @param pageSize   每页数量
+     * @return 商品列表（含SKU数和库存）
      */
-    List<Goods> getProductList(String keyword, Integer status, Integer page, Integer pageSize);
+    List<Goods> getProductList(String keyword, Long categoryId, Integer status, Integer page, Integer pageSize);
 
     /**
      * 获取商品总数
      *
-     * @param keyword 搜索关键词
-     * @param status  商品状态
+     * @param keyword    搜索关键词
+     * @param categoryId 分类ID（可选）
+     * @param status     商品状态
      * @return 商品总数
      */
-    Long getProductCount(String keyword, Integer status);
+    Long getProductCount(String keyword, Long categoryId, Integer status);
 
     /**
      * 获取商品详情
@@ -56,9 +58,18 @@ public interface ProductService {
     void updateProduct(Long id, ProductParam param);
 
     /**
-     * 删除商品
+     * 删除商品（级联删除SKU和SN码）
      *
      * @param id 商品ID
      */
     void deleteProduct(Long id);
+
+    /**
+     * 更新商品状态（上架/下架）
+     * 上架前校验：必须有至少1个启用且库存>0的SKU
+     *
+     * @param id     商品ID
+     * @param status 新状态
+     */
+    void updateProductStatus(Long id, Integer status);
 }

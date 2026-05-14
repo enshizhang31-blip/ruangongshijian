@@ -69,6 +69,16 @@ const router = createRouter({
           name: 'Settings',
           component: () => import('@/views/settings/SettingsView.vue'),
         },
+        {
+          path: '/i18n',
+          name: 'I18nEditor',
+          component: () => import('@/views/i18n/I18nEditor.vue'),
+        },
+        {
+          path: '/i18n/status',
+          name: 'I18nStatus',
+          component: () => import('@/views/i18n/I18nStatus.vue'),
+        },
       ],
     },
     {

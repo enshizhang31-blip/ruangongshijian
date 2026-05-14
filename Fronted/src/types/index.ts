@@ -18,3 +18,6 @@ export type { DashboardStats } from './statistics'
 
 // ========== SN码 ==========
 export type { SnCode, SnCodeLog, SnQuery } from './sn'
+
+// ========== 国际化 ==========
+export type { TranslationUnit, FieldType, LocaleEntry, UnitListResponse, UnitStatusResponse, LocaleStatus } from './i18n'
