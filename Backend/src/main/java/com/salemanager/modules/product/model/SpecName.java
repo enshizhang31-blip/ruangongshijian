@@ -1,31 +1,30 @@
 package com.salemanager.modules.product.model;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
- * SPU商品实体
+ * 规格名称实体
  */
 @Data
-@TableName("goods")
-public class Goods {
+@TableName("spec_name")
+public class SpecName {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
     private String name;
     private Long categoryId;
-    private String brand;
-    private String imageUrl;
-    private String images;
-    private String shortDesc;
-    private String description;
-    private Integer status;
+    private Integer sort;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    @TableField(exist = false)
+    private List<SpecValue> values;
 }

@@ -2,8 +2,10 @@ package com.salemanager.modules.product.controller;
 
 import com.salemanager.common.result.Result;
 import com.salemanager.modules.product.model.Goods;
+import com.salemanager.modules.product.model.Sku;
 import com.salemanager.modules.product.param.ProductParam;
 import com.salemanager.modules.product.service.ProductService;
+import com.salemanager.modules.product.service.SkuService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +29,9 @@ public class ProductController {
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private SkuService skuService;
 
     /**
      * 获取商品列表
@@ -62,6 +67,16 @@ public class ProductController {
         log.info("getProductById id={}", id);
         Goods goods = productService.getProductById(id);
         return Result.success(goods);
+    }
+
+    /**
+     * 获取商品SKU列表
+     */
+    @GetMapping("/{spuId}/sku")
+    public Result<List<Sku>> getSkuList(@PathVariable Long spuId) {
+        log.info("getSkuList spuId={}", spuId);
+        List<Sku> list = skuService.getSkuListBySpuId(spuId);
+        return Result.success(list);
     }
 
     /**

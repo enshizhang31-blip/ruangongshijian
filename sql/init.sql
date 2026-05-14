@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS goods (
     brand VARCHAR(64) COMMENT '品牌',
     image_url VARCHAR(512) COMMENT '主图片URL',
     images TEXT COMMENT '多图片JSON数组',
+    short_desc VARCHAR(256) COMMENT '短描述（卡片/推荐位展示）',
     description TEXT COMMENT '商品描述',
     status TINYINT DEFAULT 0 COMMENT '状态: 0下架 1上架',
     created_at DATETIME COMMENT '创建时间',
