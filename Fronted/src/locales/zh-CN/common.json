@@ -1,0 +1,48 @@
+{
+    "common": {
+        "save": "保存",
+        "cancel": "取消",
+        "delete": "删除",
+        "edit": "编辑",
+        "add": "新增",
+        "search": "搜索",
+        "reset": "重置",
+        "confirm": "确认",
+        "back": "返回",
+        "refresh": "刷新",
+        "export": "导出",
+        "import": "导入",
+        "upload": "上传",
+        "download": "下载",
+        "loading": "加载中...",
+        "noData": "暂无数据",
+        "success": "操作成功",
+        "failed": "操作失败"
+    },
+    "product": {
+        "title": "商品管理",
+        "name": "商品名称",
+        "category": "分类",
+        "brand": "品牌",
+        "price": "价格",
+        "stock": "库存",
+        "status": "状态",
+        "description": "描述",
+        "addToCart": "加入购物车",
+        "buyNow": "立即购买"
+    },
+    "order": {
+        "title": "订单管理",
+        "orderNo": "订单号",
+        "pending": "待付款",
+        "paid": "已付款",
+        "completed": "已完成",
+        "cancelled": "已取消"
+    },
+    "validation": {
+        "required": "此项不能为空",
+        "maxLength": "不能超过{max}个字符",
+        "invalidPhone": "请输入正确的手机号",
+        "invalidEmail": "请输入正确的邮箱"
+    }
+}

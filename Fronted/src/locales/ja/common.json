@@ -1,0 +1,48 @@
+{
+    "common": {
+        "save": "保存",
+        "cancel": "キャンセル",
+        "delete": "削除",
+        "edit": "編集",
+        "add": "追加",
+        "search": "検索",
+        "reset": "リセット",
+        "confirm": "確認",
+        "back": "戻る",
+        "refresh": "更新",
+        "export": "エクスポート",
+        "import": "インポート",
+        "upload": "アップロード",
+        "download": "ダウンロード",
+        "loading": "読み込み中...",
+        "noData": "データなし",
+        "success": "成功",
+        "failed": "失敗"
+    },
+    "product": {
+        "title": "商品管理",
+        "name": "商品名",
+        "category": "カテゴリ",
+        "brand": "ブランド",
+        "price": "価格",
+        "stock": "在庫",
+        "status": "状態",
+        "description": "説明",
+        "addToCart": "カートに追加",
+        "buyNow": "今すぐ購入"
+    },
+    "order": {
+        "title": "注文管理",
+        "orderNo": "注文番号",
+        "pending": "支払待ち",
+        "paid": "支払済み",
+        "completed": "完了",
+        "cancelled": "キャンセル"
+    },
+    "validation": {
+        "required": "必須項目です",
+        "maxLength": "{max}文字以内で入力してください",
+        "invalidPhone": "正しい電話番号を入力してください",
+        "invalidEmail": "正しいメールアドレスを入力してください"
+    }
+}

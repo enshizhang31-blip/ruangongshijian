@@ -1,0 +1,48 @@
+{
+    "common": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "add": "Add",
+        "search": "Search",
+        "reset": "Reset",
+        "confirm": "Confirm",
+        "back": "Back",
+        "refresh": "Refresh",
+        "export": "Export",
+        "import": "Import",
+        "upload": "Upload",
+        "download": "Download",
+        "loading": "Loading...",
+        "noData": "No Data",
+        "success": "Success",
+        "failed": "Failed"
+    },
+    "product": {
+        "title": "Products",
+        "name": "Product Name",
+        "category": "Category",
+        "brand": "Brand",
+        "price": "Price",
+        "stock": "Stock",
+        "status": "Status",
+        "description": "Description",
+        "addToCart": "Add to Cart",
+        "buyNow": "Buy Now"
+    },
+    "order": {
+        "title": "Orders",
+        "orderNo": "Order No",
+        "pending": "Pending",
+        "paid": "Paid",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+    },
+    "validation": {
+        "required": "This field is required",
+        "maxLength": "Max {max} characters",
+        "invalidPhone": "Invalid phone number",
+        "invalidEmail": "Invalid email"
+    }
+}
