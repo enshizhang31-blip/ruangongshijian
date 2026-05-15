@@ -2,6 +2,7 @@ package com.salemanager.modules.product.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.salemanager.common.exception.BusinessException;
+import com.salemanager.modules.i18n.service.I18nSyncService;
 import com.salemanager.modules.product.mapper.SkuMapper;
 import com.salemanager.modules.product.mapper.SpecNameMapper;
 import com.salemanager.modules.product.mapper.SpecValueMapper;
@@ -36,6 +37,9 @@ public class SpecServiceImpl implements SpecService {
     private SpecValueMapper specValueMapper;
 
     @Autowired
+    private I18nSyncService i18nSyncService;
+
+    @Autowired
     private SkuMapper skuMapper;
 
     @Override
@@ -60,6 +64,7 @@ public class SpecServiceImpl implements SpecService {
         spec.setUpdatedAt(LocalDateTime.now());
 
         specNameMapper.insert(spec);
+        i18nSyncService.syncSpecCreated(spec.getId(), spec.getName());
         log.info("规格创建成功 id={}, name={}", spec.getId(), spec.getName());
     }
 
@@ -94,6 +99,7 @@ public class SpecServiceImpl implements SpecService {
 
         specValueMapper.delete(new LambdaQueryWrapper<SpecValue>().eq(SpecValue::getSpecId, id));
         specNameMapper.deleteById(id);
+        i18nSyncService.syncSpecDeleted(id);
         log.info("规格删除成功 id={}", id);
     }
 
@@ -121,6 +127,7 @@ public class SpecServiceImpl implements SpecService {
         specValue.setCreatedAt(LocalDateTime.now());
         specValue.setUpdatedAt(LocalDateTime.now());
 
+        i18nSyncService.syncSpecValueCreated(specId, specValue.getId(), specValue.getValue());
         specValueMapper.insert(specValue);
         log.info("规格值创建成功 id={}, specId={}", specValue.getId(), specId);
     }
@@ -149,6 +156,7 @@ public class SpecServiceImpl implements SpecService {
         // 安全检查：规格值是否被SKU引用
         checkSkuReference(specValue);
 
+        i18nSyncService.syncSpecValueDeleted(specValue.getSpecId(), id);
         specValueMapper.deleteById(id);
         log.info("规格值删除成功 id={}", id);
     }

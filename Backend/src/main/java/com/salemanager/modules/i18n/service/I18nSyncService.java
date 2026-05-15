@@ -1,0 +1,158 @@
+package com.salemanager.modules.i18n.service;
+
+import com.salemanager.modules.i18n.model.TranslationUnit;
+import com.salemanager.modules.i18n.repository.TranslationUnitRepository;
+import com.salemanager.modules.i18n.model.TranslationUnit.LocaleEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 翻译数据同步服务 — 在实体CRUD时自动维护 translation_units
+ */
+@Service
+public class I18nSyncService {
+
+    private static final Logger log = LoggerFactory.getLogger(I18nSyncService.class);
+    private static final List<String> DEFAULT_LOCALES = List.of("zh-CN", "en-US", "ja-JP");
+
+    private final TranslationUnitRepository repo;
+    private final I18nCacheService cache;
+
+    public I18nSyncService(TranslationUnitRepository repo, I18nCacheService cache) {
+        this.repo = repo;
+        this.cache = cache;
+    }
+
+    // ==================== 商品 ====================
+
+    public void syncGoodsCreated(Long goodsId, String name, String shortDesc, String description) {
+        int order = 0;
+        upsertUnit("goods", goodsId, "name", "text", "商品名称", "商品正式名称", name, order++);
+        if (shortDesc != null) {
+            upsertUnit("goods", goodsId, "short_desc", "text", "短描述", "简短描述", shortDesc, order++);
+        }
+        if (description != null) {
+            upsertUnit("goods", goodsId, "description", "rich_text", "商品描述", "详细描述", description, order++);
+        }
+        cache.evictEntity("goods", goodsId);
+    }
+
+    public void syncGoodsUpdated(Long goodsId, String name, String shortDesc, String description) {
+        updateBaseValue("goods", goodsId, "name", name);
+        if (shortDesc != null) updateBaseValue("goods", goodsId, "short_desc", shortDesc);
+        if (description != null) updateBaseValue("goods", goodsId, "description", description);
+        cache.evictEntity("goods", goodsId);
+    }
+
+    public void syncGoodsDeleted(Long goodsId) {
+        repo.deleteByEntityTypeAndEntityId("goods", goodsId);
+        cache.evictEntity("goods", goodsId);
+        log.info("syncGoodsDeleted goodsId={}", goodsId);
+    }
+
+    // ==================== 分类 ====================
+
+    public void syncCategoryCreated(Long categoryId, String name, String description) {
+        int order = 0;
+        upsertUnit("category", categoryId, "name", "text", "分类名称", "分类显示名称", name, order++);
+        if (description != null) {
+            upsertUnit("category", categoryId, "description", "text", "分类描述", "分类说明", description, order++);
+        }
+        cache.evictEntity("category", categoryId);
+    }
+
+    public void syncCategoryUpdated(Long categoryId, String name, String description) {
+        updateBaseValue("category", categoryId, "name", name);
+        if (description != null) updateBaseValue("category", categoryId, "description", description);
+        cache.evictEntity("category", categoryId);
+    }
+
+    public void syncCategoryDeleted(Long categoryId) {
+        repo.deleteByEntityTypeAndEntityId("category", categoryId);
+        cache.evictEntity("category", categoryId);
+    }
+
+    // ==================== 规格 ====================
+
+    public void syncSpecCreated(Long specId, String name) {
+        // 先查是否已有
+        if (repo.findByUnitKey("spec:" + specId + ":name") != null) return;
+        upsertUnit("spec", specId, "name", "text", "规格名称", "规格名称", name, 0);
+    }
+
+    public void syncSpecUpdated(Long specId, String name) {
+        updateBaseValue("spec", specId, "name", name);
+        cache.evictEntity("spec", specId);
+    }
+
+    public void syncSpecValueCreated(Long specId, Long valueId, String value) {
+        upsertUnit("spec", specId, "value_" + valueId, "text", "规格值-" + value, "规格值", value, valueId.intValue());
+        cache.evictEntity("spec", specId);
+    }
+
+    public void syncSpecValueUpdated(Long specId, Long valueId, String value) {
+        updateBaseValue("spec", specId, "value_" + valueId, value);
+        cache.evictEntity("spec", specId);
+    }
+
+    public void syncSpecDeleted(Long specId) {
+        repo.deleteByEntityTypeAndEntityId("spec", specId);
+        cache.evictEntity("spec", specId);
+    }
+
+    public void syncSpecValueDeleted(Long specId, Long valueId) {
+        TranslationUnit unit = repo.findByUnitKey("spec:" + specId + ":value_" + valueId);
+        if (unit != null) {
+            repo.delete(unit);
+            cache.evictEntity("spec", specId);
+        }
+    }
+
+    // ==================== 内部方法 ====================
+
+    private void upsertUnit(String entityType, Long entityId, String fieldPath,
+                            String fieldType, String name, String desc, Object zhValue, int sortOrder) {
+        String unitKey = entityType + ":" + entityId + ":" + fieldPath;
+        TranslationUnit unit = repo.findByUnitKey(unitKey);
+        if (unit == null) {
+            unit = new TranslationUnit();
+            unit.setUnitKey(unitKey);
+            unit.setEntityType(entityType);
+            unit.setEntityId(entityId);
+            unit.setFieldPath(fieldPath);
+            unit.setName(name);
+            unit.setDescription(desc);
+            unit.setFieldType(fieldType);
+            unit.setSortOrder(sortOrder);
+            unit.setBaseLocale("zh-CN");
+            unit.setLocales(new java.util.LinkedHashMap<>());
+            unit.setCreatedAt(LocalDateTime.now());
+        } else {
+            unit.setName(name);
+            unit.setDescription(desc);
+        }
+
+        unit.getLocales().put("zh-CN", new LocaleEntry(zhValue, "approved"));
+        for (String loc : DEFAULT_LOCALES) {
+            unit.getLocales().putIfAbsent(loc, new LocaleEntry(null, "draft"));
+        }
+        unit.setUpdatedAt(LocalDateTime.now());
+        repo.save(unit);
+    }
+
+    private void updateBaseValue(String entityType, Long entityId, String fieldPath, Object newValue) {
+        String unitKey = entityType + ":" + entityId + ":" + fieldPath;
+        TranslationUnit unit = repo.findByUnitKey(unitKey);
+        if (unit == null) return;
+        unit.getLocales().computeIfAbsent("zh-CN", k -> new LocaleEntry(null, "approved"));
+        unit.getLocales().get("zh-CN").setValue(newValue);
+        unit.getLocales().get("zh-CN").setUpdatedAt(LocalDateTime.now());
+        unit.setUpdatedAt(LocalDateTime.now());
+        repo.save(unit);
+    }
+}
