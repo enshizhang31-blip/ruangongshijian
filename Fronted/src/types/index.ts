@@ -20,4 +20,4 @@ export type { DashboardStats } from './statistics'
 export type { SnCode, SnCodeLog, SnQuery } from './sn'
 
 // ========== 国际化 ==========
-export type { TranslationUnit, FieldType, LocaleEntry, UnitListResponse, UnitStatusResponse, LocaleStatus } from './i18n'
+export type { TranslationUnit, FieldType, LocaleEntry, UnitListResponse, UnitPageResponse, UnitStatusResponse, LocaleStatus, EntitySummary, EntityListResponse, EntityField, EntityFieldResponse } from './i18n'

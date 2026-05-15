@@ -19,7 +19,7 @@ export type FieldType = 'text' | 'rich_text' | 'number' | 'boolean' | 'array' | 
 
 export interface LocaleEntry {
   value: unknown
-  status: 'draft' | 'translated' | 'approved'
+  status?: 'draft' | 'translated' | 'approved'
   updatedAt?: string
 }
 
@@ -27,6 +27,13 @@ export interface UnitListResponse {
   entityType: string
   entityId: number
   units: TranslationUnit[]
+}
+
+export interface UnitPageResponse {
+  items: TranslationUnit[]
+  total: number
+  page: number
+  pageSize: number
 }
 
 export interface UnitStatusResponse {
@@ -40,4 +47,37 @@ export interface LocaleStatus {
   completeness: number
   outdated: number
   total: number
+}
+
+// 实体列表
+export interface EntitySummary {
+  entityType: string
+  entityId: number
+  name: string
+}
+
+export interface EntityListResponse {
+  items: EntitySummary[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+// 实体字段详情
+export interface EntityField {
+  fieldPath: string
+  fieldType: FieldType
+  name: string
+  description: string
+  sortOrder: number
+  unitKey: string
+  hasMongo: boolean
+  locales: Record<string, LocaleEntry>
+}
+
+export interface EntityFieldResponse {
+  entityType: string
+  entityId: number
+  entityName: string
+  fields: EntityField[]
 }
