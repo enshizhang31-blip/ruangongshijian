@@ -4,13 +4,17 @@ import com.salemanager.common.result.Result;
 import com.salemanager.modules.i18n.model.TranslationUnit;
 import com.salemanager.modules.i18n.param.BatchSaveParam;
 import com.salemanager.modules.i18n.param.SaveUnitParam;
+import com.salemanager.modules.i18n.service.I18nEntityService;
 import com.salemanager.modules.i18n.service.I18nService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
@@ -21,9 +25,11 @@ public class I18nUnitController {
 
     private static final Logger log = LoggerFactory.getLogger(I18nUnitController.class);
     private final I18nService i18nService;
+    private final I18nEntityService i18nEntityService;
 
-    public I18nUnitController(I18nService i18nService) {
+    public I18nUnitController(I18nService i18nService, I18nEntityService i18nEntityService) {
         this.i18nService = i18nService;
+        this.i18nEntityService = i18nEntityService;
     }
 
     /** 查询实体的所有最小元 */
@@ -84,5 +90,79 @@ public class I18nUnitController {
     public Result<Map<String, Object>> getStatus(@RequestParam String entityType,
                                                   @RequestParam Long entityId) {
         return Result.success(i18nService.getStatus(entityType, entityId));
+    }
+
+    /** 分页列表 */
+    @GetMapping("/units/list")
+    public Result<Map<String, Object>> getUnitsPaged(@RequestParam(defaultValue = "") String entityType,
+                                                     @RequestParam(defaultValue = "") String keyword,
+                                                     @RequestParam(defaultValue = "0") int page,
+                                                     @RequestParam(defaultValue = "20") int pageSize) {
+        if (pageSize > 200) pageSize = 200;
+        return Result.success(i18nService.getUnitsPaged(
+            entityType.isEmpty() ? null : entityType,
+            keyword.isEmpty() ? null : keyword,
+            page, pageSize));
+    }
+
+    /** 获取支持的语言列表 */
+    @GetMapping("/locales")
+    public Result<List<String>> getLocales() {
+        return Result.success(i18nService.getSupportedLocales());
+    }
+
+    /** 统一搜索实体（从MySQL） */
+    @GetMapping("/entities")
+    public Result<Map<String, Object>> searchEntities(@RequestParam(defaultValue = "") String entityType,
+                                                      @RequestParam(defaultValue = "") String keyword,
+                                                      @RequestParam(defaultValue = "0") int page,
+                                                      @RequestParam(defaultValue = "20") int pageSize) {
+        return Result.success(i18nEntityService.searchEntities(
+            entityType.isEmpty() ? null : entityType,
+            keyword.isEmpty() ? null : keyword,
+            page, pageSize));
+    }
+
+    /** 获取实体字段详情（MySQL数据 + MongoDB翻译合并） */
+    @GetMapping("/entities/{entityType}/{entityId}")
+    public Result<Map<String, Object>> getEntityFields(@PathVariable String entityType,
+                                                       @PathVariable Long entityId) {
+        return Result.success(i18nEntityService.getEntityFields(entityType, entityId));
+    }
+
+    /** 导出翻译 (JSON) */
+    @GetMapping("/units/export")
+    public void exportJson(@RequestParam String entityType,
+                           @RequestParam(defaultValue = "zh-CN,en-US,ja-JP") String locales,
+                           HttpServletResponse response) throws IOException {
+        List<TranslationUnit> units = i18nService.getUnits(entityType, null);
+        response.setContentType("application/json;charset=UTF-8");
+        response.setHeader("Content-Disposition", "attachment; filename=i18n_" + entityType + ".json");
+        PrintWriter w = response.getWriter();
+        w.println("{\"entityType\":\"" + entityType + "\",\"exportedAt\":\"" + java.time.LocalDateTime.now() + "\",\"units\":[");
+        for (int i = 0; i < units.size(); i++) {
+            if (i > 0) w.print(",");
+            w.print(units.get(i).toString());
+        }
+        w.println("]}");
+    }
+
+    /** 导出翻译 (CSV) */
+    @GetMapping(value = "/units/export/csv", produces = "text/csv;charset=UTF-8")
+    public void exportCsv(@RequestParam String entityType, HttpServletResponse response) throws IOException {
+        List<TranslationUnit> units = i18nService.getUnits(entityType, null);
+        response.setHeader("Content-Disposition", "attachment; filename=i18n_" + entityType + ".csv");
+        PrintWriter w = response.getWriter();
+        w.println("unit_key,entity_type,entity_id,name,field_type,zh-CN,en-US,ja-JP");
+        for (TranslationUnit u : units) {
+            w.printf("\"%s\",\"%s\",%d,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                u.getUnitKey(), u.getEntityType(), u.getEntityId(), u.getName(), u.getFieldType(),
+                safeGet(u, "zh-CN"), safeGet(u, "en-US"), safeGet(u, "ja-JP"));
+        }
+    }
+
+    private String safeGet(TranslationUnit u, String loc) {
+        var e = u.getLocales().get(loc);
+        return e != null && e.getValue() != null ? e.getValue().toString().replace("\"", "\"\"") : "";
     }
 }

@@ -27,4 +27,10 @@ public interface I18nService {
 
     /** 解析单个最小元的 locale 值（含 fallback） */
     Object resolveLocaleValue(TranslationUnit unit, String requestedLocale);
+
+    /** 分页查询翻译单元 */
+    Map<String, Object> getUnitsPaged(String entityType, String keyword, int page, int pageSize);
+
+    /** 获取支持的语言列表 */
+    List<String> getSupportedLocales();
 }

@@ -10,13 +10,20 @@ import com.salemanager.modules.i18n.service.I18nService;
 import com.salemanager.modules.i18n.service.I18nValidationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 public class I18nServiceImpl implements I18nService {
@@ -24,13 +31,16 @@ public class I18nServiceImpl implements I18nService {
     private static final Logger log = LoggerFactory.getLogger(I18nServiceImpl.class);
 
     private final TranslationUnitRepository repo;
+    private final MongoTemplate mongoTemplate;
     private final I18nProperties properties;
     private final I18nCacheService cache;
     private final I18nValidationService validator;
 
-    public I18nServiceImpl(TranslationUnitRepository repo, I18nProperties properties,
+    public I18nServiceImpl(TranslationUnitRepository repo, MongoTemplate mongoTemplate,
+                           I18nProperties properties,
                            I18nCacheService cache, I18nValidationService validator) {
         this.repo = repo;
+        this.mongoTemplate = mongoTemplate;
         this.properties = properties;
         this.cache = cache;
         this.validator = validator;
@@ -179,6 +189,46 @@ public class I18nServiceImpl implements I18nService {
         }
 
         return "";
+    }
+
+    @Override
+    public Map<String, Object> getUnitsPaged(String entityType, String keyword, int page, int pageSize) {
+        Criteria criteria = new Criteria();
+        List<Criteria> andCriteria = new ArrayList<>();
+
+        if (entityType != null && !entityType.isEmpty()) {
+            andCriteria.add(Criteria.where("entityType").is(entityType));
+        }
+        if (keyword != null && !keyword.isEmpty()) {
+            Pattern pattern = Pattern.compile(".*" + Pattern.quote(keyword) + ".*", Pattern.CASE_INSENSITIVE);
+            andCriteria.add(new Criteria().orOperator(
+                Criteria.where("unitKey").regex(pattern),
+                Criteria.where("name").regex(pattern),
+                Criteria.where("fieldPath").regex(pattern)
+            ));
+        }
+
+        if (!andCriteria.isEmpty()) {
+            criteria.andOperator(andCriteria.toArray(new Criteria[0]));
+        }
+
+        Query query = Query.query(criteria);
+        long total = mongoTemplate.count(query, TranslationUnit.class);
+
+        query.with(PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "updatedAt")));
+        List<TranslationUnit> items = mongoTemplate.find(query, TranslationUnit.class);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("items", items);
+        result.put("total", total);
+        result.put("page", page);
+        result.put("pageSize", pageSize);
+        return result;
+    }
+
+    @Override
+    public List<String> getSupportedLocales() {
+        return properties.getSupportedLocales();
     }
 
     private boolean isEmptyString(Object value) {
