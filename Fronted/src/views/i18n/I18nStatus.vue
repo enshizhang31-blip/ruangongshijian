@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { i18nApi, productApi } from '@/api'
-import { Table, Card, Tag, Button, Message } from '@arco-design/web-vue'
+import { Table, Card, Tag, Button, Message, TableColumn } from '@arco-design/web-vue'
 
 interface StatusRow {
   entityType: string
@@ -13,12 +13,39 @@ interface StatusRow {
 
 const loading = ref(false)
 const rows = ref<StatusRow[]>([])
+const supportedLocales = ref<string[]>([])
+
+const localeLabels: Record<string, string> = {
+  'zh-CN': '中文', 'en-US': 'English', 'ja-JP': '日本語',
+}
+
+const columns = computed<TableColumn[]>(() => {
+  const base: TableColumn[] = [
+    { title: '实体', dataIndex: 'name', width: 200 },
+    { title: '总字段', dataIndex: 'totalUnits', width: 80, align: 'center' },
+  ]
+  for (const loc of supportedLocales.value) {
+    base.push({
+      title: localeLabels[loc] || loc,
+      slotName: loc,
+      width: 160,
+    })
+  }
+  return base
+})
+
+async function loadLocales() {
+  try {
+    supportedLocales.value = await i18nApi.getLocales()
+  } catch {
+    supportedLocales.value = ['zh-CN', 'en-US', 'ja-JP']
+  }
+}
 
 async function load() {
   loading.value = true
   try {
-    // Load goods list first
-    const products = await productApi.getList({ page: 1, size: 50 })
+    const products = await productApi.list({ page: 1, pageSize: 100 })
     const list: StatusRow[] = []
 
     for (const p of (products as any).list || []) {
@@ -29,7 +56,7 @@ async function load() {
           entityId: p.id,
           name: p.name,
           totalUnits: status.totalUnits,
-          locales: Object.entries(status.localesStatus).map(([locale, s]) => ({
+          locales: (Object.entries(status.localesStatus) as [string, any][]).map(([locale, s]) => ({
             locale,
             completeness: s.completeness,
             outdated: s.outdated,
@@ -47,21 +74,20 @@ async function load() {
   }
 }
 
-onMounted(() => load())
-
-const columns = [
-  { title: '实体', dataIndex: 'name', width: 200 },
-  { title: '总字段', dataIndex: 'totalUnits', width: 80, align: 'center' as const },
-  { title: '中文', slotName: 'zh-CN', width: 120 },
-  { title: 'English', slotName: 'en-US', width: 120 },
-  { title: '日本語', slotName: 'ja-JP', width: 120 },
-]
+function findLocale(row: StatusRow, locale: string) {
+  return row.locales.find(l => l.locale === locale)
+}
 
 function progressColor(pct: number) {
   if (pct >= 80) return '#00b42a'
   if (pct >= 40) return '#ff7d00'
   return '#f53f3c'
 }
+
+onMounted(async () => {
+  await loadLocales()
+  load()
+})
 </script>
 
 <template>
@@ -76,36 +102,17 @@ function progressColor(pct: number) {
 
     <Card>
       <Table :columns="columns" :data="rows" :loading="loading" :pagination="false" row-key="entityId">
-        <template #zh-CN="{ record }">
-          <template v-for="l in record.locales" :key="l.locale">
-            <div v-if="l.locale === 'zh-CN'" class="flex items-center gap-2">
+        <template v-for="loc in supportedLocales" :key="loc" #[loc]="{ record }">
+          <template v-if="findLocale(record, loc)">
+            <div class="flex items-center gap-2">
               <div class="w-16 h-2 bg-gray-100 rounded overflow-hidden">
-                <div class="h-full rounded transition-all" :style="{ width: l.completeness + '%', backgroundColor: progressColor(l.completeness) }" />
+                <div class="h-full rounded transition-all" :style="{ width: findLocale(record, loc)!.completeness + '%', backgroundColor: progressColor(findLocale(record, loc)!.completeness) }" />
               </div>
-              <span class="text-xs text-gray-500">{{ l.completeness }}%</span>
+              <span class="text-xs text-gray-500">{{ findLocale(record, loc)!.completeness }}%</span>
+              <Tag v-if="findLocale(record, loc)!.outdated > 0" size="small" color="orange">{{ findLocale(record, loc)!.outdated }}过时</Tag>
             </div>
           </template>
-        </template>
-        <template #en-US="{ record }">
-          <template v-for="l in record.locales" :key="l.locale">
-            <div v-if="l.locale === 'en-US'" class="flex items-center gap-2">
-              <div class="w-16 h-2 bg-gray-100 rounded overflow-hidden">
-                <div class="h-full rounded transition-all" :style="{ width: l.completeness + '%', backgroundColor: progressColor(l.completeness) }" />
-              </div>
-              <span class="text-xs text-gray-500">{{ l.completeness }}%</span>
-              <Tag v-if="l.outdated > 0" size="small" color="orange">{{ l.outdated }}过时</Tag>
-            </div>
-          </template>
-        </template>
-        <template #ja-JP="{ record }">
-          <template v-for="l in record.locales" :key="l.locale">
-            <div v-if="l.locale === 'ja-JP'" class="flex items-center gap-2">
-              <div class="w-16 h-2 bg-gray-100 rounded overflow-hidden">
-                <div class="h-full rounded transition-all" :style="{ width: l.completeness + '%', backgroundColor: progressColor(l.completeness) }" />
-              </div>
-              <span class="text-xs text-gray-500">{{ l.completeness }}%</span>
-            </div>
-          </template>
+          <span v-else class="text-gray-300 text-xs">-</span>
         </template>
       </Table>
     </Card>
