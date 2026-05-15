@@ -44,6 +44,11 @@ jwt:
 
 # MongoDB/Redis 配置已合并到上方 spring 块中
 
+# 全局分页限制
+sale-manager:
+  pagination:
+    max-page-size: 100
+
 # i18n
 i18n:
   default-locale: zh-CN
