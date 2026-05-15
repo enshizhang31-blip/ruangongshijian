@@ -5,7 +5,7 @@ import { productApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { formatDate, formatMoney } from '@/utils/format'
 import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Message, Empty, Select } from '@arco-design/web-vue'
-import type { Product, Sku, ProductCategory } from '@/types'
+import type { Product, Sku, ProductCategory, Spec } from '@/types'
 import { PlusIcon, PencilIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -33,6 +33,14 @@ const form = ref<Partial<Product>>({
 const expandedSkus = ref<Set<number>>(new Set())
 const skuData = ref<Record<number, Sku[]>>({})
 const skuLoading = ref<Record<number, boolean>>({})
+
+const specs = ref<Spec[]>([])
+const showBatchSkuModal = ref(false)
+const batchSkuSpuId = ref<number>(0)
+const batchSkuPrefix = ref('')
+const batchSkuPrice = ref<number>(0)
+const batchSkuCostPrice = ref<number>(0)
+const selectedSpecIds = ref<number[]>([])
 
 const columns = [
   { title: '', dataIndex: 'expand', width: 50 },
@@ -136,6 +144,35 @@ async function handleDeleteSku(sku: Sku, record: Product) {
   try { await productApi.deleteSku(sku.id); Message.success('删除成功'); toggleSkus(record.id) }
   catch (e: any) { Message.error(e?.message || '删除失败') }
 }
+
+async function handleOpenBatchSku(record: Product) {
+  batchSkuSpuId.value = record.id
+  batchSkuPrefix.value = ''
+  batchSkuPrice.value = 0
+  batchSkuCostPrice.value = 0
+  selectedSpecIds.value = []
+  try {
+    specs.value = await productApi.getSpecs()
+  } catch { specs.value = [] }
+  showBatchSkuModal.value = true
+}
+
+async function handleBatchGenerateSku() {
+  if (selectedSpecIds.value.length === 0) { Message.warning('请至少选择一个规格'); return false }
+  try {
+    await productApi.batchGenerateSkus({
+      spuId: batchSkuSpuId.value,
+      specIds: selectedSpecIds.value,
+      codePrefix: batchSkuPrefix.value || undefined,
+      defaultPrice: batchSkuPrice.value || undefined,
+      defaultCostPrice: batchSkuCostPrice.value || undefined,
+    } as any)
+    Message.success('批量生成SKU成功')
+    showBatchSkuModal.value = false
+    toggleSkus(batchSkuSpuId.value)
+    return true
+  } catch (e: any) { Message.error(e?.message || '操作失败'); return false }
+}
 </script>
 
 <template>
@@ -190,6 +227,10 @@ async function handleDeleteSku(sku: Sku, record: Product) {
           <div class="px-8 py-4">
             <div v-if="skuLoading[record.id]" class="text-center py-4 text-gray-400">加载中...</div>
             <template v-else-if="skuData[record.id]?.length">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm text-gray-500">规格组合列表</span>
+                <Button type="outline" size="small" @click="handleOpenBatchSku(record)">批量生成SKU</Button>
+              </div>
               <Table :columns="skuColumns" :data="skuData[record.id]" :pagination="false" :scroll="{ x: 800 }">
                 <template #specJson="{ record: sku }">
                   <Space>
@@ -212,7 +253,10 @@ async function handleDeleteSku(sku: Sku, record: Product) {
                 </template>
               </Table>
             </template>
-            <div v-else class="text-center py-4 text-gray-400">暂无SKU</div>
+            <div v-else class="text-center py-4 text-gray-400">
+              暂无SKU
+              <div class="mt-2"><Button type="outline" size="small" @click="handleOpenBatchSku(record)">批量生成SKU</Button></div>
+            </div>
           </div>
         </template>
 
@@ -297,6 +341,29 @@ async function handleDeleteSku(sku: Sku, record: Product) {
           <Select.Option :value="0">下架</Select.Option>
         </Select>
       </div>
+    </div>
+  </Modal>
+  <Modal v-model:visible="showBatchSkuModal" title="批量生成SKU" :on-before-ok="handleBatchGenerateSku" :width="500">
+    <div class="flex flex-col gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-sm text-gray-500">SKU前缀</div>
+        <Input v-model="batchSkuPrefix" placeholder="如 IP15" class="flex-1" />
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-sm text-gray-500">默认价格</div>
+        <Input v-model="batchSkuPrice" type="number" placeholder="0.00" class="flex-1" />
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-sm text-gray-500">默认成本</div>
+        <Input v-model="batchSkuCostPrice" type="number" placeholder="0.00" class="flex-1" />
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="w-20 text-sm text-gray-500">规格选择</div>
+        <Select v-model="selectedSpecIds" placeholder="选择规格（系统自动做笛卡尔积）" class="flex-1" multiple>
+          <Select.Option v-for="spec in specs" :key="spec.id" :value="spec.id">{{ spec.name }}</Select.Option>
+        </Select>
+      </div>
+      <p class="text-xs text-gray-400">系统将根据所选规格的所有值做笛卡尔积，自动生成所有SKU组合。</p>
     </div>
   </Modal>
 </template>

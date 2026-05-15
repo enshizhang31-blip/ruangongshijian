@@ -28,14 +28,10 @@ export function usePageQuery<T>(
     loading.value = true
     error.value = null
     try {
-      const result = await fetchFn(query.value)
-      list.value = result.list
-      total.value = result.pagination.total
-      // 同步后端返回的分页信息
-      if (result.pagination) {
-        query.value.page = result.pagination.page
-        query.value.pageSize = result.pagination.pageSize
-      }
+      const params = { ...query.value } as PageQuery
+      const result = await fetchFn(params)
+      list.value = result.list || (result as any).records || []
+      total.value = result.pagination?.total ?? (result as any).total ?? 0
     } catch (e) {
       error.value = e instanceof Error ? e : new Error('请求失败')
       console.error('usePageQuery error:', e)

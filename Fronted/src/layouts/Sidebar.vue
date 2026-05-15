@@ -56,7 +56,8 @@ const defaultOpenKeys = computed(() => {
                     </MenuItem>
                     <MenuItem key="/product/spec">
                     <router-link to="/product/spec" class="menu-link-inline">规格管理</router-link>
-                    </Menu
+                    </MenuItem>
+                </SubMenu>
 
                 <SubMenu key="/i18n">
                     <template #title>
@@ -69,7 +70,6 @@ const defaultOpenKeys = computed(() => {
                     <MenuItem key="/i18n">
                     <router-link to="/i18n" class="menu-link-inline">翻译编辑</router-link>
                     </MenuItem>
-                </SubMenu>Item>
                 </SubMenu>
 
                 <SubMenu key="/sn">

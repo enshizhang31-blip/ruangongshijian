@@ -3,11 +3,11 @@ import { onMounted, ref, reactive, h } from 'vue'
 import { snApi, productApi } from '@/api'
 import { usePageQuery } from '@/composables'
 import { formatDate } from '@/utils/format'
-import { Table, Button, Input, InputNumber, Space, Tag, Card, Modal, Select, DatePicker, Message, Empty, Upload } from '@arco-design/web-vue'
+import { Table, Button, Input, Space, Tag, Card, Modal, Select, DatePicker, Message, Empty, Pagination } from '@arco-design/web-vue'
 import type { SnCode, Product } from '@/types'
 import { PlusIcon, MagnifyingGlassIcon, ArrowPathIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline'
 
-const { loading, error, list, total, query, load, setPage, setKeyword } = usePageQuery(snApi.list)
+const { loading, list, total, query, load, setPage, setKeyword, setPageSize } = usePageQuery(snApi.list)
 const keyword = ref('')
 const showAddModal = ref(false)
 const showBatchModal = ref(false)
@@ -85,11 +85,12 @@ function handleSearch() {
 }
 
 function handleAdvancedSearch() {
-    Object.assign(query.value, {
+    query.value = {
+        page: 1,
+        pageSize: query.value.pageSize || 20,
         keyword: keyword.value || undefined,
         status: searchForm.status,
-        page: 1,
-    })
+    }
     load()
 }
 
@@ -97,9 +98,16 @@ function handleReset() {
     keyword.value = ''
     searchForm.goodsId = undefined
     searchForm.status = undefined
-    searchForm.startDate = ''
-    searchForm.endDate = ''
-    setKeyword('')
+    query.value = { page: 1, pageSize: 20 }
+    load()
+}
+
+function handlePageChange(p: number) {
+    setPage(p)
+}
+
+function handlePageSizeChange(size: number) {
+    setPageSize(size)
 }
 
 async function handleAddSn() {
@@ -238,15 +246,9 @@ const columns = [
 
             <!-- 分页 -->
             <div class="flex justify-end mt-4">
-                <Space direction="horizontal">
-                    <span class="text-sm text-gray-500">共 {{ total }} 条</span>
-                    <Button :disabled="(query.page || 1) <= 1" @click="setPage((query.page || 1) - 1)">上一页</Button>
-                    <span class="text-sm py-2">第 {{ query.page || 1 }} / {{ Math.ceil(total / (query.pageSize || 20)) ||
-                        1 }}
-                        页</span>
-                    <Button :disabled="(query.page || 1) >= Math.ceil(total / (query.pageSize || 20))"
-                        @click="setPage((query.page || 1) + 1)">下一页</Button>
-                </Space>
+                <Pagination :current="query.page || 1" :total="total" :page-size="query.pageSize || 20"
+                    :page-size-options="[10, 20, 50, 100]" show-total @change="handlePageChange"
+                    @page-size-change="handlePageSizeChange" />
             </div>
         </Card>
     </div>

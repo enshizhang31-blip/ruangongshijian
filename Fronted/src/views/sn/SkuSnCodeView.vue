@@ -42,7 +42,7 @@ onMounted(() => {
 
 async function loadAllSkus() {
   try {
-    const res: any = await productApi.list({ page: 1, pageSize: 500 })
+    const res: any = await productApi.list({ page: 1, pageSize: 100 })
     const spuList: any[] = res.list
     const all: Sku[] = []
     for (const spu of spuList) {
