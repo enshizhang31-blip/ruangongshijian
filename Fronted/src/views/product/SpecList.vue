@@ -30,7 +30,7 @@ const expandedKeys = ref<string[]>([])
 const columns = [
   { title: '名称', slotName: 'name', width: 200 },
   { title: '翻译键', slotName: 'unitKey', width: 260 },
-  { title: '操作', slotName: 'actions', align: 'right', width: 220 },
+  { title: '操作', slotName: 'actions', align: 'right', width: 220, fixed: 'right' },
 ]
 
 // 规格名弹窗（只创建名称）

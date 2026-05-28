@@ -26,7 +26,7 @@ const expandedKeys = ref<number[]>([])
 const columns = [
   { title: '分类名称', dataIndex: 'name', width: 200 },
   { title: '状态', slotName: 'status', width: 80 },
-  { title: '操作', slotName: 'actions', align: 'right', width: 200 },
+  { title: '操作', slotName: 'actions', align: 'right', width: 200, fixed: 'right' },
 ]
 
 // 翻译弹窗

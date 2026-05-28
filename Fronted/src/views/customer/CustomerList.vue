@@ -39,7 +39,7 @@ const columns = [
         title: '状态', dataIndex: 'status', render: (status: number) =>
             h(Tag, { color: status === 1 ? 'green' : 'gray' }, () => status === 1 ? '正常' : '禁用')
     },
-    { title: '操作', slotName: 'actions', align: 'right' },
+    { title: '操作', slotName: 'actions', align: 'right', fixed: 'right' },
 ]
 
 onMounted(() => {
@@ -210,8 +210,10 @@ async function handleDelete(id: number) {
             <!-- 基本信息 -->
             <div class="mb-4">
                 <div class="flex items-center gap-4 mb-4">
-                    <img v-if="viewingCustomer.avatar" :src="viewingCustomer.avatar" class="w-16 h-16 rounded-full object-cover" />
-                    <div v-else class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
+                    <img v-if="viewingCustomer.avatar" :src="viewingCustomer.avatar"
+                        class="w-16 h-16 rounded-full object-cover" />
+                    <div v-else
+                        class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
                         {{ viewingCustomer.nickname?.charAt(0) || '?' }}
                     </div>
                     <div>
@@ -230,7 +232,8 @@ async function handleDelete(id: number) {
                     <div>
                         <div class="text-xs text-gray-500">会员等级</div>
                         <div class="text-sm">
-                            <Tag :color="viewingCustomer.memberLevel === 4 ? 'gold' : viewingCustomer.memberLevel === 3 ? 'orange' : 'arcoblue'">
+                            <Tag
+                                :color="viewingCustomer.memberLevel === 4 ? 'gold' : viewingCustomer.memberLevel === 3 ? 'orange' : 'arcoblue'">
                                 {{ ['', '普通会员', '银卡会员', '金卡会员', '钻石会员'][viewingCustomer.memberLevel || 1] }}
                             </Tag>
                         </div>
@@ -241,7 +244,8 @@ async function handleDelete(id: number) {
                     </div>
                     <div>
                         <div class="text-xs text-gray-500">账户余额</div>
-                        <div class="text-sm font-medium text-green-600">¥{{ formatMoney(viewingCustomer.balance || 0) }}</div>
+                        <div class="text-sm font-medium text-green-600">¥{{ formatMoney(viewingCustomer.balance || 0) }}
+                        </div>
                     </div>
                     <div>
                         <div class="text-xs text-gray-500">积分余额</div>

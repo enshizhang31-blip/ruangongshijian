@@ -39,7 +39,7 @@ const columns = [
   { title: '总库存', dataIndex: 'stockCount', width: 80, align: 'center' as const },
   { title: '状态', dataIndex: 'status', width: 80 },
   { title: '创建时间', dataIndex: 'createdAt', width: 160 },
-  { title: '操作', slotName: 'actions', align: 'right', width: 200 },
+  { title: '操作', slotName: 'actions', align: 'right', width: 200, fixed: 'right' },
 ]
 
 onMounted(() => { load(); fetchCategories() })

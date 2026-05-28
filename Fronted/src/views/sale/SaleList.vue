@@ -71,7 +71,7 @@ const columns = [
         render: (payType: number) => h(Tag, { color: payType === 2 ? 'green' : 'orange' }, () => paymentStatusMap[payType] || '未知')
     },
     { title: '下单时间', dataIndex: 'createdAt', render: (t: string) => formatDate(t) },
-    { title: '操作', slotName: 'actions', align: 'right', width: 120 },
+    { title: '操作', slotName: 'actions', align: 'right', width: 120, fixed: 'right' },
 ]
 
 onMounted(() => {
@@ -266,7 +266,8 @@ async function handleSubmitEdit() {
             <!-- 订单商品明细 -->
             <div class="mb-4">
                 <h4 class="text-sm font-medium text-gray-700 mb-2">商品明细</h4>
-                <Table :loading="loadingItems" :columns="itemColumns" :data="orderItems" :pagination="false" size="small">
+                <Table :loading="loadingItems" :columns="itemColumns" :data="orderItems" :pagination="false"
+                    size="small">
                     <template #empty>
                         <span class="text-gray-400">暂无明细数据</span>
                     </template>
