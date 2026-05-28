@@ -8,14 +8,13 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+  profiles:
+    active: local
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Asia/Shanghai
     serialization:
       write-dates-as-timestamps: false
-
-    profiles:
-      active: local
 
 mybatis-plus:
   global-config:
@@ -63,5 +62,5 @@ i18n:
     entity-ttl: 3600
     status-ttl: 1800
 
-# 默认 active profile（本地开发优先使用 local）
-# 如需使用云端配置，启动时显式设置 `spring.profiles.active=cloud`
+# 默认使用 local profile，已在 spring.profiles.active 中配置
+# 部署到云端时，通过 -Dspring.profiles.active=cloud 或 SPRING_PROFILES_ACTIVE=cloud 覆盖

@@ -1,5 +1,4 @@
 spring:
-  profiles: cloud
   datasource:
     url: jdbc:mysql://8.137.32.18:3306/sale_manager?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: salemanager
