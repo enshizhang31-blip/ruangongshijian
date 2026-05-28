@@ -5,6 +5,7 @@ import com.salemanager.modules.i18n.repository.TranslationUnitRepository;
 import com.salemanager.modules.i18n.model.TranslationUnit.LocaleEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -142,7 +143,25 @@ public class I18nSyncService {
             unit.getLocales().putIfAbsent(loc, new LocaleEntry(null, "draft"));
         }
         unit.setUpdatedAt(LocalDateTime.now());
-        repo.save(unit);
+        try {
+            repo.save(unit);
+        } catch (DuplicateKeyException e) {
+            // 兜底：唯一索引冲突时重新查找并更新
+            TranslationUnit existing = repo.findByUnitKey(unitKey);
+            if (existing != null) {
+                existing.setName(name);
+                existing.setDescription(desc);
+                existing.setFieldType(fieldType);
+                existing.getLocales().put("zh-CN", new LocaleEntry(zhValue, "approved"));
+                for (String loc : DEFAULT_LOCALES) {
+                    existing.getLocales().putIfAbsent(loc, new LocaleEntry(null, "draft"));
+                }
+                existing.setUpdatedAt(LocalDateTime.now());
+                repo.save(existing);
+            } else {
+                log.warn("upsertUnit DuplicateKey但查询不到已有记录 unitKey={}", unitKey);
+            }
+        }
     }
 
     private void updateBaseValue(String entityType, Long entityId, String fieldPath, Object newValue) {

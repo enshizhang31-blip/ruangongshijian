@@ -68,7 +68,16 @@ public class I18nUnitController {
             .map(u -> {
                 Map<String, Object> m = new java.util.LinkedHashMap<>();
                 m.put("unitKey", u.getUnitKey());
-                m.put("locales", u.getLocales());
+                Map<String, Map<String, Object>> localeMaps = new java.util.LinkedHashMap<>();
+                if (u.getLocales() != null) {
+                    for (var le : u.getLocales().entrySet()) {
+                        Map<String, Object> lv = new java.util.LinkedHashMap<>();
+                        lv.put("value", le.getValue().getValue());
+                        lv.put("status", le.getValue().getStatus());
+                        localeMaps.put(le.getKey(), lv);
+                    }
+                }
+                m.put("locales", localeMaps);
                 return m;
             })
             .toList();

@@ -61,7 +61,24 @@ public class I18nServiceImpl implements I18nService {
     public void saveUnit(String unitKey, String locale, Object value, boolean force) {
         TranslationUnit unit = repo.findByUnitKey(unitKey);
         if (unit == null) {
-            throw new BusinessException(404, "翻译单元不存在: " + unitKey);
+            // 自动同步未创建时，由首次编辑自动创建
+            String[] parts = unitKey.split(":", 3);
+            String entityType = parts.length > 0 ? parts[0] : "";
+            String entityIdStr = parts.length > 1 ? parts[1] : "0";
+            String fieldPath = parts.length > 2 ? parts[2] : "";
+            unit = new TranslationUnit();
+            unit.setUnitKey(unitKey);
+            unit.setEntityType(entityType);
+            unit.setEntityId(Long.parseLong(entityIdStr));
+            unit.setFieldPath(fieldPath);
+            unit.setName(fieldPath);
+            unit.setFieldType("text");
+            unit.setBaseLocale("zh-CN");
+            unit.setLocales(new java.util.LinkedHashMap<>());
+            unit.setCreatedAt(LocalDateTime.now());
+            if ("zh-CN".equals(locale)) {
+                unit.getLocales().put("zh-CN", new LocaleEntry(value, "approved"));
+            }
         }
 
         validator.checkOverwriteAllowed(unit, locale, force);
@@ -89,7 +106,8 @@ public class I18nServiceImpl implements I18nService {
             if (locales != null) {
                 for (var le : locales.entrySet()) {
                     String locale = le.getKey();
-                    Object value = le.getValue().get("value");
+                    Map<String, Object> lv = le.getValue();
+                    Object value = lv != null ? lv.get("value") : null;
                     saveUnit(unitKey, locale, value, false);
                 }
             }

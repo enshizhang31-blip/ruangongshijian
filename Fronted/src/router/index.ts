@@ -25,6 +25,11 @@ const router = createRouter({
           component: () => import('@/views/product/ProductList.vue'),
         },
         {
+          path: '/product/:id',
+          name: 'SpuDetail',
+          component: () => import('@/views/product/SpuDetail.vue'),
+        },
+        {
           path: '/product/sku',
           name: 'ProductSku',
           component: () => import('@/views/product/SkuList.vue'),

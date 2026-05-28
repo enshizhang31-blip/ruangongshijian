@@ -69,6 +69,19 @@ const editVisible = ref(false)
 const fieldsLoading = ref(false)
 const editingEntity = ref<EntitySummary | null>(null)
 const fields = ref<EntityField[]>([])
+const addingLocale = ref('')
+
+function addLocale() {
+  const code = addingLocale.value.trim()
+  if (!code) { Message.warning('请输入语言代码'); return }
+  if (supportedLocales.value.includes(code)) { Message.warning('该语言已存在'); return }
+  supportedLocales.value.push(code)
+  for (const unitKey of Object.keys(editValues.value)) {
+    editValues.value[unitKey][code] = ''
+  }
+  addingLocale.value = ''
+  Message.success(`已添加语言: ${code}`)
+}
 
 function buildEmptyEditValues(): Record<string, string> {
   const map: Record<string, string> = {}
@@ -151,7 +164,8 @@ onMounted(async () => {
     <Card class="mb-4">
       <Space :size="12" wrap>
         <Select v-model="filterEntityType" :options="entityTypeOptions" style="width:140px" />
-        <Input v-model="filterKeyword" placeholder="搜索名称..." style="width:220px" @keyup.enter="handleSearch" allow-clear />
+        <Input v-model="filterKeyword" placeholder="搜索名称..." style="width:220px" @keyup.enter="handleSearch"
+          allow-clear />
         <Button type="primary" @click="handleSearch">搜索</Button>
         <Button @click="handleReset">重置</Button>
       </Space>
@@ -161,7 +175,8 @@ onMounted(async () => {
     <Card>
       <Table :columns="columns" :data="rows" :loading="loading" :pagination="false" row-key="entityId">
         <template #entityType="{ record }">
-          <Tag size="small" :color="record.entityType === 'goods' ? 'blue' : record.entityType === 'category' ? 'green' : 'orange'">
+          <Tag size="small"
+            :color="record.entityType === 'goods' ? 'blue' : record.entityType === 'category' ? 'green' : 'orange'">
             {{ entityTypeLabel[record.entityType] || record.entityType }}
           </Tag>
         </template>
@@ -170,77 +185,56 @@ onMounted(async () => {
         </template>
       </Table>
       <div class="flex justify-end mt-4">
-        <Pagination
-          :current="page + 1"
-          :total="total"
-          :page-size="pageSize"
-          :page-size-options="[10, 20, 50, 100]"
-          show-total
-          @change="handlePageChange"
-          @page-size-change="handlePageSizeChange"
-        />
+        <Pagination :current="page + 1" :total="total" :page-size="pageSize" :page-size-options="[10, 20, 50, 100]"
+          show-total @change="handlePageChange" @page-size-change="handlePageSizeChange" />
       </div>
     </Card>
 
     <!-- 编辑弹窗 -->
-    <Modal
-      v-model:visible="editVisible"
-      title="编辑翻译"
+    <Modal v-model:visible="editVisible" title="编辑翻译"
       :width="Math.min(780, typeof window !== 'undefined' ? window.innerWidth - 40 : 780)"
-      :ok-text="saving ? '保存中...' : '保存全部'"
-      :ok-loading="saving"
-      @ok="handleSave"
-    >
+      :ok-text="saving ? '保存中...' : '保存全部'" :ok-loading="saving" @ok="handleSave">
       <template v-if="editingEntity">
         <div class="mb-4 p-3 bg-gray-50 rounded-lg text-sm">
-          <span class="text-gray-400">{{ entityTypeLabel[editingEntity.entityType] }} #{{ editingEntity.entityId }}：</span>
+          <span class="text-gray-400">{{ entityTypeLabel[editingEntity.entityType] }} #{{ editingEntity.entityId
+          }}：</span>
           <span class="text-gray-800 font-medium">{{ editingEntity.name }}</span>
         </div>
       </template>
       <div v-if="fieldsLoading" class="text-center text-gray-400 py-8">加载字段中...</div>
       <div v-else-if="!fields.length" class="text-center text-gray-400 py-8">该实体暂无需要翻译的字段</div>
-      <div v-else class="space-y-5 max-h-[60vh] overflow-y-auto pr-2">
-        <div v-for="f in fields" :key="f.unitKey" class="border rounded-lg p-3">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-sm font-medium text-gray-700">{{ f.name }}</span>
-            <Tag size="small" color="arcoblue">{{ f.fieldType }}</Tag>
-            <span v-if="f.description" class="text-xs text-gray-400">{{ f.description }}</span>
-          </div>
-          <div class="space-y-2">
-            <div v-for="loc in supportedLocales" :key="loc" class="flex items-start gap-2">
-              <Tag class="shrink-0" :color="loc === 'zh-CN' ? 'red' : 'arcoblue'" size="small">{{ loc }}</Tag>
-              <Input
-                v-if="f.fieldType === 'text' || f.fieldType === 'rich_text'"
-                v-model="editValues[f.unitKey][loc]"
-                :placeholder="loc === 'zh-CN' ? '基准语言值' : `输入${loc}翻译...`"
-                size="small"
-                class="flex-1"
-              />
-              <Input
-                v-else-if="f.fieldType === 'number'"
-                v-model="editValues[f.unitKey][loc]"
-                type="number"
-                size="small"
-                placeholder="输入数字..."
-                class="flex-1"
-              />
-              <Select
-                v-else-if="f.fieldType === 'boolean'"
-                v-model="editValues[f.unitKey][loc]"
-                size="small"
-                placeholder="选择..."
-                class="flex-1"
-              >
-                <Select.Option value="true">true</Select.Option>
-                <Select.Option value="false">false</Select.Option>
-              </Select>
-              <Input
-                v-else
-                v-model="editValues[f.unitKey][loc]"
-                size="small"
-                :placeholder="f.fieldType === 'array' ? '逗号分隔' : 'JSON'"
-                class="flex-1"
-              />
+      <div v-else>
+        <div class="flex items-center gap-2 mb-3 px-1">
+          <span class="text-sm text-gray-500">支持的语言：</span>
+          <Tag v-for="loc in supportedLocales" :key="loc" :color="loc === 'zh-CN' ? 'red' : ''" size="small">{{ loc }}
+          </Tag>
+          <span class="flex-1"></span>
+          <Input v-model="addingLocale" placeholder="如 ko-KR" style="width:120px" size="small"
+            @keydown.enter.prevent="addLocale" />
+          <Button type="text" size="small" @click="addLocale">+ 添加语言</Button>
+        </div>
+        <div class="space-y-5 max-h-[60vh] overflow-y-auto pr-2">
+          <div v-for="f in fields" :key="f.unitKey" class="border rounded-lg p-3">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-sm font-medium text-gray-700">{{ f.name }}</span>
+              <Tag size="small" color="arcoblue">{{ f.fieldType }}</Tag>
+              <span v-if="f.description" class="text-xs text-gray-400">{{ f.description }}</span>
+            </div>
+            <div class="space-y-2">
+              <div v-for="loc in supportedLocales" :key="loc" class="flex items-start gap-2">
+                <Tag class="shrink-0" :color="loc === 'zh-CN' ? 'red' : 'arcoblue'" size="small">{{ loc }}</Tag>
+                <Input v-if="f.fieldType === 'text' || f.fieldType === 'rich_text'" v-model="editValues[f.unitKey][loc]"
+                  :placeholder="loc === 'zh-CN' ? '基准语言值' : `输入${loc}翻译...`" size="small" class="flex-1" />
+                <Input v-else-if="f.fieldType === 'number'" v-model="editValues[f.unitKey][loc]" type="number"
+                  size="small" placeholder="输入数字..." class="flex-1" />
+                <Select v-else-if="f.fieldType === 'boolean'" v-model="editValues[f.unitKey][loc]" size="small"
+                  placeholder="选择..." class="flex-1">
+                  <Select.Option value="true">true</Select.Option>
+                  <Select.Option value="false">false</Select.Option>
+                </Select>
+                <Input v-else v-model="editValues[f.unitKey][loc]" size="small"
+                  :placeholder="f.fieldType === 'array' ? '逗号分隔' : 'JSON'" class="flex-1" />
+              </div>
             </div>
           </div>
         </div>
