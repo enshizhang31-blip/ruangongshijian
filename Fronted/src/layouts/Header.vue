@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Avatar, Dropdown } from '@arco-design/web-vue'
+import { IconMenuFold } from '@arco-design/web-vue/es/icon'
 import { useAppStore } from '@/stores/app'
 import { removeToken, removeUserInfo } from '@/utils/storage'
 
@@ -22,8 +23,15 @@ function handleMenuClick(key: string) {
 
 <template>
     <header class="h-14 bg-white shadow-sm flex items-center justify-between px-4 lg:px-6">
-        <div class="text-sm text-gray-500">
-            <slot name="breadcrumb" />
+        <div class="flex items-center gap-3">
+            <!-- 移动端菜单按钮 -->
+            <button @click="appStore.toggleMobileSidebar()"
+                class="md:hidden flex items-center justify-center w-8 h-8 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+                <IconMenuFold class="w-5 h-5" />
+            </button>
+            <div class="text-sm text-gray-500">
+                <slot name="breadcrumb" />
+            </div>
         </div>
 
         <div class="flex items-center gap-4">

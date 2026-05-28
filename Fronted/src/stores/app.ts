@@ -10,10 +10,19 @@ export interface UserInfo {
 
 export const useAppStore = defineStore('app', () => {
     const sidebarCollapsed = ref(false)
+    const mobileSidebarVisible = ref(false)
     const userInfo = ref<UserInfo | null>(getUserInfo())
 
     function toggleSidebar() {
         sidebarCollapsed.value = !sidebarCollapsed.value
+    }
+
+    function toggleMobileSidebar() {
+        mobileSidebarVisible.value = !mobileSidebarVisible.value
+    }
+
+    function closeMobileSidebar() {
+        mobileSidebarVisible.value = false
     }
 
     function setUser(info: UserInfo) {
@@ -28,8 +37,11 @@ export const useAppStore = defineStore('app', () => {
 
     return {
         sidebarCollapsed,
+        mobileSidebarVisible,
         userInfo,
         toggleSidebar,
+        toggleMobileSidebar,
+        closeMobileSidebar,
         setUser,
         logout,
     }

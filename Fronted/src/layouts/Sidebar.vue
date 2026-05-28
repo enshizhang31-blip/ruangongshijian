@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Menu, MenuItem, SubMenu } from '@arco-design/web-vue'
+import { useAppStore } from '@/stores/app'
 import {
     IconApps,
     IconSafe,
@@ -15,37 +16,49 @@ import {
 
 const route = useRoute()
 const router = useRouter()
+const appStore = useAppStore()
 const collapsed = ref(false)
 
 const selectedKey = computed(() => {
     const p = route.path
-    // 动态路由：SPU 详情页高亮 SPU管理
     if (/^\/product\/\d+$/.test(p)) return '/product'
-    // 动态路由：SN码页高亮 SN码(按SKU)
-    if (/^\/sn\/sku\/\d+$/.test(p)) return '/sn/sku'
     return p
 })
 const defaultOpenKeys = computed(() => {
     const p = route.path
     if (p.startsWith('/product')) return ['/product']
-    if (p.startsWith('/sn')) return ['/sn']
     if (p.startsWith('/i18n')) return ['/i18n']
     return []
 })
 
 function go(path: string) {
     router.push(path)
+    // 移动端点击菜单后自动关闭
+    appStore.closeMobileSidebar()
 }
 </script>
 
 <template>
-    <aside class="sidebar-container" :class="{ collapsed }">
+    <!-- 移动端遮罩 -->
+    <div v-if="appStore.mobileSidebarVisible" class="md:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+        @click="appStore.closeMobileSidebar()" />
+
+    <!-- 侧边栏 -->
+    <aside class="sidebar-container" :class="{
+        collapsed,
+        'mobile-open': appStore.mobileSidebarVisible,
+    }" @click.stop>
         <div class="sidebar-logo">
             <span class="logo-text">销售管理</span>
-            <span class="collapse-trigger" @click="collapsed = !collapsed">
+            <span class="collapse-trigger hidden md:flex" @click="collapsed = !collapsed">
                 <IconMenuFold v-if="!collapsed" />
                 <IconMenuUnfold v-else />
             </span>
+            <!-- 移动端关闭按钮 -->
+            <button @click="appStore.closeMobileSidebar()"
+                class="md:hidden flex items-center justify-center w-7 h-7 text-gray-500 hover:bg-gray-100 rounded-lg ml-auto">
+                <IconMenuFold class="w-4 h-4" />
+            </button>
         </div>
         <div class="menu-wrap">
             <Menu :selected-keys="[selectedKey]" :default-open-keys="defaultOpenKeys" :collapsed="collapsed"
@@ -56,7 +69,6 @@ function go(path: string) {
                     </template>
                     首页
                 </MenuItem>
-
                 <SubMenu key="/product">
                     <template #icon>
                         <IconRobot />
@@ -66,54 +78,32 @@ function go(path: string) {
                     <MenuItem key="/product/category" @click="go('/product/category')">商品分类</MenuItem>
                     <MenuItem key="/product/sku" @click="go('/product/sku')">SKU管理</MenuItem>
                     <MenuItem key="/product/spec" @click="go('/product/spec')">规格管理</MenuItem>
+                    <MenuItem key="/sn" @click="go('/sn')">SN码管理</MenuItem>
                 </SubMenu>
-
-                <SubMenu key="/i18n">
-                    <template #icon>
-                        <IconLanguage />
-                    </template>
-                    <template #title>多语言</template>
-                    <MenuItem key="/i18n/status" @click="go('/i18n/status')">翻译状态</MenuItem>
-                    <MenuItem key="/i18n" @click="go('/i18n')">翻译编辑</MenuItem>
-                </SubMenu>
-
-                <SubMenu key="/sn">
-                    <template #icon>
-                        <IconBulb />
-                    </template>
-                    <template #title>SN码管理</template>
-                    <MenuItem key="/sn" @click="go('/sn')">SN码列表</MenuItem>
-                    <MenuItem key="/sn/sku" @click="go('/sn/sku/0')">SN码(按SKU)</MenuItem>
-                </SubMenu>
-
                 <MenuItem key="/customer" @click="go('/customer')">
                     <template #icon>
                         <IconSafe />
                     </template>
                     客户管理
                 </MenuItem>
-
                 <MenuItem key="/sale" @click="go('/sale')">
                     <template #icon>
                         <IconFire />
                     </template>
                     销售订单
                 </MenuItem>
-
                 <MenuItem key="/admin/user" @click="go('/admin/user')">
                     <template #icon>
                         <IconSafe />
                     </template>
                     员工管理
                 </MenuItem>
-
                 <MenuItem key="/statistics" @click="go('/statistics')">
                     <template #icon>
                         <IconBulb />
                     </template>
                     数据统计
                 </MenuItem>
-
                 <MenuItem key="/settings" @click="go('/settings')">
                     <template #icon>
                         <IconApps />
@@ -133,12 +123,30 @@ function go(path: string) {
     background-color: #fff;
     border-right: 1px solid #e5e6eb;
     flex-shrink: 0;
-    transition: width 0.2s;
+    transition: width 0.2s, transform 0.3s;
     width: 200px;
 }
 
 .sidebar-container.collapsed {
     width: 48px;
+}
+
+/* 移动端：默认隐藏，使用抽屉式弹出 */
+@media (max-width: 767px) {
+    .sidebar-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 50;
+        height: 100vh;
+        transform: translateX(-100%);
+        width: 240px;
+        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-container.mobile-open {
+        transform: translateX(0);
+    }
 }
 
 .sidebar-logo {
