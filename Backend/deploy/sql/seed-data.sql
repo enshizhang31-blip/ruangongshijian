@@ -1,7 +1,7 @@
 ﻿-- =====================================================
 -- 销售管理系统 - 种子数据 (DML only)
 -- 使用 INSERT IGNORE 防止重复执行报错
--- 手动执行: docker exec -i salemanager-mysql mysql -u salemanager -pSm@MySQL2026!User sale_manager < seed-data.sql
+-- 手动执行: docker exec -i salemanager-mysql mysql -u salemanager -pSm@MySQL2026User sale_manager < seed-data.sql
 -- =====================================================
 
 USE sale_manager;
