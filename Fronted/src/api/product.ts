@@ -44,13 +44,13 @@ export const productApi = {
     return api.get<ProductCategory[]>('/admin/product/categories')
   },
   createCategory(data: Partial<ProductCategory>) {
-    return api.post<void>('/admin/product/category', data)
+    return api.post<void>('/admin/product/categories', data)
   },
   updateCategory(id: number, data: Partial<ProductCategory>) {
-    return api.put<void>(`/admin/product/category/${id}`, data)
+    return api.put<void>(`/admin/product/categories/${id}`, data)
   },
   deleteCategory(id: number) {
-    return api.delete<void>(`/admin/product/category/${id}`)
+    return api.delete<void>(`/admin/product/categories/${id}`)
   },
 
   // ========== 规格 ==========

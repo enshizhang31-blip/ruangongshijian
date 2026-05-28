@@ -37,10 +37,10 @@ public class SpecServiceImpl implements SpecService {
     private SpecValueMapper specValueMapper;
 
     @Autowired
-    private I18nSyncService i18nSyncService;
+    private SkuMapper skuMapper;
 
     @Autowired
-    private SkuMapper skuMapper;
+    private I18nSyncService i18nSyncService;
 
     @Override
     public List<SpecName> getSpecList() {
@@ -99,7 +99,6 @@ public class SpecServiceImpl implements SpecService {
 
         specValueMapper.delete(new LambdaQueryWrapper<SpecValue>().eq(SpecValue::getSpecId, id));
         specNameMapper.deleteById(id);
-        i18nSyncService.syncSpecDeleted(id);
         log.info("规格删除成功 id={}", id);
     }
 
@@ -127,8 +126,8 @@ public class SpecServiceImpl implements SpecService {
         specValue.setCreatedAt(LocalDateTime.now());
         specValue.setUpdatedAt(LocalDateTime.now());
 
-        i18nSyncService.syncSpecValueCreated(specId, specValue.getId(), specValue.getValue());
         specValueMapper.insert(specValue);
+        i18nSyncService.syncSpecValueCreated(specId, specValue.getId(), specValue.getValue());
         log.info("规格值创建成功 id={}, specId={}", specValue.getId(), specId);
     }
 
@@ -156,7 +155,6 @@ public class SpecServiceImpl implements SpecService {
         // 安全检查：规格值是否被SKU引用
         checkSkuReference(specValue);
 
-        i18nSyncService.syncSpecValueDeleted(specValue.getSpecId(), id);
         specValueMapper.deleteById(id);
         log.info("规格值删除成功 id={}", id);
     }

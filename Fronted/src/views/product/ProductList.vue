@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref, h } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { productApi } from '@/api'
 import { usePageQuery } from '@/composables'
-import { formatDate, formatMoney } from '@/utils/format'
+import { formatDate } from '@/utils/format'
 import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Message, Empty, Select } from '@arco-design/web-vue'
-import type { Product, Sku, ProductCategory, Spec } from '@/types'
-import { PlusIcon, PencilIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
+import type { Product, ProductCategory } from '@/types'
+import { PlusIcon, PencilIcon } from '@heroicons/vue/24/outline'
+import TranslationModal from '@/components/TranslationModal.vue'
 
 const router = useRouter()
 
@@ -30,39 +31,15 @@ const form = ref<Partial<Product>>({
   name: '', categoryId: undefined, brand: '', imageUrl: '', images: '', shortDesc: '', description: '', status: 1,
 })
 
-const expandedSkus = ref<Set<number>>(new Set())
-const skuData = ref<Record<number, Sku[]>>({})
-const skuLoading = ref<Record<number, boolean>>({})
-
-const specs = ref<Spec[]>([])
-const showBatchSkuModal = ref(false)
-const batchSkuSpuId = ref<number>(0)
-const batchSkuPrefix = ref('')
-const batchSkuPrice = ref<number>(0)
-const batchSkuCostPrice = ref<number>(0)
-const selectedSpecIds = ref<number[]>([])
-
 const columns = [
-  { title: '', dataIndex: 'expand', width: 50 },
-  { title: '商品名称', dataIndex: 'name', width: 200 },
+  { title: 'SPU名称', dataIndex: 'name', width: 200 },
   { title: '分类', dataIndex: 'categoryName', width: 100 },
   { title: '品牌', dataIndex: 'brand', width: 100 },
-  { title: '价格区间', dataIndex: 'priceRange', width: 140 },
   { title: 'SKU数', dataIndex: 'skuCount', width: 70, align: 'center' as const },
   { title: '总库存', dataIndex: 'stockCount', width: 80, align: 'center' as const },
   { title: '状态', dataIndex: 'status', width: 80 },
   { title: '创建时间', dataIndex: 'createdAt', width: 160 },
-  { title: '操作', slotName: 'actions', align: 'right', width: 180 },
-]
-
-const skuColumns = [
-  { title: '规格组合', dataIndex: 'specJson', width: 200 },
-  { title: 'SKU编码', dataIndex: 'skuCode', width: 140 },
-  { title: '价格', dataIndex: 'price', width: 100 },
-  { title: '成本价', dataIndex: 'costPrice', width: 100 },
-  { title: '库存', dataIndex: 'stock', width: 80, align: 'center' as const },
-  { title: '状态', dataIndex: 'status', width: 80 },
-  { title: '操作', slotName: 'skuActions', align: 'right', width: 120 },
+  { title: '操作', slotName: 'actions', align: 'right', width: 200 },
 ]
 
 onMounted(() => { load(); fetchCategories() })
@@ -124,54 +101,13 @@ async function handleToggleStatus(record: Product) {
   catch (e: any) { Message.error(e?.message || '操作失败') }
 }
 
-async function toggleSkus(productId: number) {
-  if (expandedSkus.value.has(productId)) { expandedSkus.value.delete(productId); return }
-  if (skuData.value[productId]) { expandedSkus.value.add(productId); return }
-  skuLoading.value[productId] = true; expandedSkus.value.add(productId)
-  try { skuData.value[productId] = await productApi.getSkus(productId) }
-  catch { Message.error('获取SKU失败'); expandedSkus.value.delete(productId) }
-  finally { skuLoading.value[productId] = false }
-}
+// 翻译弹窗
+const translateTarget = ref<{ type: string; id: number; name: string } | null>(null)
+const showTranslateModal = ref(false)
 
-function getPriceRange(skus: Sku[] | undefined): string {
-  if (!skus || skus.length === 0) return '-'
-  const prices = skus.map(s => s.price)
-  const min = Math.min(...prices), max = Math.max(...prices)
-  return min === max ? formatMoney(min) : `${formatMoney(min)} ~ ${formatMoney(max)}`
-}
-
-async function handleDeleteSku(sku: Sku, record: Product) {
-  try { await productApi.deleteSku(sku.id); Message.success('删除成功'); toggleSkus(record.id) }
-  catch (e: any) { Message.error(e?.message || '删除失败') }
-}
-
-async function handleOpenBatchSku(record: Product) {
-  batchSkuSpuId.value = record.id
-  batchSkuPrefix.value = ''
-  batchSkuPrice.value = 0
-  batchSkuCostPrice.value = 0
-  selectedSpecIds.value = []
-  try {
-    specs.value = await productApi.getSpecs()
-  } catch { specs.value = [] }
-  showBatchSkuModal.value = true
-}
-
-async function handleBatchGenerateSku() {
-  if (selectedSpecIds.value.length === 0) { Message.warning('请至少选择一个规格'); return false }
-  try {
-    await productApi.batchGenerateSkus({
-      spuId: batchSkuSpuId.value,
-      specIds: selectedSpecIds.value,
-      codePrefix: batchSkuPrefix.value || undefined,
-      defaultPrice: batchSkuPrice.value || undefined,
-      defaultCostPrice: batchSkuCostPrice.value || undefined,
-    } as any)
-    Message.success('批量生成SKU成功')
-    showBatchSkuModal.value = false
-    toggleSkus(batchSkuSpuId.value)
-    return true
-  } catch (e: any) { Message.error(e?.message || '操作失败'); return false }
+function handleTranslate(type: string, id: number, name: string) {
+  translateTarget.value = { type, id, name }
+  showTranslateModal.value = true
 }
 </script>
 
@@ -179,24 +115,26 @@ async function handleBatchGenerateSku() {
   <div class="p-4 lg:p-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
       <div>
-        <h1 class="text-xl lg:text-2xl font-bold text-gray-800">商品管理</h1>
-        <p class="text-sm text-gray-500 mt-1">管理商品信息（SPU + SKU）</p>
+        <h1 class="text-xl lg:text-2xl font-bold text-gray-800">SPU 管理</h1>
+        <p class="text-sm text-gray-500 mt-1">管理商品SPU，点击「SKU管理」进入SKU层级</p>
       </div>
       <Button type="primary" @click="handleAdd">
-        <template #icon><PlusIcon class="w-4 h-4" /></template>
-        新增商品
+        <template #icon>
+          <PlusIcon class="w-4 h-4" />
+        </template>
+        新增SPU
       </Button>
     </div>
 
     <Card class="mb-4">
       <Space direction="horizontal" :size="12" wrap>
-        <Input v-model="keyword" placeholder="搜索商品名称..." class="w-56!" @press-enter="handleSearch">
+        <Input v-model="keyword" placeholder="搜索SPU名称..." class="w-56!" @press-enter="handleSearch">
           <template #prefix><span class="text-gray-400">🔍</span></template>
         </Input>
         <Select v-model="searchCategoryId" placeholder="选择分类" class="w-44!" :loading="loadingCategories" allow-clear>
           <Select.Option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</Select.Option>
         </Select>
-        <Select v-model="searchStatus" placeholder="商品状态" class="w-32!" allow-clear>
+        <Select v-model="searchStatus" placeholder="SPU状态" class="w-32!" allow-clear>
           <Select.Option :value="1">上架</Select.Option>
           <Select.Option :value="0">下架</Select.Option>
         </Select>
@@ -214,84 +152,27 @@ async function handleBatchGenerateSku() {
         <Empty description="暂无数据" />
       </div>
 
-      <Table
-        v-else
-        :loading="loading"
-        :columns="columns"
-        :data="list"
-        :pagination="false"
-        :scroll="{ x: 1200 }"
-        :expandable="{ expandedRowKeys: Array.from(expandedSkus), onExpand: (record: Product, expanded: boolean) => { expanded ? toggleSkus(record.id) : expandedSkus.delete(record.id) } }"
-      >
-        <template #expand="{ record }">
-          <div class="px-8 py-4">
-            <div v-if="skuLoading[record.id]" class="text-center py-4 text-gray-400">加载中...</div>
-            <template v-else-if="skuData[record.id]?.length">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-sm text-gray-500">规格组合列表</span>
-                <Button type="outline" size="small" @click="handleOpenBatchSku(record)">批量生成SKU</Button>
-              </div>
-              <Table :columns="skuColumns" :data="skuData[record.id]" :pagination="false" :scroll="{ x: 800 }">
-                <template #specJson="{ record: sku }">
-                  <Space>
-                    <Tag v-for="(v, k) in JSON.parse(sku.specJson || '{}')" :key="k">{{ k }}: {{ v }}</Tag>
-                  </Space>
-                </template>
-                <template #price="{ record: sku }">{{ formatMoney(sku.price) }}</template>
-                <template #costPrice="{ record: sku }">{{ sku.costPrice ? formatMoney(sku.costPrice) : '-' }}</template>
-                <template #status="{ record: sku }">
-                  <Tag :color="sku.status === 1 ? 'green' : 'gray'">{{ sku.status === 1 ? '启用' : '禁用' }}</Tag>
-                </template>
-                <template #skuActions="{ record: sku }">
-                  <Space>
-                    <Button type="text" size="small" class="text-blue-600">编辑</Button>
-                    <Button type="text" size="small" class="text-purple-600" @click="router.push(`/sn/sku/${sku.id}?spuId=${record.id}`)">SN码</Button>
-                    <Popconfirm title="确定删除该SKU？" @ok="handleDeleteSku(sku, record)">
-                      <Button type="text" status="danger" size="small">删除</Button>
-                    </Popconfirm>
-                  </Space>
-                </template>
-              </Table>
-            </template>
-            <div v-else class="text-center py-4 text-gray-400">
-              暂无SKU
-              <div class="mt-2"><Button type="outline" size="small" @click="handleOpenBatchSku(record)">批量生成SKU</Button></div>
-            </div>
-          </div>
+      <Table v-else :loading="loading" :columns="columns" :data="list" :pagination="false" :scroll="{ x: 1000 }">
+        <template #status="{ record }">
+          <Tag :color="record.status === 1 ? 'green' : 'gray'">{{ record.status === 1 ? '上架' : '下架' }}</Tag>
         </template>
-
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'expand'">
-            <Button type="text" size="small" @click="toggleSkus(record.id)">
-              <ChevronDownIcon v-if="expandedSkus.has(record.id)" class="w-4 h-4" />
-              <ChevronRightIcon v-else class="w-4 h-4" />
+        <template #createdAt="{ record }">
+          {{ record.createdAt ? formatDate(record.createdAt) : '-' }}
+        </template>
+        <template #actions="{ record }">
+          <Space>
+            <Button type="text" size="small" @click="router.push(`/product/${record.id}`)">SKU管理</Button>
+            <Button type="text" size="small" @click="handleTranslate('goods', record.id, record.name)">翻译</Button>
+            <Button type="text" size="small" @click="handleToggleStatus(record)">
+              {{ record.status === 1 ? '下架' : '上架' }}
             </Button>
-          </template>
-          <template v-else-if="column.dataIndex === 'priceRange'">
-            {{ getPriceRange(skuData[record.id]) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'status'">
-            <Tag :color="record.status === 1 ? 'green' : 'gray'">{{ record.status === 1 ? '上架' : '下架' }}</Tag>
-          </template>
-          <template v-else-if="column.dataIndex === 'stockCount'">
-            <span :class="record.stockCount ? 'text-green-600 font-medium' : 'text-red-400'">{{ record.stockCount ?? 0 }}</span>
-          </template>
-          <template v-else-if="column.dataIndex === 'createdAt'">
-            {{ record.createdAt ? formatDate(record.createdAt) : '-' }}
-          </template>
-          <template v-else-if="column.dataIndex === 'actions'">
-            <Space>
-              <Button type="text" size="small" @click="handleToggleStatus(record)">
-                {{ record.status === 1 ? '下架' : '上架' }}
-              </Button>
-              <Button type="text" size="small" @click="handleEdit(record)">
-                <PencilIcon class="w-4 h-4" />
-              </Button>
-              <Popconfirm title="确定删除该商品？" @ok="handleDelete(record.id)">
-                <Button type="text" status="danger" size="small">删除</Button>
-              </Popconfirm>
-            </Space>
-          </template>
+            <Button type="text" size="small" @click="handleEdit(record)">
+              <PencilIcon class="w-4 h-4" />
+            </Button>
+            <Popconfirm title="确定删除该SPU？（将级联删除所有SKU和SN码）" @ok="handleDelete(record.id)">
+              <Button type="text" status="danger" size="small">删除</Button>
+            </Popconfirm>
+          </Space>
         </template>
       </Table>
 
@@ -299,18 +180,20 @@ async function handleBatchGenerateSku() {
         <Space direction="horizontal">
           <span class="text-sm text-gray-500">共 {{ total }} 条</span>
           <Button :disabled="(query.page || 1) <= 1" @click="setPage((query.page || 1) - 1)">上一页</Button>
-          <span class="text-sm py-2">第 {{ query.page || 1 }} / {{ Math.ceil(total / (query.pageSize || 20)) || 1 }} 页</span>
-          <Button :disabled="(query.page || 1) >= Math.ceil(total / (query.pageSize || 20))" @click="setPage((query.page || 1) + 1)">下一页</Button>
+          <span class="text-sm py-2">第 {{ query.page || 1 }} / {{ Math.ceil(total / (query.pageSize || 20)) || 1 }}
+            页</span>
+          <Button :disabled="(query.page || 1) >= Math.ceil(total / (query.pageSize || 20))"
+            @click="setPage((query.page || 1) + 1)">下一页</Button>
         </Space>
       </div>
     </Card>
   </div>
 
-  <Modal v-model:visible="showFormModal" :title="isEdit ? '编辑商品' : '新增商品'" :on-before-ok="handleSubmit" :width="500">
+  <Modal v-model:visible="showFormModal" :title="isEdit ? '编辑SPU' : '新增SPU'" :on-before-ok="handleSubmit" :width="500">
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">商品名称</div>
-        <Input v-model="form.name" placeholder="请输入商品名称" class="flex-1" />
+        <div class="w-20 text-sm text-gray-500">SPU名称</div>
+        <Input v-model="form.name" placeholder="请输入SPU名称" class="flex-1" />
       </div>
       <div class="flex items-center gap-4">
         <div class="w-20 text-sm text-gray-500">商品分类</div>
@@ -343,27 +226,7 @@ async function handleBatchGenerateSku() {
       </div>
     </div>
   </Modal>
-  <Modal v-model:visible="showBatchSkuModal" title="批量生成SKU" :on-before-ok="handleBatchGenerateSku" :width="500">
-    <div class="flex flex-col gap-4">
-      <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">SKU前缀</div>
-        <Input v-model="batchSkuPrefix" placeholder="如 IP15" class="flex-1" />
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">默认价格</div>
-        <Input v-model="batchSkuPrice" type="number" placeholder="0.00" class="flex-1" />
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">默认成本</div>
-        <Input v-model="batchSkuCostPrice" type="number" placeholder="0.00" class="flex-1" />
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">规格选择</div>
-        <Select v-model="selectedSpecIds" placeholder="选择规格（系统自动做笛卡尔积）" class="flex-1" multiple>
-          <Select.Option v-for="spec in specs" :key="spec.id" :value="spec.id">{{ spec.name }}</Select.Option>
-        </Select>
-      </div>
-      <p class="text-xs text-gray-400">系统将根据所选规格的所有值做笛卡尔积，自动生成所有SKU组合。</p>
-    </div>
-  </Modal>
+
+  <TranslationModal v-model:visible="showTranslateModal" :entity-type="translateTarget?.type || ''"
+    :entity-id="translateTarget?.id || 0" :entity-name="translateTarget?.name" />
 </template>

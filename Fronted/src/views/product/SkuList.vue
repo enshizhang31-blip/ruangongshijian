@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, h } from 'vue'
+import { onMounted, ref, computed, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { productApi } from '@/api'
 import { formatMoney } from '@/utils/format'
-import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Message, Empty, Select } from '@arco-design/web-vue'
-import type { Sku, Product } from '@/types'
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { Table, Button, Input, Space, Tag, Popconfirm, Card, Modal, Message, Empty, Select, Form, FormItem } from '@arco-design/web-vue'
+import type { Sku, Product, Spec, SpecValue } from '@/types'
+import { PlusIcon } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
 const router = useRouter()
@@ -19,27 +19,51 @@ const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
 
-// 所属 SPU 列表（用于筛选）
 const spuList = ref<Product[]>([])
 const searchSpuId = ref<number | undefined>(spuId.value || undefined)
 
-// 弹窗
-const showFormModal = ref(false)
-const isEdit = ref(false)
-const editingId = ref<number>()
-const form = ref<Partial<Sku>>({
-  spuId: spuId.value || undefined,
-  skuCode: '',
-  specJson: '',
-  price: 0,
-  costPrice: undefined,
-  unit: '件',
-  imageUrl: '',
-  status: 1,
-})
+// 规格缓存
+const allSpecs = ref<Spec[]>([])
+const specValueCache = ref<Record<number, SpecValue[]>>({})
+const valueMap = ref<Record<number, SpecValue>>({})
+
+function buildSpecMaps(specs: Spec[]) {
+  const vm: Record<number, SpecValue> = {}
+  for (const s of specs) {
+    for (const v of s.values || []) vm[v.id] = v
+  }
+  valueMap.value = vm
+}
+
+async function getSpecValues(specId: number): Promise<SpecValue[]> {
+  if (specValueCache.value[specId]) return specValueCache.value[specId]
+  try { const vals = await productApi.getSpecValues(specId); specValueCache.value[specId] = vals; for (const v of vals) valueMap.value[v.id] = v; return vals }
+  catch { return [] }
+}
+
+function onSpecSelected(row: any) {
+  if (row.specId) getSpecValues(row.specId)
+  row.valueId = undefined
+}
+
+// 解析 specJson
+function renderSpecTags(specJson?: string): { name: string; value: string }[] {
+  if (!specJson) return []
+  try {
+    const obj = JSON.parse(specJson)
+    return Object.entries(obj).map(([k, v]) => {
+      const valId = Number(v)
+      if (valId && valueMap.value[valId]) {
+        const spec = allSpecs.value.find(s => s.values?.some(sv => sv.id === valId))
+        return { name: spec?.name || k, value: valueMap.value[valId].value }
+      }
+      return { name: k, value: String(v) }
+    })
+  } catch { return [] }
+}
 
 const columns = [
-  { title: '规格组合', dataIndex: 'specJson', width: 220 },
+  { title: '规格组合', slotName: 'specJson', width: 220 },
   { title: 'SKU编码', dataIndex: 'skuCode', width: 150 },
   { title: 'SPU', dataIndex: 'spuName', width: 150 },
   { title: '价格', dataIndex: 'price', width: 100 },
@@ -50,10 +74,60 @@ const columns = [
   { title: '操作', slotName: 'actions', align: 'right', width: 150 },
 ]
 
+// 弹窗（动态规格表单）
+const showFormModal = ref(false)
+const isEdit = ref(false)
+const editingId = ref<number>()
+
+interface SpecRow { specId: number | undefined; valueId: number | undefined }
+const formModel = reactive({
+  spuId: spuId.value || undefined as number | undefined,
+  skuCode: '',
+  specs: [{ specId: undefined, valueId: undefined }] as SpecRow[],
+  price: 0,
+  costPrice: undefined as number | undefined,
+  unit: '件',
+  imageUrl: '',
+  status: 1,
+})
+
+const availableSpecs = computed(() => {
+  const used = new Set(formModel.specs.map(r => r.specId).filter((id): id is number => !!id))
+  return allSpecs.value.filter(s => !used.has(s.id))
+})
+
+function addSpecRow() {
+  formModel.specs.push({ specId: undefined, valueId: undefined })
+}
+
+function removeSpecRow(index: number) {
+  formModel.specs.splice(index, 1)
+}
+
+watch(() => formModel.specs.map(r => `${r.specId}-${r.valueId}`).join(','), () => {
+  const obj: Record<string, string> = {}
+  for (const row of formModel.specs) {
+    if (row.specId && row.valueId) obj[String(row.specId)] = String(row.valueId)
+  }
+  if (!isEdit.value && !formModel.skuCode) {
+    formModel.skuCode = autoGenerateSkuCode(obj)
+  }
+})
+
+function autoGenerateSkuCode(_specIdObj: Record<string, string>): string {
+  const spu = spuList.value.find(s => s.id === formModel.spuId)
+  const abbr = spu?.name
+    ? spu.name.replace(/[\u4e00-\u9fa5]/g, '').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6) || 'SPU'
+    : 'SPU'
+  const id = editingId.value || Date.now() % 10000
+  return `SKU-${abbr}-${id}-SPU${formModel.spuId || ''}`
+}
+
 onMounted(() => {
-  if (spuId.value) form.value.spuId = spuId.value
+  if (spuId.value) formModel.spuId = spuId.value
   load()
   fetchSpuList()
+  productApi.getSpecs().then(specs => { allSpecs.value = specs; buildSpecMaps(specs) }).catch(() => { })
 })
 
 async function fetchSpuList() {
@@ -102,56 +176,71 @@ function handleReset() {
 }
 
 function handleAdd() {
-  isEdit.value = false
-  editingId.value = undefined
-  form.value = {
-    spuId: searchSpuId.value || spuId.value || undefined,
-    skuCode: '',
-    specJson: '',
-    price: 0,
-    costPrice: undefined,
-    unit: '件',
-    imageUrl: '',
-    status: 1,
-  }
+  isEdit.value = false; editingId.value = undefined
+  formModel.spuId = searchSpuId.value || spuId.value || undefined
+  formModel.skuCode = ''
+  formModel.specs = [{ specId: undefined, valueId: undefined }]
+  formModel.price = 0
+  formModel.costPrice = undefined
+  formModel.unit = '件'
+  formModel.imageUrl = ''
+  formModel.status = 1
   showFormModal.value = true
 }
 
 function handleEdit(record: Sku) {
-  isEdit.value = true
-  editingId.value = record.id
-  form.value = { ...record }
+  isEdit.value = true; editingId.value = record.id
+  formModel.spuId = record.spuId
+  formModel.skuCode = record.skuCode
+  formModel.specs = []
+  formModel.price = record.price
+  formModel.costPrice = record.costPrice
+  formModel.unit = record.unit || '件'
+  formModel.imageUrl = record.imageUrl || ''
+  formModel.status = record.status
+  try {
+    const obj = JSON.parse(record.specJson || '{}')
+    for (const [k, v] of Object.entries(obj)) {
+      const specId = Number(k); const valId = Number(v)
+      if (specId && valId) formModel.specs.push({ specId, valueId: valId })
+    }
+  } catch { /* ignore */ }
+  if (formModel.specs.length === 0) formModel.specs.push({ specId: undefined, valueId: undefined })
   showFormModal.value = true
 }
 
 async function handleSubmit() {
-  if (!form.value.spuId) { Message.warning('请选择所属商品'); return false }
-  if (!form.value.price || form.value.price <= 0) { Message.warning('请填写有效的价格'); return false }
+  if (!formModel.spuId) { Message.warning('请选择所属商品'); return false }
+  if (!formModel.price || formModel.price <= 0) { Message.warning('请填写有效的价格'); return false }
   try {
+    const obj: Record<string, string> = {}
+    for (const row of formModel.specs) {
+      if (row.specId && row.valueId) obj[String(row.specId)] = String(row.valueId)
+    }
+    const data: Partial<Sku> = {
+      spuId: formModel.spuId,
+      skuCode: formModel.skuCode,
+      specJson: JSON.stringify(obj),
+      price: formModel.price,
+      costPrice: formModel.costPrice,
+      unit: formModel.unit,
+      imageUrl: formModel.imageUrl,
+      status: formModel.status,
+    }
     if (isEdit.value && editingId.value) {
-      await productApi.updateSku({ ...form.value, id: editingId.value } as Sku)
+      await productApi.updateSku({ ...data, id: editingId.value } as Sku)
       Message.success('更新成功')
     } else {
-      await productApi.createSku(form.value as Sku)
+      await productApi.createSku(data as Sku)
       Message.success('创建成功')
     }
-    showFormModal.value = false
-    load()
-    return true
+    showFormModal.value = false; load(); return true
   } catch (e: any) { Message.error(e?.message || '操作失败'); return false }
 }
 
 async function handleDelete(id: number) {
   try { await productApi.deleteSku(id); Message.success('删除成功'); load() }
   catch (e: any) { Message.error(e?.message || '删除失败') }
-}
-
-function renderSpecJson(specJson: string | undefined) {
-  if (!specJson) return '-'
-  try {
-    const obj = JSON.parse(specJson)
-    return Object.entries(obj).map(([k, v]) => `${k}: ${v}`).join(', ')
-  } catch { return specJson }
 }
 </script>
 
@@ -163,7 +252,9 @@ function renderSpecJson(specJson: string | undefined) {
         <p class="text-sm text-gray-500 mt-1">管理商品规格组合</p>
       </div>
       <Button type="primary" @click="handleAdd">
-        <template #icon><PlusIcon class="w-4 h-4" /></template>
+        <template #icon>
+          <PlusIcon class="w-4 h-4" />
+        </template>
         新增SKU
       </Button>
     </div>
@@ -188,31 +279,28 @@ function renderSpecJson(specJson: string | undefined) {
       </div>
 
       <Table v-else :loading="loading" :columns="columns" :data="list" :pagination="false" :scroll="{ x: 1100 }">
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'specJson'">
-            <Space>
-              <Tag v-for="(v, k) in JSON.parse(record.specJson || '{}')" :key="k">{{ k }}: {{ v }}</Tag>
-            </Space>
-          </template>
-          <template v-else-if="column.dataIndex === 'price'">{{ formatMoney(record.price) }}</template>
-          <template v-else-if="column.dataIndex === 'costPrice'">{{ record.costPrice ? formatMoney(record.costPrice) : '-' }}</template>
-          <template v-else-if="column.dataIndex === 'status'">
-            <Tag :color="record.status === 1 ? 'green' : 'gray'">{{ record.status === 1 ? '启用' : '禁用' }}</Tag>
-          </template>
-          <template v-else-if="column.dataIndex === 'createdAt'">
-            {{ record.createdAt ? record.createdAt : '-' }}
-          </template>
-          <template v-else-if="column.dataIndex === 'actions'">
-            <Space>
-              <Button type="text" size="small" @click="handleEdit(record)">
-                <PencilIcon class="w-4 h-4" />
-              </Button>
-              <Button type="text" size="small" class="text-purple-600" @click="router.push(`/sn/sku/${record.id}?spuId=${record.spuId}`)">SN码</Button>
-              <Popconfirm title="确定删除该SKU？" @ok="handleDelete(record.id)">
-                <Button type="text" status="danger" size="small">删除</Button>
-              </Popconfirm>
-            </Space>
-          </template>
+        <template #specJson="{ record }">
+          <Space>
+            <Tag v-for="tag in renderSpecTags(record.specJson)" :key="tag.name">{{ tag.name }}: {{ tag.value }}</Tag>
+          </Space>
+        </template>
+        <template #price="{ record }">{{ formatMoney(record.price) }}</template>
+        <template #costPrice="{ record }">{{ record.costPrice ? formatMoney(record.costPrice) : '-' }}</template>
+        <template #status="{ record }">
+          <Tag :color="record.status === 1 ? 'green' : 'gray'">{{ record.status === 1 ? '启用' : '禁用' }}</Tag>
+        </template>
+        <template #createdAt="{ record }">
+          {{ record.createdAt ? record.createdAt : '-' }}
+        </template>
+        <template #actions="{ record }">
+          <Space>
+            <Button type="text" size="small" @click="handleEdit(record)">编辑</Button>
+            <Button type="text" size="small" class="text-purple-600"
+              @click="router.push(`/sn/sku/${record.id}?spuId=${record.spuId}`)">SN码</Button>
+            <Popconfirm title="确定删除该SKU？" @ok="handleDelete(record.id)">
+              <Button type="text" status="danger" size="small">删除</Button>
+            </Popconfirm>
+          </Space>
         </template>
       </Table>
 
@@ -227,41 +315,53 @@ function renderSpecJson(specJson: string | undefined) {
     </Card>
   </div>
 
-  <Modal v-model:visible="showFormModal" :title="isEdit ? '编辑SKU' : '新增SKU'" :on-before-ok="handleSubmit" :width="500">
-    <div class="flex flex-col gap-4">
-      <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">所属商品</div>
-        <Select v-model="form.spuId" placeholder="选择商品" class="flex-1" :disabled="!!spuId">
+  <Modal v-model:visible="showFormModal" :title="isEdit ? '编辑SKU' : '新增SKU'" :on-before-ok="handleSubmit" :width="580">
+    <a-form :model="formModel">
+      <a-form-item field="spuId" label="所属商品">
+        <Select v-model="formModel.spuId" placeholder="选择商品" :disabled="!!spuId">
           <Select.Option v-for="spu in spuList" :key="spu.id" :value="spu.id">{{ spu.name }}</Select.Option>
         </Select>
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">SKU编码</div>
-        <Input v-model="form.skuCode" placeholder="请输入SKU编码" class="flex-1" />
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">规格组合</div>
-        <Input v-model="form.specJson" placeholder='JSON格式，如: {"颜色":"黑色","内存":"256G"}' class="flex-1" />
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">销售价格</div>
-        <Input v-model="form.price" type="number" placeholder="0.00" class="flex-1" />
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">成本价</div>
-        <Input v-model="form.costPrice" type="number" placeholder="0.00" class="flex-1" />
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">单位</div>
-        <Input v-model="form.unit" placeholder="件" class="flex-1" />
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">状态</div>
-        <Select v-model="form.status" class="w-32!">
+      </a-form-item>
+      <a-form-item field="skuCode" label="SKU编码">
+        <a-input v-model="formModel.skuCode" placeholder="选择规格后自动生成" />
+      </a-form-item>
+
+      <a-form-item label="规格组合" :content-flex="false" :merge-props="false">
+        <a-space direction="vertical" fill>
+          <a-form-item v-for="(spec, index) in formModel.specs" :key="index" :field="`specs[${index}].valueId`"
+            no-style>
+            <a-space>
+              <Select v-model="formModel.specs[index].specId" placeholder="选择规格名" style="width:120px"
+                @change="onSpecSelected(formModel.specs[index])">
+                <Select.Option v-for="s in availableSpecs" :key="s.id" :value="s.id">{{ s.name }}</Select.Option>
+              </Select>
+              <Select v-model="formModel.specs[index].valueId" placeholder="选择规格值" style="width:200px"
+                :disabled="!formModel.specs[index].specId">
+                <Select.Option v-for="v in (specValueCache[formModel.specs[index].specId || 0] || [])" :key="v.id"
+                  :value="v.id">{{ v.value }}</Select.Option>
+              </Select>
+              <Button type="text" status="danger" size="small" @click="removeSpecRow(index)">删除</Button>
+            </a-space>
+          </a-form-item>
+          <Button type="text" size="small" @click="addSpecRow">+ 添加规格</Button>
+        </a-space>
+      </a-form-item>
+
+      <a-form-item field="price" label="销售价格">
+        <a-input v-model="formModel.price" type="number" placeholder="0.00" />
+      </a-form-item>
+      <a-form-item field="costPrice" label="成本价">
+        <a-input v-model="formModel.costPrice" type="number" placeholder="0.00" />
+      </a-form-item>
+      <a-form-item field="unit" label="单位">
+        <a-input v-model="formModel.unit" placeholder="件" />
+      </a-form-item>
+      <a-form-item field="status" label="状态">
+        <Select v-model="formModel.status" style="width:140px">
           <Select.Option :value="1">启用</Select.Option>
           <Select.Option :value="0">禁用</Select.Option>
         </Select>
-      </div>
-    </div>
+      </a-form-item>
+    </a-form>
   </Modal>
 </template>

@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.salemanager.common.exception.BusinessException;
-import com.salemanager.modules.i18n.service.I18nSyncService;
 import com.salemanager.modules.product.mapper.GoodsMapper;
 import com.salemanager.modules.product.mapper.SkuMapper;
 import com.salemanager.modules.product.model.Goods;
@@ -45,9 +44,6 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private SnCodeLogMapper snCodeLogMapper;
-
-    @Autowired
-    private I18nSyncService i18nSyncService;
 
     @Override
     public List<Goods> getProductList(String keyword, Long categoryId, Integer status, Integer page, Integer pageSize) {
@@ -147,7 +143,6 @@ public class ProductServiceImpl implements ProductService {
         goods.setUpdatedAt(LocalDateTime.now());
 
         goodsMapper.insert(goods);
-        i18nSyncService.syncGoodsCreated(goods.getId(), goods.getName(), goods.getShortDesc(), goods.getDescription());
         log.info("商品创建成功 id={}", goods.getId());
     }
 
@@ -189,7 +184,6 @@ public class ProductServiceImpl implements ProductService {
         goods.setUpdatedAt(LocalDateTime.now());
 
         goodsMapper.updateById(goods);
-        i18nSyncService.syncGoodsUpdated(goods.getId(), goods.getName(), goods.getShortDesc(), goods.getDescription());
         log.info("商品更新成功 id={}", id);
     }
 
@@ -230,7 +224,6 @@ public class ProductServiceImpl implements ProductService {
             log.info("删除SKU count={}", skus.size());
         }
 
-        i18nSyncService.syncGoodsDeleted(id);
         goodsMapper.deleteById(id);
         log.info("商品删除成功 id={}", id);
     }

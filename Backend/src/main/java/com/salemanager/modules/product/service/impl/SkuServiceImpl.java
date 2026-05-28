@@ -191,7 +191,10 @@ public class SkuServiceImpl implements SkuService {
 
         // 3. 为每个组合创建SKU
         List<Sku> skus = new ArrayList<>();
+        Goods goods = goodsMapper.selectById(param.getSpuId());
+        String spuAbbr = abbreviate(goods != null ? goods.getName() : "");
         String prefix = StringUtils.hasText(param.getCodePrefix()) ? param.getCodePrefix() : "SKU";
+        String spuTag = prefix + "-" + spuAbbr + "-";
         BigDecimal price = param.getDefaultPrice() != null ? param.getDefaultPrice() : BigDecimal.ZERO;
         BigDecimal costPrice = param.getDefaultCostPrice() != null ? param.getDefaultCostPrice() : BigDecimal.ZERO;
         LocalDateTime now = LocalDateTime.now();
@@ -200,7 +203,7 @@ public class SkuServiceImpl implements SkuService {
             List<SpecValue> combo = combinations.get(i);
             Sku sku = new Sku();
             sku.setSpuId(param.getSpuId());
-            sku.setSkuCode(buildSkuCode(prefix, combo, i));
+            sku.setSkuCode(spuTag + (i + 1) + "-SPU" + param.getSpuId());
             sku.setSpecJson(buildSpecJson(combo));
             sku.setPrice(price);
             sku.setCostPrice(costPrice);
@@ -244,21 +247,13 @@ public class SkuServiceImpl implements SkuService {
         return result;
     }
 
-    /** 构建SKU编码: 前缀-值缩写-序号 */
-    private String buildSkuCode(String prefix, List<SpecValue> combo, int index) {
-        StringBuilder sb = new StringBuilder(prefix);
-        for (SpecValue sv : combo) {
-            sb.append("-").append(abbreviate(sv.getValue()));
-        }
-        return sb.toString();
-    }
 
-    /** 简单缩写：取前4个字符大写 */
+    /** 简单缩写：取前4个有效字符（过滤中文） */
     private String abbreviate(String value) {
         if (value == null || value.isEmpty()) return "XX";
-        return value.replaceAll("[^a-zA-Z0-9\\u4e00-\\u9fa5]", "")
-                .substring(0, Math.min(4, value.length()))
-                .toUpperCase();
+        String cleaned = value.replaceAll("[\\u4e00-\\u9fa5]", "").replaceAll("[^A-Za-z0-9]", "");
+        if (cleaned.isEmpty()) return "V" + Math.abs(value.hashCode() % 1000);
+        return cleaned.substring(0, Math.min(4, cleaned.length())).toUpperCase();
     }
 
     /** 构建specJson */

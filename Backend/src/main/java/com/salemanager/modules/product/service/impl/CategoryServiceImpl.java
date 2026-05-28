@@ -2,7 +2,6 @@ package com.salemanager.modules.product.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.salemanager.common.exception.BusinessException;
-import com.salemanager.modules.i18n.service.I18nSyncService;
 import com.salemanager.modules.product.mapper.GoodsCategoryMapper;
 import com.salemanager.modules.product.mapper.GoodsMapper;
 import com.salemanager.modules.product.model.Goods;
@@ -31,9 +30,6 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Autowired
     private GoodsMapper goodsMapper;
-
-    @Autowired
-    private I18nSyncService i18nSyncService;
 
     @Override
     public List<GoodsCategory> getCategoryList() {
@@ -73,7 +69,6 @@ public class CategoryServiceImpl implements CategoryService {
         category.setUpdatedAt(LocalDateTime.now());
 
         categoryMapper.insert(category);
-        i18nSyncService.syncCategoryCreated(category.getId(), category.getName(), null);
         log.info("分类创建成功 id={}", category.getId());
     }
 
@@ -96,7 +91,6 @@ public class CategoryServiceImpl implements CategoryService {
         existing.setUpdatedAt(LocalDateTime.now());
 
         categoryMapper.updateById(existing);
-        i18nSyncService.syncCategoryUpdated(existing.getId(), existing.getName(), null);
         log.info("分类更新成功 id={}", id);
     }
 
@@ -123,7 +117,6 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         categoryMapper.deleteById(id);
-        i18nSyncService.syncCategoryDeleted(id);
         log.info("分类删除成功 id={}", id);
     }
 }

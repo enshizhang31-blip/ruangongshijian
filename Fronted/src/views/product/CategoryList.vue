@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { productApi } from '@/api'
-import { Table, Button, Input, Space, Card, Modal, Message, Empty, Select, Tree } from '@arco-design/web-vue'
+import { Table, Button, Input, Space, Card, Modal, Message, Empty, Select, Tag, Popconfirm } from '@arco-design/web-vue'
 import type { ProductCategory } from '@/types'
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import TranslationModal from '@/components/TranslationModal.vue'
 
 const loading = ref(false)
 const error = ref<Error | null>(null)
@@ -20,13 +21,22 @@ const form = ref<Partial<ProductCategory>>({
   status: 1,
 })
 
+const expandedKeys = ref<number[]>([])
+
 const columns = [
   { title: '分类名称', dataIndex: 'name', width: 200 },
-  { title: '图标', dataIndex: 'icon', width: 80 },
-  { title: '排序', dataIndex: 'sort', width: 80, align: 'center' as const },
-  { title: '状态', dataIndex: 'status', width: 80 },
-  { title: '操作', slotName: 'actions', align: 'right', width: 150 },
+  { title: '状态', slotName: 'status', width: 80 },
+  { title: '操作', slotName: 'actions', align: 'right', width: 200 },
 ]
+
+// 翻译弹窗
+const translateTarget = ref<{ type: string; id: number; name: string } | null>(null)
+const showTranslateModal = ref(false)
+
+function handleTranslate(type: string, id: number, name: string) {
+  translateTarget.value = { type, id, name }
+  showTranslateModal.value = true
+}
 
 onMounted(() => { load() })
 
@@ -34,12 +44,34 @@ async function load() {
   loading.value = true
   error.value = null
   try {
-    treeData.value = await productApi.categories()
+    const data = await productApi.categories()
+    const { tree, parentIds } = buildTree(data)
+    treeData.value = tree
+    expandedKeys.value = parentIds
   } catch (e) {
     error.value = e instanceof Error ? e : new Error('加载失败')
   } finally {
     loading.value = false
   }
+}
+
+function buildTree(list: ProductCategory[]) {
+  const map = new Map<number, ProductCategory>()
+  for (const item of list) {
+    map.set(item.id, { ...item, key: item.id, children: [] })
+  }
+  const tree: ProductCategory[] = []
+  const parentIds: number[] = []
+  for (const item of list) {
+    const node = map.get(item.id)!
+    if (item.parentId && map.has(item.parentId)) {
+      map.get(item.parentId)!.children!.push(node)
+      parentIds.push(item.parentId)
+    } else {
+      tree.push(node)
+    }
+  }
+  return { tree, parentIds: [...new Set(parentIds)] }
 }
 
 function handleAdd(parentId?: number) {
@@ -80,15 +112,16 @@ async function handleDelete(id: number) {
   } catch (e: any) { Message.error(e?.message || '删除失败') }
 }
 
-function flattenTree(nodes: ProductCategory[], depth = 0): ProductCategory[] {
-  const result: ProductCategory[] = []
-  for (const node of nodes) {
-    result.push({ ...node })
-    if (node.children?.length) {
-      result.push(...flattenTree(node.children, depth + 1))
-    }
+async function handleToggleStatus(record: ProductCategory) {
+  try {
+    const newStatus = record.status === 1 ? 0 : 1
+    await productApi.updateCategory(record.id, { status: newStatus })
+    Message.success('状态更新成功')
+    load()
   }
-  return result
+  catch (e: any) {
+    Message.error(e?.message || '操作失败')
+  }
 }
 </script>
 
@@ -100,7 +133,9 @@ function flattenTree(nodes: ProductCategory[], depth = 0): ProductCategory[] {
         <p class="text-sm text-gray-500 mt-1">管理商品分类（支持多级）</p>
       </div>
       <Button type="primary" @click="handleAdd()">
-        <template #icon><PlusIcon class="w-4 h-4" /></template>
+        <template #icon>
+          <PlusIcon class="w-4 h-4" />
+        </template>
         新增分类
       </Button>
     </div>
@@ -114,27 +149,26 @@ function flattenTree(nodes: ProductCategory[], depth = 0): ProductCategory[] {
         <Empty description="暂无数据" />
       </div>
 
-      <Table v-else :loading="loading" :columns="columns" :data="flattenTree(treeData)" :pagination="false" :scroll="{ x: 600 }">
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'name'">
-            <span :style="{ paddingLeft: (record as any).depth * 20 + 'px' }">{{ record.name }}</span>
-          </template>
-          <template v-else-if="column.dataIndex === 'status'">
-            <span :class="record.status === 1 ? 'text-green-600' : 'text-gray-400'">
-              {{ record.status === 1 ? '启用' : '禁用' }}
-            </span>
-          </template>
-          <template v-else-if="column.dataIndex === 'actions'">
-            <Space>
-              <Button type="text" size="small" @click="handleAdd(record.id)">添加子分类</Button>
-              <Button type="text" size="small" @click="handleEdit(record)">
-                <PencilIcon class="w-4 h-4" />
-              </Button>
-              <Popconfirm title="确定删除该分类？" @ok="handleDelete(record.id)">
-                <Button type="text" status="danger" size="small">删除</Button>
-              </Popconfirm>
-            </Space>
-          </template>
+      <Table v-else :loading="loading" :columns="columns" :data="treeData" :pagination="false" :scroll="{ x: 600 }"
+        column-resizable row-key="id" v-model:expandedKeys="expandedKeys" show-empty-tree>
+        <template #name="{ record }">
+          <span>{{ record.name }}</span>
+        </template>
+        <template #status="{ record }">
+          <Tag :color="record.status === 1 ? 'green' : 'gray'">{{ record.status === 1 ? '启用' : '未启用' }}</Tag>
+        </template>
+        <template #actions="{ record }">
+          <Space>
+            <Button type="text" size="small" @click="handleAdd(record.id)">添加子分类</Button>
+            <Button type="text" size="small" @click="handleEdit(record)">编辑</Button>
+            <Button type="text" size="small" @click="handleTranslate('category', record.id, record.name)">翻译</Button>
+            <Popconfirm :content="`确定将状态改为${record.status === 1 ? '未启用' : '启用'}吗？`" @ok="handleToggleStatus(record)">
+              <Button type="text" size="small">{{ record.status === 1 ? '禁用' : '启用' }}</Button>
+            </Popconfirm>
+            <Popconfirm content="确定删除该分类？" @ok="handleDelete(record.id)">
+              <Button type="text" status="danger" size="small">删除</Button>
+            </Popconfirm>
+          </Space>
         </template>
       </Table>
     </Card>
@@ -153,20 +187,15 @@ function flattenTree(nodes: ProductCategory[], depth = 0): ProductCategory[] {
         </Select>
       </div>
       <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">图标</div>
-        <Input v-model="form.icon" placeholder="图标URL或emoji" class="flex-1" />
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="w-20 text-sm text-gray-500">排序</div>
-        <Input v-model="form.sort" type="number" placeholder="0" class="w-24!" />
-      </div>
-      <div class="flex items-center gap-4">
         <div class="w-20 text-sm text-gray-500">状态</div>
         <Select v-model="form.status" class="w-32!">
           <Select.Option :value="1">启用</Select.Option>
-          <Select.Option :value="0">禁用</Select.Option>
+          <Select.Option :value="0">未启用</Select.Option>
         </Select>
       </div>
     </div>
   </Modal>
+
+  <TranslationModal v-model:visible="showTranslateModal" :entity-type="translateTarget?.type || ''"
+    :entity-id="translateTarget?.id || 0" :entity-name="translateTarget?.name" />
 </template>
