@@ -19,10 +19,10 @@ export function usePageQuery<T>(
   const total = ref(0)
   const query = ref<PageQuery>({
     page: 1,
-    pageSize: 20,
+    pageSize: 10,
   })
 
-  const totalPages = computed(() => Math.ceil(total.value / (query.value.pageSize || 20)))
+  const totalPages = computed(() => Math.ceil(total.value / (query.value.pageSize || 10)))
 
   async function load() {
     loading.value = true

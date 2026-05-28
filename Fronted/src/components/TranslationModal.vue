@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { i18nApi } from '@/api'
-import { Modal, Input, Button, Message, Tag, Table } from '@arco-design/web-vue'
+import { Modal, Input, Button, Message, Tag, Table, Select } from '@arco-design/web-vue'
 import type { EntityField, EntityFieldResponse } from '@/types/i18n'
 
 const props = defineProps<{
@@ -19,13 +19,19 @@ const emit = defineEmits<{
 const loading = ref(false)
 const data = ref<EntityFieldResponse | null>(null)
 const supportedLocales = ref<string[]>([])
-const editValues = ref<Record<string, Record<string, string>>>({}) // unitKey -> locale -> value
+const editValues = ref<Record<string, Record<string, string>>>({})
 const addingLocale = ref('')
 
-const columns = [
-    { title: '字段', dataIndex: 'name', width: 120 },
-    { title: '字段说明', dataIndex: 'description', width: 150 },
-]
+const localeColumns = ref<any[]>([])
+
+// 响应式弹窗宽度
+const modalWidth = computed(() => {
+    if (typeof window !== 'undefined') {
+        const w = window.innerWidth * 0.95
+        return w > 1200 ? 1200 : w
+    }
+    return 1200
+})
 
 watch(() => props.visible, async (v) => {
     if (v) await loadData()
@@ -36,22 +42,25 @@ function addLocale() {
     if (!code) { Message.warning('请输入语言代码'); return }
     if (supportedLocales.value.includes(code)) { Message.warning('该语言已存在'); return }
     supportedLocales.value.push(code)
-    // 为新语言在所有字段中初始化空值
     for (const unitKey of Object.keys(editValues.value)) {
-        editValues.value[unitKey][code] = ''
+        editValues.value[unitKey]![code] = ''
     }
-    // 重建列
+    rebuildColumns()
+    addingLocale.value = ''
+    Message.success(`已添加语言: ${code}`)
+}
+
+function rebuildColumns() {
     localeColumns.value = [
         { title: '字段', dataIndex: 'name', width: 120, fixed: 'left' as const },
+        { title: '键(unitKey)', dataIndex: 'unitKey', width: 200 },
         { title: '说明', dataIndex: 'description', width: 140 },
         ...supportedLocales.value.map(loc => ({
             title: loc,
             slotName: loc,
-            width: 200,
+            width: 220,
         })),
     ]
-    addingLocale.value = ''
-    Message.success(`已添加语言: ${code}`)
 }
 
 async function loadData() {
@@ -68,29 +77,18 @@ async function loadData() {
         for (const f of res.fields) {
             vals[f.unitKey] = {}
             for (const loc of locs) {
-                vals[f.unitKey][loc] = String(f.locales[loc]?.value ?? '')
+                const raw = f.locales[loc]?.value
+                vals[f.unitKey]![loc] = raw !== null && raw !== undefined ? String(raw) : ''
             }
         }
         editValues.value = vals
-
-        // 动态构建列（字段+每种语言一列）
-        localeColumns.value = [
-            { title: '字段', dataIndex: 'name', width: 120, fixed: 'left' as const },
-            { title: '说明', dataIndex: 'description', width: 140 },
-            ...locs.map(loc => ({
-                title: loc,
-                slotName: loc,
-                width: 200,
-            })),
-        ]
+        rebuildColumns()
     } catch (e: any) {
         Message.error('加载翻译数据失败: ' + (e?.message || '未知错误'))
     } finally {
         loading.value = false
     }
 }
-
-const localeColumns = ref<any[]>([])
 
 // 扁平化字段列表供表格使用
 const flatFields = ref<any[]>([])
@@ -101,6 +99,17 @@ watch(data, (d) => {
         unitKey: f.unitKey,
     }))
 }, { immediate: true })
+
+// 安全获取编辑值（避免 TS 对象可能未定义警告）
+function getEditVal(unitKey: string, locale: string): string {
+    return editValues.value[unitKey]?.[locale] ?? ''
+}
+
+function setEditVal(unitKey: string, locale: string, val: string) {
+    if (!editValues.value[unitKey]) editValues.value[unitKey] = {}
+    editValues.value[unitKey][locale] = val
+}
+
 
 async function handleSave() {
     if (!data.value) return false
@@ -139,7 +148,7 @@ async function handleSave() {
 
 <template>
     <Modal :visible="visible" :title="`翻译管理 - ${entityName || entityType}:${entityId}`" :on-before-ok="handleSave"
-        @update:visible="$emit('update:visible', $event)" :width="800" :loading="loading">
+        @update:visible="$emit('update:visible', $event)" :width="modalWidth" :loading="loading">
         <div v-if="loading" class="text-center py-8 text-gray-400">加载中...</div>
         <template v-else-if="data">
             <div class="flex items-center gap-2 mb-3">
@@ -150,7 +159,8 @@ async function handleSave() {
                     @keydown.enter.prevent="addLocale" />
                 <Button type="text" size="small" @click="addLocale">+ 添加语言</Button>
             </div>
-            <Table :data="flatFields" :columns="localeColumns" :pagination="false" :scroll="{ x: 800 }" bordered>
+            <Table :data="flatFields" :columns="localeColumns" :pagination="false" :scroll="{ x: 1200 }" bordered
+                row-key="unitKey">
                 <template #name="{ record }">
                     <span class="font-medium">{{ record.name }}</span>
                 </template>
@@ -158,8 +168,22 @@ async function handleSave() {
                     <span class="text-gray-500 text-sm">{{ record.description }}</span>
                 </template>
                 <template v-for="loc in supportedLocales" :key="loc" #[loc]="{ record }">
-                    <Input v-model="editValues[record.unitKey][loc]" placeholder="输入翻译..." :max-length="500"
-                        allow-clear />
+                    <template v-if="record.fieldType === 'boolean'">
+                        <Select :model-value="getEditVal(record.unitKey, loc)"
+                            @update:model-value="(v: any) => setEditVal(record.unitKey, loc, v)" placeholder="选择..."
+                            size="small" style="width:100%">
+                            <Select.Option value="true">true</Select.Option>
+                            <Select.Option value="false">false</Select.Option>
+                        </Select>
+                    </template>
+                    <Input v-else-if="record.fieldType === 'number'" :model-value="getEditVal(record.unitKey, loc)"
+                        @update:model-value="(v: any) => setEditVal(record.unitKey, loc, v)" type="number"
+                        placeholder="输入数字..." size="small" style="width:100%" />
+                    <Input v-else :model-value="getEditVal(record.unitKey, loc)"
+                        @update:model-value="(v: any) => setEditVal(record.unitKey, loc, v)"
+                        :placeholder="record.fieldType === 'array' ? '逗号分隔多个值' : record.fieldType === 'object' ? 'JSON 格式' : '输入翻译...'"
+                        :max-length="record.fieldType === 'text' || record.fieldType === 'rich_text' ? 500 : undefined"
+                        size="small" style="width:100%" allow-clear />
                 </template>
             </Table>
         </template>
