@@ -11,6 +11,7 @@ import com.salemanager.modules.ums.mapper.RoleMapper;
 import com.salemanager.modules.ums.model.AdminUser;
 import com.salemanager.modules.ums.model.Role;
 import com.salemanager.modules.ums.param.AdminUserParam;
+import com.salemanager.modules.ums.param.AdminUserUpdateParam;
 import com.salemanager.modules.ums.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,7 +153,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void updateUser(Long id, AdminUserParam param) {
+    public void updateUser(Long id, AdminUserUpdateParam param) {
         log.info("updateUser id={}", id);
 
         AdminUser user = adminUserMapper.selectById(id);

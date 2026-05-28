@@ -2,6 +2,7 @@ package com.salemanager.modules.ums.service;
 
 import com.salemanager.modules.ums.model.AdminUser;
 import com.salemanager.modules.ums.param.AdminUserParam;
+import com.salemanager.modules.ums.param.AdminUserUpdateParam;
 
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,7 @@ public interface UserService {
     /**
      * 更新员工
      */
-    void updateUser(Long id, AdminUserParam param);
+    void updateUser(Long id, AdminUserUpdateParam param);
 
     /**
      * 删除员工

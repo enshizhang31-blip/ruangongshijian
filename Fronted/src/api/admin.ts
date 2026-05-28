@@ -11,8 +11,8 @@ export const adminApi = {
     create(data: Partial<AdminUser>) {
         return api.post<AdminUser>('/admin/user', data)
     },
-    update(data: Partial<AdminUser>) {
-        return api.put<AdminUser>('/admin/user', data)
+    update(id: number, data: Partial<AdminUser>) {
+        return api.put<AdminUser>(`/admin/user/${id}`, data)
     },
     delete(id: number) {
         return api.delete<void>(`/admin/user/${id}`)

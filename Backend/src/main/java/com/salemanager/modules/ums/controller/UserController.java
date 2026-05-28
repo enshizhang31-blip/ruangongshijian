@@ -3,6 +3,7 @@ package com.salemanager.modules.ums.controller;
 import com.salemanager.common.result.Result;
 import com.salemanager.modules.ums.model.AdminUser;
 import com.salemanager.modules.ums.param.AdminUserParam;
+import com.salemanager.modules.ums.param.AdminUserUpdateParam;
 import com.salemanager.modules.ums.service.UserService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -36,7 +37,7 @@ public class UserController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer status,
             @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "20") Integer pageSize) {
+            @RequestParam(defaultValue = "10") Integer pageSize) {
 
         log.info("getUserList keyword={}, status={}, page={}, pageSize={}", keyword, status, page, pageSize);
 
@@ -81,7 +82,7 @@ public class UserController {
      * 更新员工
      */
     @PutMapping("/{id}")
-    public Result<Void> updateUser(@PathVariable Long id, @Valid @RequestBody AdminUserParam param) {
+    public Result<Void> updateUser(@PathVariable Long id, @Valid @RequestBody AdminUserUpdateParam param) {
         log.info("updateUser id={}", id);
         userService.updateUser(id, param);
         return Result.success();

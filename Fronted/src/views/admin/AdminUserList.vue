@@ -5,7 +5,7 @@ import { usePageQuery } from '@/composables'
 import { formatDate } from '@/utils/format'
 import { Table, Button, Input, Space, Tag, Card, Modal, Form, FormItem, Select, Popconfirm, Message, Spin, Empty } from '@arco-design/web-vue'
 import type { AdminUser, Department, Role } from '@/types'
-import { PlusIcon, PencilIcon, KeyIcon, ShieldCheckIcon, ChevronRightIcon, ChevronLeftIcon, ArrowsRightLeftIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, ShieldCheckIcon, ChevronRightIcon, ChevronLeftIcon, ArrowsRightLeftIcon } from '@heroicons/vue/24/outline'
 import draggable from 'vuedraggable'
 
 const { loading, error, list, total, query, load, setPage, setKeyword } = usePageQuery(adminApi.list)
@@ -80,7 +80,7 @@ const columns = [
     },
     { title: '最后登录', dataIndex: 'lastLoginAt', render: (t: string) => t ? formatDate(t) : '-' },
     { title: '创建时间', dataIndex: 'createdAt', render: (t: string) => t ? formatDate(t) : '-' },
-    { title: '操作', slotName: 'actions', width: 250 },
+    { title: '操作', slotName: 'actions', width: 300, fixed: 'right' },
 ]
 
 onMounted(async () => {
@@ -169,7 +169,7 @@ async function handleSubmit() {
                 departmentId: form.departmentId,
                 status: form.status,
             }
-            await adminApi.update(updateData as any)
+            await adminApi.update(editingId.value, updateData as any)
             Message.success('更新成功')
         } else {
             // 新增时提交完整数据
@@ -355,16 +355,10 @@ function toggleRoute(r: string) {
             <Table v-else :loading="loading" :columns="columns" :data="list" :pagination="false" :scroll="{ x: 1000 }">
                 <template #actions="{ record }">
                     <Space>
-                        <Button type="text" size="small" @click="handleEdit(record)">
-                            <PencilIcon class="w-4 h-4" />
-                        </Button>
-                        <Button type="text" size="small" @click="handleOpenPermModal(record)">
-                            <ShieldCheckIcon class="w-4 h-4" />
-                        </Button>
+                        <Button type="text" size="small" @click="handleEdit(record)">编辑</Button>
+                        <Button type="text" size="small" @click="handleOpenPermModal(record)">权限</Button>
                         <Popconfirm title="确定重置该员工密码？" @ok="handleResetPassword(record.id)">
-                            <Button type="text" size="small">
-                                <KeyIcon class="w-4 h-4" />
-                            </Button>
+                            <Button type="text" size="small">重置密码</Button>
                         </Popconfirm>
                         <Popconfirm title="确定删除该员工？" @ok="handleDelete(record.id)">
                             <Button type="text" status="danger" size="small">删除</Button>
@@ -377,10 +371,10 @@ function toggleRoute(r: string) {
                 <Space direction="horizontal">
                     <span class="text-sm text-gray-500">共 {{ total }} 条</span>
                     <Button :disabled="(query.page || 1) <= 1" @click="setPage((query.page || 1) - 1)">上一页</Button>
-                    <span class="text-sm py-2">第 {{ query.page || 1 }} / {{ Math.ceil(total / (query.pageSize || 20)) ||
+                    <span class="text-sm py-2">第 {{ query.page || 1 }} / {{ Math.ceil(total / (query.pageSize || 10)) ||
                         1 }}
                         页</span>
-                    <Button :disabled="(query.page || 1) >= Math.ceil(total / (query.pageSize || 20))"
+                    <Button :disabled="(query.page || 1) >= Math.ceil(total / (query.pageSize || 10))"
                         @click="setPage((query.page || 1) + 1)">下一页</Button>
                 </Space>
             </div>
