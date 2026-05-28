@@ -49,4 +49,12 @@ export const snApi = {
     completeReturn(id: number, remark?: string) {
         return api.post<void>(`/admin/sn/code/${id}/return-complete`, { remark })
     },
+    // 自动生成SN码（基于SKU编码+序号后缀）
+    generate(skuId: number, count: number = 1) {
+        return api.post<SnCode[]>('/admin/sn/code/generate', { skuId, count })
+    },
+    // 更新SN码状态
+    updateStatus(id: number, status: number) {
+        return api.put<void>(`/admin/sn/code/${id}/status`, { status })
+    },
 }

@@ -160,7 +160,7 @@ const columns = [
   { title: '来源', dataIndex: 'source', width: 80 },
   { title: '价格', dataIndex: 'price', width: 100 },
   { title: '录入时间', dataIndex: 'createdAt', width: 160 },
-  { title: '操作', slotName: 'actions', align: 'right', width: 200 },
+  { title: '操作', slotName: 'actions', align: 'right', width: 200, fixed: 'right' },
 ]
 </script>
 
@@ -182,85 +182,87 @@ const columns = [
     </Card>
 
     <template v-else>
-    <!-- 头部 -->
-    <div class="flex items-center gap-4 mb-6">
-      <Button type="text" @click="goBack">
-        <ArrowLeftIcon class="w-5 h-5" />
-      </Button>
-      <div>
-        <h1 class="text-xl lg:text-2xl font-bold text-gray-800">SN码管理</h1>
-        <p v-if="sku" class="text-sm text-gray-500 mt-1">
-          SKU: {{ sku.skuCode }} | 
-          <span v-if="sku.specJson">
-            <Tag v-for="(v, k) in JSON.parse(sku.specJson || '{}')" :key="k" size="small">{{ k }}: {{ v }}</Tag>
-          </span>
-        </p>
-      </div>
-    </div>
-
-    <!-- 库存统计卡片 -->
-    <div class="grid grid-cols-3 sm:grid-cols-5 gap-4 mb-4">
-      <Card v-for="item in [
-        { key: 'total', label: '总数', color: 'text-gray-700' },
-        { key: 'inStock', label: '在库', color: 'text-green-600' },
-        { key: 'sold', label: '已售', color: 'text-blue-600' },
-        { key: 'voided', label: '作废', color: 'text-gray-400' },
-        { key: 'returning', label: '退货中', color: 'text-orange-500' },
-      ]" :key="item.key" class="text-center">
-        <div class="text-2xl font-bold" :class="item.color">{{ stats[item.key] || 0 }}</div>
-        <div class="text-xs text-gray-500 mt-1">{{ item.label }}</div>
-      </Card>
-    </div>
-
-    <!-- 操作栏 -->
-    <Card class="mb-4">
-      <Space direction="horizontal" :size="12">
-        <Button type="primary" @click="showFormModal = true">
-          <template #icon><PlusIcon class="w-4 h-4" /></template>
-          录入SN
+      <!-- 头部 -->
+      <div class="flex items-center gap-4 mb-6">
+        <Button type="text" @click="goBack">
+          <ArrowLeftIcon class="w-5 h-5" />
         </Button>
-        <Button @click="showBatchModal = true">批量录入</Button>
-      </Space>
-    </Card>
-
-    <!-- SN码列表 -->
-    <Card>
-      <div v-if="loading" class="text-center py-8 text-gray-400">加载中...</div>
-      <div v-else-if="list.length === 0" class="text-center py-8">
-        <Empty description="暂无SN码" />
+        <div>
+          <h1 class="text-xl lg:text-2xl font-bold text-gray-800">SN码管理</h1>
+          <p v-if="sku" class="text-sm text-gray-500 mt-1">
+            SKU: {{ sku.skuCode }} |
+            <span v-if="sku.specJson">
+              <Tag v-for="(v, k) in JSON.parse(sku.specJson || '{}')" :key="k" size="small">{{ k }}: {{ v }}</Tag>
+            </span>
+          </p>
+        </div>
       </div>
-      <Table v-else :columns="columns" :data="list" :pagination="false" :scroll="{ x: 900 }">
-        <template #status="{ record }">
-          <Tag :color="getStatusInfo(record.status).color">{{ getStatusInfo(record.status).label }}</Tag>
-        </template>
-        <template #source="{ record }">
-          {{ record.source === 1 ? '手动' : record.source === 2 ? 'CSV' : record.source === 3 ? '自动' : '-' }}
-        </template>
-        <template #price="{ record }">{{ record.price ? formatMoney(record.price) : '-' }}</template>
-        <template #createdAt="{ record }">{{ record.createdAt ? formatDate(record.createdAt) : '-' }}</template>
-        <template #actions="{ record }">
-          <Space>
-            <Popconfirm v-if="record.status === 0" title="确定作废该SN码？" @ok="handleVoid(record)">
-              <Button type="text" status="warning" size="small">作废</Button>
-            </Popconfirm>
-            <Popconfirm v-if="record.status === 1" title="确定发起退货？" @ok="handleReturn(record)">
-              <Button type="text" status="warning" size="small">退货</Button>
-            </Popconfirm>
-            <span v-if="record.status === 2" class="text-xs text-gray-400">已作废</span>
-            <span v-if="record.status === 3 || record.status === 4" class="text-xs text-gray-400">--</span>
-          </Space>
-        </template>
-      </Table>
 
-      <div class="flex justify-end mt-4" v-if="total > 0">
-        <Space direction="horizontal">
-          <span class="text-sm text-gray-500">共 {{ total }} 条</span>
-          <Button :disabled="page <= 1" @click="handlePageChange(page - 1)">上一页</Button>
-          <span class="text-sm py-2">{{ page }} / {{ Math.ceil(total / pageSize) || 1 }}</span>
-          <Button :disabled="page >= Math.ceil(total / pageSize)" @click="handlePageChange(page + 1)">下一页</Button>
+      <!-- 库存统计卡片 -->
+      <div class="grid grid-cols-3 sm:grid-cols-5 gap-4 mb-4">
+        <Card v-for="item in [
+          { key: 'total', label: '总数', color: 'text-gray-700' },
+          { key: 'inStock', label: '在库', color: 'text-green-600' },
+          { key: 'sold', label: '已售', color: 'text-blue-600' },
+          { key: 'voided', label: '作废', color: 'text-gray-400' },
+          { key: 'returning', label: '退货中', color: 'text-orange-500' },
+        ]" :key="item.key" class="text-center">
+          <div class="text-2xl font-bold" :class="item.color">{{ stats[item.key] || 0 }}</div>
+          <div class="text-xs text-gray-500 mt-1">{{ item.label }}</div>
+        </Card>
+      </div>
+
+      <!-- 操作栏 -->
+      <Card class="mb-4">
+        <Space direction="horizontal" :size="12">
+          <Button type="primary" @click="showFormModal = true">
+            <template #icon>
+              <PlusIcon class="w-4 h-4" />
+            </template>
+            录入SN
+          </Button>
+          <Button @click="showBatchModal = true">批量录入</Button>
         </Space>
-      </div>
-    </Card>
+      </Card>
+
+      <!-- SN码列表 -->
+      <Card>
+        <div v-if="loading" class="text-center py-8 text-gray-400">加载中...</div>
+        <div v-else-if="list.length === 0" class="text-center py-8">
+          <Empty description="暂无SN码" />
+        </div>
+        <Table v-else :columns="columns" :data="list" :pagination="false" :scroll="{ x: 900 }">
+          <template #status="{ record }">
+            <Tag :color="getStatusInfo(record.status).color">{{ getStatusInfo(record.status).label }}</Tag>
+          </template>
+          <template #source="{ record }">
+            {{ record.source === 1 ? '手动' : record.source === 2 ? 'CSV' : record.source === 3 ? '自动' : '-' }}
+          </template>
+          <template #price="{ record }">{{ record.price ? formatMoney(record.price) : '-' }}</template>
+          <template #createdAt="{ record }">{{ record.createdAt ? formatDate(record.createdAt) : '-' }}</template>
+          <template #actions="{ record }">
+            <Space>
+              <Popconfirm v-if="record.status === 0" title="确定作废该SN码？" @ok="handleVoid(record)">
+                <Button type="text" status="warning" size="small">作废</Button>
+              </Popconfirm>
+              <Popconfirm v-if="record.status === 1" title="确定发起退货？" @ok="handleReturn(record)">
+                <Button type="text" status="warning" size="small">退货</Button>
+              </Popconfirm>
+              <span v-if="record.status === 2" class="text-xs text-gray-400">已作废</span>
+              <span v-if="record.status === 3 || record.status === 4" class="text-xs text-gray-400">--</span>
+            </Space>
+          </template>
+        </Table>
+
+        <div class="flex justify-end mt-4" v-if="total > 0">
+          <Space direction="horizontal">
+            <span class="text-sm text-gray-500">共 {{ total }} 条</span>
+            <Button :disabled="page <= 1" @click="handlePageChange(page - 1)">上一页</Button>
+            <span class="text-sm py-2">{{ page }} / {{ Math.ceil(total / pageSize) || 1 }}</span>
+            <Button :disabled="page >= Math.ceil(total / pageSize)" @click="handlePageChange(page + 1)">下一页</Button>
+          </Space>
+        </div>
+      </Card>
     </template>
   </div>
 
@@ -276,7 +278,8 @@ const columns = [
   <Modal v-model:visible="showBatchModal" title="批量录入SN码" @ok="handleBatchCreate" :width="500">
     <div class="flex flex-col gap-4">
       <p class="text-sm text-gray-500">每行一个SN码</p>
-      <textarea v-model="batchSnText" rows="8" class="w-full border rounded-lg p-3 text-sm font-mono" placeholder="SN202501010001&#10;SN202501010002&#10;SN202501010003"></textarea>
+      <textarea v-model="batchSnText" rows="8" class="w-full border rounded-lg p-3 text-sm font-mono"
+        placeholder="SN202501010001&#10;SN202501010002&#10;SN202501010003"></textarea>
       <Input v-model="remark" placeholder="备注（可选）" />
     </div>
   </Modal>

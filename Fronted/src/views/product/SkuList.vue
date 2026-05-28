@@ -71,7 +71,7 @@ const columns = [
   { title: '库存', dataIndex: 'stock', width: 80, align: 'center' as const },
   { title: '状态', dataIndex: 'status', width: 80 },
   { title: '创建时间', dataIndex: 'createdAt', width: 160 },
-  { title: '操作', slotName: 'actions', align: 'right', width: 150 },
+  { title: '操作', slotName: 'actions', align: 'right', width: 150, fixed: 'right' },
 ]
 
 // 弹窗（动态规格表单）
@@ -123,10 +123,10 @@ function autoGenerateSkuCode(_specIdObj: Record<string, string>): string {
   return `SKU-${abbr}-${id}-SPU${formModel.spuId || ''}`
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (spuId.value) formModel.spuId = spuId.value
+  await fetchSpuList()
   load()
-  fetchSpuList()
   productApi.getSpecs().then(specs => { allSpecs.value = specs; buildSpecMaps(specs) }).catch(() => { })
 })
 
@@ -323,7 +323,7 @@ async function handleDelete(id: number) {
         </Select>
       </a-form-item>
       <a-form-item field="skuCode" label="SKU编码">
-        <a-input v-model="formModel.skuCode" placeholder="选择规格后自动生成" />
+        <a-input :model-value="formModel.skuCode" placeholder="自动生成" disabled />
       </a-form-item>
 
       <a-form-item label="规格组合" :content-flex="false" :merge-props="false">

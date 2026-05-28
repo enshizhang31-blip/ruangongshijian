@@ -58,7 +58,9 @@ public class SnCodeServiceImpl implements SnCodeService {
             wrapper.and(w -> w
                     .like(SnCode::getSnCode, keyword)
                     .or()
-                    .like(SnCode::getSpuName, keyword));
+                    .like(SnCode::getSpuName, keyword)
+                    .or()
+                    .like(SnCode::getSkuCode, keyword));
         }
 
         if (status != null) {
@@ -81,7 +83,9 @@ public class SnCodeServiceImpl implements SnCodeService {
             wrapper.and(w -> w
                     .like(SnCode::getSnCode, keyword)
                     .or()
-                    .like(SnCode::getSpuName, keyword));
+                    .like(SnCode::getSpuName, keyword)
+                    .or()
+                    .like(SnCode::getSkuCode, keyword));
         }
 
         if (status != null) {
@@ -323,6 +327,62 @@ public class SnCodeServiceImpl implements SnCodeService {
 
     @Override
     @Transactional
+    public List<SnCode> generateSnCodes(Long skuId, int count) {
+        log.info("generateSnCodes skuId={}, count={}", skuId, count);
+        if (skuId == null || skuId <= 0) {
+            throw new BusinessException(400, "SKU ID无效");
+        }
+        if (count <= 0 || count > 100) {
+            throw new BusinessException(400, "生成数量必须在1-100之间");
+        }
+
+        Sku sku = skuMapper.selectById(skuId);
+        if (sku == null) {
+            throw new BusinessException("SKU不存在");
+        }
+
+        // 获取该SKU已有SN码数量，作为序号起始值
+        Long existingCount = snCodeMapper.selectCount(
+                new LambdaQueryWrapper<SnCode>().eq(SnCode::getSkuId, skuId));
+
+        String prefix = sku.getSkuCode() != null ? sku.getSkuCode() : "SN";
+        List<SnCode> result = new ArrayList<>();
+
+        for (int i = 1; i <= count; i++) {
+            int seq = (int) (existingCount + i);
+            String snCode = prefix + "-" + String.format("%04d", seq);
+
+            SnCode sn = new SnCode();
+            sn.setSnCode(snCode);
+            sn.setSkuId(skuId);
+            sn.setSpuId(sku.getSpuId());
+            sn.setSkuCode(sku.getSkuCode());
+            sn.setSpecJson(sku.getSpecJson());
+            sn.setPrice(sku.getPrice());
+            sn.setStatus(0);
+            sn.setSource(3); // 自动生成
+            sn.setCreatedAt(LocalDateTime.now());
+            sn.setUpdatedAt(LocalDateTime.now());
+
+            // 填充SPU名称
+            if (sku.getSpuId() != null) {
+                Goods goods = goodsMapper.selectById(sku.getSpuId());
+                if (goods != null) {
+                    sn.setSpuName(goods.getName());
+                }
+            }
+
+            snCodeMapper.insert(sn);
+            logOperation(sn.getId(), sn.getSnCode(), skuId, "自动生成", null, 0, null, "自动生成");
+            result.add(sn);
+        }
+
+        log.info("generateSnCodes 完成 skuId={}, 生成了{}个", skuId, result.size());
+        return result;
+    }
+
+    @Override
+    @Transactional
     public void voidSnCode(Long id, String remark) {
         log.info("voidSnCode id={}", id);
         SnCode snCode = getSnCodeById(id);
@@ -332,7 +392,7 @@ public class SnCodeServiceImpl implements SnCodeService {
             throw new BusinessException("只能作废在库状态的SN码");
         }
 
-        updateSnCodeStatus(id, 2);
+        updateSnCodeStatusDirect(id, 2);
         logOperation(snCode.getId(), snCode.getSnCode(), snCode.getSkuId(),
                 "作废", oldStatus, 2, null, remark);
         log.info("SN码作废成功 id={}", id);
@@ -372,7 +432,19 @@ public class SnCodeServiceImpl implements SnCodeService {
         log.info("SN码退货完成，重新入库 id={}", id);
     }
 
-    private void updateSnCodeStatus(Long id, Integer status) {
+    @Override
+    @Transactional
+    public void updateSnCodeStatus(Long id, Integer status) {
+        log.info("updateSnCodeStatus id={}, status={}", id, status);
+        SnCode snCode = getSnCodeById(id);
+        Integer oldStatus = snCode.getStatus();
+        updateSnCodeStatusDirect(id, status);
+        logOperation(snCode.getId(), snCode.getSnCode(), snCode.getSkuId(),
+                "状态变更", oldStatus, status, null, "变更为:" + status);
+        log.info("SN码状态变更成功 id={}", id);
+    }
+
+    private void updateSnCodeStatusDirect(Long id, Integer status) {
         LambdaUpdateWrapper<SnCode> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(SnCode::getId, id)
                 .set(SnCode::getStatus, status)

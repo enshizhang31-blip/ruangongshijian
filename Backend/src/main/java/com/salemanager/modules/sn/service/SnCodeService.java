@@ -105,4 +105,18 @@ public interface SnCodeService {
      * 退货完成（状态 3→4，退回在库）
      */
     void completeReturnSnCode(Long id, String remark);
+
+    /**
+     * 为指定SKU自动生成SN码
+     *
+     * @param skuId SKU ID
+     * @param count 生成数量
+     * @return 生成的SN码列表
+     */
+    List<SnCode> generateSnCodes(Long skuId, int count);
+
+    /**
+     * 更新SN码状态
+     */
+    void updateSnCodeStatus(Long id, Integer status);
 }

@@ -1,36 +1,26 @@
 <script setup lang="ts">
-import { onMounted, ref, reactive, h } from 'vue'
+import { onMounted, ref, reactive } from 'vue'
 import { snApi, productApi } from '@/api'
 import { usePageQuery } from '@/composables'
-import { formatDate } from '@/utils/format'
-import { Table, Button, Input, Space, Tag, Card, Modal, Select, DatePicker, Message, Empty, Pagination } from '@arco-design/web-vue'
-import type { SnCode, Product } from '@/types'
-import { PlusIcon, MagnifyingGlassIcon, ArrowPathIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline'
+import { Table, Button, Space, Tag, Card, Select, Message, Pagination } from '@arco-design/web-vue'
+import { PlusIcon } from '@heroicons/vue/24/outline'
+import SnAddModal from '@/components/SnAddModal.vue'
+import SnEditModal from '@/components/SnEditModal.vue'
+import type { Sku } from '@/types'
 
 const { loading, list, total, query, load, setPage, setKeyword, setPageSize } = usePageQuery(snApi.list)
-const keyword = ref('')
 const showAddModal = ref(false)
-const showBatchModal = ref(false)
-const showQueryModal = ref(false)
-const querySn = ref('')
-const queryResult = ref<SnCode | null>(null)
+const showEditModal = ref(false)
+const editTarget = ref<{ id: number; status: number }>({ id: 0, status: 0 })
 
-// 商品列表
-const goodsList = ref<Product[]>([])
-const loadingGoods = ref(false)
-
-// 批量导入
-const batchSns = ref('')
+const skuList = ref<Sku[]>([])
+const loadingSkus = ref(false)
+const selectedSkuCode = ref<string>('')
 
 const searchForm = reactive({
-    goodsId: undefined as number | undefined,
     status: undefined as number | undefined,
-    startDate: '',
-    endDate: '',
 })
 
-// SN码状态 - 与数据库 sn_code.status 一致
-// 0:在库 1:已售 2:已作废 3:退货中 4:已退货
 const statusMap: Record<number, { label: string; color: string }> = {
     0: { label: '在库', color: 'orange' },
     1: { label: '已售', color: 'arcoblue' },
@@ -48,145 +38,43 @@ const statusOptions = [
     { label: '已退货', value: 4 },
 ]
 
-const newSn = reactive({
-    sn: '',
-    goodsId: undefined as number | undefined,
-    remark: '',
-})
+onMounted(() => { load(); loadSkus() })
 
-const batchGoodsId = ref<number>()
-const batchRemark = ref('')
-
-onMounted(() => {
-    load()
-    fetchGoods()
-})
-
-async function fetchGoods() {
-    loadingGoods.value = true
+async function loadSkus() {
+    loadingSkus.value = true
     try {
-        const res = await productApi.list({ pageSize: 100 })
-        goodsList.value = res.list
-    } catch {
-        Message.error('获取商品列表失败')
-    } finally {
-        loadingGoods.value = false
-    }
+        const goodsRes: any = await productApi.list({ pageSize: 100 })
+        const all: Sku[] = []
+        for (const g of goodsRes.list || []) {
+            try { all.push(...await productApi.getSkus(g.id)) } catch { /* ignore */ }
+        }
+        skuList.value = all
+    } catch { /* silent */ }
+    finally { loadingSkus.value = false }
 }
 
-function getGoodsName(goodsId?: number): string {
-    if (!goodsId) return '-'
-    const goods = goodsList.value.find(g => g.id === goodsId)
-    return goods?.name || '-'
-}
-
-function handleSearch() {
-    setKeyword(keyword.value)
-}
-
+function handleSearch() { setKeyword(selectedSkuCode.value || undefined) }
 function handleAdvancedSearch() {
-    query.value = {
-        page: 1,
-        pageSize: query.value.pageSize || 20,
-        keyword: keyword.value || undefined,
-        status: searchForm.status,
-    }
+    query.value = { page: 1, pageSize: query.value.pageSize || 20, keyword: selectedSkuCode.value || undefined, status: searchForm.status }
     load()
 }
+function handleReset() { selectedSkuCode.value = ''; searchForm.status = undefined; query.value = { page: 1, pageSize: 20 }; load() }
+function handlePageChange(p: number) { setPage(p) }
+function handlePageSizeChange(size: number) { setPageSize(size) }
 
-function handleReset() {
-    keyword.value = ''
-    searchForm.goodsId = undefined
-    searchForm.status = undefined
-    query.value = { page: 1, pageSize: 20 }
-    load()
-}
-
-function handlePageChange(p: number) {
-    setPage(p)
-}
-
-function handlePageSizeChange(size: number) {
-    setPageSize(size)
-}
-
-async function handleAddSn() {
-    if (!newSn.sn || newSn.goodsId === undefined) {
-        Message.warning('请填写完整信息')
-        return false
-    }
-    try {
-        await snApi.create({ sn: newSn.sn, goodsId: newSn.goodsId, remark: newSn.remark })
-        Message.success('录入成功')
-        showAddModal.value = false
-        Object.assign(newSn, { sn: '', goodsId: undefined, remark: '' })
-        load()
-    } catch (e: any) {
-        Message.error('录入失败')
-        return false
-    }
-}
-
-async function handleBatchImport() {
-    if (!batchGoodsId.value) {
-        Message.warning('请选择商品')
-        return false
-    }
-    if (!batchSns.value || batchSns.value.trim() === '') {
-        Message.warning('请输入SN码')
-        return false
-    }
-    const sns = batchSns.value.split('\n').map(s => s.trim()).filter(s => s.length > 0)
-    if (sns.length === 0) {
-        Message.warning('请输入有效的SN码')
-        return false
-    }
-    try {
-        const result = await snApi.batchCreate({ sns, goodsId: batchGoodsId.value, remark: batchRemark.value })
-        Message.success(`批量导入成功: ${result.success}个，失败: ${result.failed}个`)
-        showBatchModal.value = false
-        batchSns.value = ''
-        batchGoodsId.value = undefined
-        batchRemark.value = ''
-        load()
-    } catch (e: any) {
-        Message.error('批量导入失败')
-        return false
-    }
-}
-
-function handleOpenBatchModal() {
-    batchGoodsId.value = undefined
-    batchSns.value = ''
-    batchRemark.value = ''
-    showBatchModal.value = true
-}
-
-async function handleQuerySn() {
-    if (!querySn.value) {
-        Message.warning('请输入SN码')
-        return
-    }
-    try {
-        queryResult.value = await snApi.query(querySn.value)
-    } catch {
-        Message.warning('未找到该SN码')
-        queryResult.value = null
-    }
+function handleOpenEdit(record: any) {
+    editTarget.value = { id: record.id, status: record.status }
+    showEditModal.value = true
 }
 
 const columns = [
+    { title: 'ID', dataIndex: 'id', width: 80 },
     { title: 'SN码', dataIndex: 'snCode', width: 180 },
     { title: '商品名称', dataIndex: 'spuName' },
-    {
-        title: '状态', dataIndex: 'status', render: (status: number) => {
-            const item = statusMap[status] || { label: '未知', color: 'gray' }
-            return h(Tag, { color: item.color }, () => item.label)
-        }
-    },
-    { title: '销售时间', dataIndex: 'soldAt', render: (t: string) => t ? formatDate(t) : '-' },
-    { title: '创建时间', dataIndex: 'createdAt', render: (t: string) => formatDate(t) },
-    { title: '操作', slotName: 'actions', align: 'right', width: 120 },
+    { title: '状态', slotName: 'statusCol', width: 100 },
+    { title: '销售时间', dataIndex: 'soldAt' },
+    { title: '创建时间', dataIndex: 'createdAt' },
+    { title: '操作', slotName: 'actions', align: 'right', width: 120, fixed: 'right' },
 ]
 </script>
 
@@ -196,38 +84,27 @@ const columns = [
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
                 <h1 class="text-xl lg:text-2xl font-bold text-gray-800">SN码管理</h1>
-                <p class="text-sm text-gray-500 mt-1">管理商品SN码录入与查询</p>
+                <p class="text-sm text-gray-500 mt-1">管理商品SN码</p>
             </div>
-            <Space>
-                <Button type="primary" @click="showQueryModal = true">
-                    <template #icon>
-                        <MagnifyingGlassIcon class="w-4 h-4" />
-                    </template>
-                    SN码查询
-                </Button>
-                <Button @click="handleOpenBatchModal">
-                    <template #icon>
-                        <ArrowUpTrayIcon class="w-4 h-4" />
-                    </template>
-                    批量导入
-                </Button>
-                <Button type="primary" @click="showAddModal = true">
-                    <template #icon>
-                        <PlusIcon class="w-4 h-4" />
-                    </template>
-                    录入SN码
-                </Button>
-            </Space>
+            <Button type="primary" @click="handleOpenAdd">
+                <template #icon>
+                    <PlusIcon class="w-4 h-4"></PlusIcon>
+                </template>
+                新增SN码
+            </Button>
         </div>
 
         <!-- 搜索区域 -->
         <Card class="mb-4">
             <Space direction="horizontal" :size="12" wrap>
-                <Input v-model="keyword" placeholder="搜索SN码或商品名称..." class="w-64!" @press-enter="handleSearch">
-                    <template #prefix><span class="text-gray-400">🔍</span></template>
-                </Input>
-                <Select v-model="searchForm.status" :options="statusOptions" placeholder="状态筛选" class="w-32!" />
-                <Button type="primary" @click="handleAdvancedSearch">搜索</Button>
+                <Select v-model="selectedSkuCode" placeholder="按SKU编码筛选" style="width:260px" allow-clear
+                    :loading="loadingSkus" filterable @change="handleAdvancedSearch">
+                    <Select.Option v-for="s in skuList" :key="s.id" :value="s.skuCode">
+                        {{ s.skuCode }}
+                    </Select.Option>
+                </Select>
+                <Select v-model="searchForm.status" :options="statusOptions" placeholder="状态筛选" style="width:140px"
+                    @change="handleAdvancedSearch"></Select>
                 <Button @click="handleReset">重置</Button>
             </Space>
         </Card>
@@ -235,11 +112,14 @@ const columns = [
         <!-- 数据表格 -->
         <Card>
             <Table :loading="loading" :columns="columns" :data="list" :pagination="false" :scroll="{ x: 900 }">
+                <template #statusCol="{ record }">
+                    <Tag :color="(statusMap[record.status] || {}).color || 'gray'">
+                        {{ (statusMap[record.status] || {}).label || '未知' }}
+                    </Tag>
+                </template>
                 <template #actions="{ record }">
                     <Space>
-                        <Button type="text" size="small" @click="querySn = record.sn; showQueryModal = true">
-                            <ArrowPathIcon class="w-4 h-4" />
-                        </Button>
+                        <Button type="text" size="small" @click="handleOpenEdit(record)">编辑</Button>
                     </Space>
                 </template>
             </Table>
@@ -248,82 +128,12 @@ const columns = [
             <div class="flex justify-end mt-4">
                 <Pagination :current="query.page || 1" :total="total" :page-size="query.pageSize || 20"
                     :page-size-options="[10, 20, 50, 100]" show-total @change="handlePageChange"
-                    @page-size-change="handlePageSizeChange" />
+                    @page-size-change="handlePageSizeChange"></Pagination>
             </div>
         </Card>
     </div>
 
-    <!-- 录入SN码弹窗 -->
-    <Modal v-model:visible="showAddModal" title="录入SN码" :on-before-ok="handleAddSn" :width="500">
-        <Space direction="vertical" :size="16" class="w-full">
-            <div>
-                <div class="text-sm text-gray-600 mb-1">商品 *</div>
-                <Select v-model="newSn.goodsId" placeholder="请选择商品" class="w-full" :loading="loadingGoods" filterable>
-                    <Select.Option v-for="g in goodsList" :key="g.id" :value="g.id">
-                        {{ g.name }} ({{ g.brand || '无品牌' }})
-                    </Select.Option>
-                </Select>
-            </div>
-            <div>
-                <div class="text-sm text-gray-600 mb-1">SN码 *</div>
-                <Input v-model="newSn.sn" placeholder="请输入SN码" class="w-full" />
-            </div>
-            <div>
-                <div class="text-sm text-gray-600 mb-1">备注</div>
-                <Input v-model="newSn.remark" placeholder="可选" class="w-full" />
-            </div>
-        </Space>
-    </Modal>
-
-    <!-- 批量导入弹窗 -->
-    <Modal v-model:visible="showBatchModal" title="批量导入SN码" :on-before-ok="handleBatchImport" :width="600">
-        <Space direction="vertical" :size="16" class="w-full">
-            <div>
-                <div class="text-sm text-gray-600 mb-1">商品 *</div>
-                <Select v-model="batchGoodsId" placeholder="请选择商品" class="w-full" :loading="loadingGoods" filterable>
-                    <Select.Option v-for="g in goodsList" :key="g.id" :value="g.id">
-                        {{ g.name }} ({{ g.brand || '无品牌' }})
-                    </Select.Option>
-                </Select>
-            </div>
-            <div>
-                <div class="text-sm text-gray-600 mb-1">SN码列表（每行一个） *</div>
-                <Input v-model="batchSns" placeholder="请输入SN码，每行一个" :rows="10" type="textarea" class="w-full" />
-            </div>
-            <div class="text-xs text-gray-500">
-                提示：每行输入一个SN码，批量导入将自动识别换行符分割
-            </div>
-        </Space>
-    </Modal>
-
-    <!-- SN码查询弹窗 -->
-    <Modal v-model:visible="showQueryModal" title="SN码查询" :width="500">
-        <Space direction="horizontal" :size="12" class="w-full mb-4">
-            <Input v-model="querySn" placeholder="请输入SN码" class="w-64!" @press-enter="handleQuerySn" />
-            <Button type="primary" @click="handleQuerySn">查询</Button>
-        </Space>
-
-        <div v-if="queryResult" class="border-t border-gray-200 pt-4">
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <div class="text-xs text-gray-500">SN码</div>
-                    <div class="text-sm font-medium">{{ queryResult.snCode }}</div>
-                </div>
-                <div>
-                    <div class="text-xs text-gray-500">商品</div>
-                    <div class="text-sm font-medium">{{ queryResult.spuName || '-' }}</div>
-                </div>
-                <div>
-                    <div class="text-xs text-gray-500">状态</div>
-                    <Tag :color="statusMap[queryResult.status]?.color">
-                        {{ statusMap[queryResult.status]?.label }}
-                    </Tag>
-                </div>
-                <div>
-                    <div class="text-xs text-gray-500">销售时间</div>
-                    <div class="text-sm">{{ queryResult.soldAt ? formatDate(queryResult.soldAt) : '-' }}</div>
-                </div>
-            </div>
-        </div>
-    </Modal>
+    <SnAddModal v-model:visible="showAddModal" @saved="load" />
+    <SnEditModal v-model:visible="showEditModal" :sn-id="editTarget.id" :current-status="editTarget.status"
+        @saved="load" />
 </template>

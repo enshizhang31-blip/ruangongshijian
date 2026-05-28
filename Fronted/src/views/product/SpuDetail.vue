@@ -277,7 +277,7 @@ function onSpecSelected(row: SpecRow) {
                 { title: '成本价', dataIndex: 'costPrice', width: 100 },
                 { title: '库存', dataIndex: 'stock', width: 80, align: 'center' as const },
                 { title: '状态', dataIndex: 'status', width: 80 },
-                { title: '操作', slotName: 'actions', align: 'right', width: 200 },
+                { title: '操作', slotName: 'actions', align: 'right', width: 200, fixed: 'right' },
             ]" :data="skuList" :pagination="false" :scroll="{ x: 1000 }">
                 <template #specJson="{ record }">
                     <Space>
@@ -314,7 +314,7 @@ function onSpecSelected(row: SpecRow) {
         :width="580">
         <a-form :model="formModel">
             <a-form-item field="skuCode" label="SKU编码">
-                <a-input v-model="formModel.skuCode" placeholder="选择规格后自动生成" />
+                <a-input :model-value="formModel.skuCode" placeholder="自动生成" disabled />
             </a-form-item>
 
             <a-form-item label="规格组合" :content-flex="false" :merge-props="false">

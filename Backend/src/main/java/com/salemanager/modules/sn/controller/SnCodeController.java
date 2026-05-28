@@ -211,4 +211,27 @@ public class SnCodeController {
         snCodeService.completeReturnSnCode(id, remark);
         return Result.success();
     }
+
+    /**
+     * 自动生成SN码（基于SKU编码+序号）
+     */
+    @PostMapping("/code/generate")
+    public Result<List<SnCode>> generateSnCodes(@RequestBody Map<String, Object> params) {
+        Long skuId = params.get("skuId") != null ? Long.valueOf(params.get("skuId").toString()) : null;
+        int count = params.get("count") != null ? Integer.parseInt(params.get("count").toString()) : 1;
+        log.info("generateSnCodes skuId={}, count={}", skuId, count);
+        List<SnCode> list = snCodeService.generateSnCodes(skuId, count);
+        return Result.success(list);
+    }
+
+    /**
+     * 更新SN码状态
+     */
+    @PutMapping("/code/{id}/status")
+    public Result<Void> updateSnCodeStatus(@PathVariable Long id, @RequestBody Map<String, Object> params) {
+        Integer status = params.get("status") != null ? Integer.parseInt(params.get("status").toString()) : null;
+        log.info("updateSnCodeStatus id={}, status={}", id, status);
+        snCodeService.updateSnCodeStatus(id, status);
+        return Result.success();
+    }
 }
