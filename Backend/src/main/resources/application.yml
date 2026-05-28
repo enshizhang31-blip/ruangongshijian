@@ -1,11 +1,9 @@
+# 公共配置（不要在此处放置环境敏感信息）
+# 环境相关的数据库/Redis/Mongo 配置请放到 application-local.yml 或 application-cloud.yml
+
 spring:
   application:
     name: Backend
-  datasource:
-    url: jdbc:mysql://8.137.32.18:3306/sale_manager?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: salemanager
-    password: Sm@MySQL2026User
-    driver-class-name: com.mysql.cj.jdbc.Driver
   servlet:
     multipart:
       max-file-size: 10MB
@@ -15,13 +13,9 @@ spring:
     time-zone: Asia/Shanghai
     serialization:
       write-dates-as-timestamps: false
-  data:
-    mongodb:
-      uri: mongodb://salemanager:Sm%40Mongo2026Admin@8.137.32.18:27017/sale_manager_i18n?authSource=admin
-    redis:
-      host: 8.137.32.18
-      port: 6379
-      password: Sm@Redis2026Cache
+
+    profiles:
+      active: local
 
 mybatis-plus:
   global-config:
@@ -38,18 +32,17 @@ mybatis-plus:
 server:
   port: 8080
 
+# 公共 JWT（可由具体 profile 覆盖）
 jwt:
   secret: sale-manager-jwt-secret-key-2026
   expiration: 86400000
-
-# MongoDB/Redis 配置已合并到上方 spring 块中
 
 # 全局分页限制
 sale-manager:
   pagination:
     max-page-size: 100
 
-# i18n
+# i18n 公共配置
 i18n:
   default-locale: zh-CN
   supported-locales:
@@ -69,3 +62,6 @@ i18n:
     unit-ttl: 3600
     entity-ttl: 3600
     status-ttl: 1800
+
+# 默认 active profile（本地开发优先使用 local）
+# 如需使用云端配置，启动时显式设置 `spring.profiles.active=cloud`

@@ -19,10 +19,10 @@ echo "===== 2. 初始化数据库 ====="
 bash "$DEPLOY_DIR/init-database.sh"
 
 echo ""
-echo "===== 3. 启动后端 ====="
+echo "===== 3. 启动后端（cloud 模式）====="
 cd "$DEPLOY_DIR"
 mkdir -p logs
-nohup java -jar $JAR > logs/app.log 2>&1 &
+nohup java -Dspring.profiles.active=cloud -jar $JAR > logs/app.log 2>&1 &
 sleep 5
 
 echo ""
