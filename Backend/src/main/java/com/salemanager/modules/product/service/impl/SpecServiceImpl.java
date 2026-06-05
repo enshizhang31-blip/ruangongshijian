@@ -21,6 +21,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 规格服务实现
@@ -227,5 +228,28 @@ public class SpecServiceImpl implements SpecService {
         if (count != null && count > 0) {
             throw new BusinessException(400, "规格值已存在");
         }
+    }
+
+    @Override
+    public List<Map<String, Object>> resolveSpecItems(List<Map<String, Long>> items) {
+        log.info("resolveSpecItems count={}", items.size());
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (var item : items) {
+            Long specId = item.get("specId");
+            Long valueId = item.get("valueId");
+            java.util.Map<String, Object> resolved = new java.util.LinkedHashMap<>();
+            resolved.put("specId", specId);
+            resolved.put("valueId", valueId);
+            if (specId != null) {
+                SpecName spec = specNameMapper.selectById(specId);
+                resolved.put("specName", spec != null ? spec.getName() : null);
+            }
+            if (valueId != null) {
+                SpecValue val = specValueMapper.selectById(valueId);
+                resolved.put("valueName", val != null ? val.getValue() : null);
+            }
+            result.add(resolved);
+        }
+        return result;
     }
 }

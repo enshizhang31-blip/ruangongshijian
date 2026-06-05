@@ -14,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 规格控制器
@@ -106,5 +107,17 @@ public class SpecController {
         log.info("deleteSpecValue id={}", id);
         specService.deleteSpecValue(id);
         return Result.success();
+    }
+
+    /**
+     * 根据规格ID和值ID批量解析为可读名称
+     * 请求: POST /api/admin/spec/resolve  body: [{"specId":1,"valueId":1}, ...]
+     */
+    @PostMapping("/resolve")
+    public Result<Map<String, Object>> resolveSpec(@RequestBody List<Map<String, Long>> items) {
+        log.info("resolveSpec count={}", items.size());
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("items", specService.resolveSpecItems(items));
+        return Result.success(result);
     }
 }

@@ -51,4 +51,9 @@ public interface SpecService {
      * 删除规格值
      */
     void deleteSpecValue(Long id);
+
+    /**
+     * 批量解析规格ID+值ID为可读名称
+     */
+    List<java.util.Map<String, Object>> resolveSpecItems(List<java.util.Map<String, Long>> items);
 }
