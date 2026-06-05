@@ -1,16 +1,118 @@
 {
-	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
+	"easycom": {
+		"autoscan": true,
+		"custom": {
+			"^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+		}
+	},
+	"pages": [
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "uni-app"
+				"navigationBarTitleText": "首页"
+			}
+		},
+		{
+			"path": "pages/goods/list",
+			"style": {
+				"navigationBarTitleText": "商品列表"
+			}
+		},
+		{
+			"path": "pages/goods/detail",
+			"style": {
+				"navigationBarTitleText": "商品详情"
+			}
+		},
+		{
+			"path": "pages/cart/index",
+			"style": {
+				"navigationBarTitleText": "购物车"
+			}
+		},
+		{
+			"path": "pages/order/confirm",
+			"style": {
+				"navigationBarTitleText": "确认订单"
+			}
+		},
+		{
+			"path": "pages/order/list",
+			"style": {
+				"navigationBarTitleText": "订单列表"
+			}
+		},
+		{
+			"path": "pages/order/detail",
+			"style": {
+				"navigationBarTitleText": "订单详情"
+			}
+		},
+		{
+			"path": "pages/member/index",
+			"style": {
+				"navigationBarTitleText": "会员中心"
+			}
+		},
+		{
+			"path": "pages/member/balance",
+			"style": {
+				"navigationBarTitleText": "余额充值"
+			}
+		},
+		{
+			"path": "pages/member/points",
+			"style": {
+				"navigationBarTitleText": "积分商城"
+			}
+		},
+		{
+			"path": "pages/address/list",
+			"style": {
+				"navigationBarTitleText": "地址管理"
+			}
+		},
+		{
+			"path": "pages/address/form",
+			"style": {
+				"navigationBarTitleText": "编辑地址"
+			}
+		},
+		{
+			"path": "pages/user/profile",
+			"style": {
+				"navigationBarTitleText": "个人资料"
 			}
 		}
 	],
+	"tabBar": {
+		"color": "#999",
+		"selectedColor": "#0f62fe",
+		"backgroundColor": "#fff",
+		"borderStyle": "black",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/goods/list",
+				"text": "商品"
+			},
+			{
+				"pagePath": "pages/cart/index",
+				"text": "购物车"
+			},
+			{
+				"pagePath": "pages/member/index",
+				"text": "我的"
+			}
+		]
+	},
 	"globalStyle": {
-		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "uni-app",
-		"navigationBarBackgroundColor": "#F8F8F8",
-		"backgroundColor": "#F8F8F8"
+		"navigationBarTextStyle": "white",
+		"navigationBarTitleText": "SaleManager",
+		"navigationBarBackgroundColor": "#0f62fe",
+		"backgroundColor": "#F5F5F5"
 	}
 }
