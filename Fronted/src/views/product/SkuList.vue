@@ -53,7 +53,7 @@ function renderSpecTags(specJson?: string): { name: string; value: string }[] {
     const obj = JSON.parse(specJson)
     return Object.entries(obj).map(([k, v]) => {
       const valId = Number(v)
-      if (valId && valueMap.value[valId]) {
+      if (!isNaN(valId) && valueMap.value[valId]) {
         const spec = allSpecs.value.find(s => s.values?.some(sv => sv.id === valId))
         return { name: spec?.name || k, value: valueMap.value[valId].value }
       }

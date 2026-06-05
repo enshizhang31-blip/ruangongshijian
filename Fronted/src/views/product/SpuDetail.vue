@@ -21,13 +21,17 @@ const skuLoading = ref(false)
 const allSpecs = ref<Spec[]>([])
 const specValueCache = ref<Record<number, SpecValue[]>>({})
 const valueMap = ref<Record<number, SpecValue>>({})
+const specMap = ref<Record<number, Spec>>({})
 
 function buildSpecMaps(specs: Spec[]) {
     const vm: Record<number, SpecValue> = {}
+    const sm: Record<number, Spec> = {}
     for (const s of specs) {
+        sm[s.id] = s
         for (const v of s.values || []) vm[v.id] = v
     }
     valueMap.value = vm
+    specMap.value = sm
 }
 
 async function getSpecValues(specId: number): Promise<SpecValue[]> {
@@ -52,7 +56,7 @@ function onSpecSelected(row: SpecRow) {
             const obj = JSON.parse(specJson)
             return Object.entries(obj).map(([k, v]) => {
                 const specId = Number(k); const valId = Number(v)
-                if (specId && valId && valueMap.value[valId]) {
+                if (!isNaN(specId) && !isNaN(valId) && valueMap.value[valId]) {
                     return { name: specMap.value[specId]?.name || k, value: valueMap.value[valId].value }
                 }
                 return { name: k, value: String(v) }
@@ -241,7 +245,7 @@ function onSpecSelected(row: SpecRow) {
                         <span v-if="spu?.categoryName">分类：{{ spu.categoryName }}</span>
                         <span v-if="spu?.brand">品牌：{{ spu.brand }}</span>
                         <Tag v-if="spu" :color="spu.status === 1 ? 'green' : 'gray'">{{ spu.status === 1 ? '上架' : '下架'
-                        }}</Tag>
+                            }}</Tag>
                     </div>
                 </div>
             </div>
@@ -282,12 +286,12 @@ function onSpecSelected(row: SpecRow) {
                 <template #specJson="{ record }">
                     <Space>
                         <Tag v-for="tag in renderSpecTags(record.specJson)" :key="tag.name">{{ tag.name }}: {{ tag.value
-                        }}</Tag>
+                            }}</Tag>
                     </Space>
                 </template>
                 <template #price="{ record }">{{ formatMoney(record.price) }}</template>
                 <template #costPrice="{ record }">{{ record.costPrice ? formatMoney(record.costPrice) : '-'
-                }}</template>
+                    }}</template>
                 <template #stock="{ record }"><span
                         :class="record.stock ? 'text-green-600 font-medium' : 'text-red-400'">{{ record.stock ?? 0
                         }}</span></template>
