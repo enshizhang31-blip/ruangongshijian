@@ -9,79 +9,91 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "首页"
+				"navigationBarTitleText": "SaleManager"
 			}
 		},
 		{
-			"path": "pages/goods/list",
+			"path": "pages/goods/list/index",
 			"style": {
-				"navigationBarTitleText": "商品列表"
+				"navigationBarTitleText": "Goods"
 			}
 		},
 		{
-			"path": "pages/goods/detail",
+			"path": "pages/goods/detail/index",
 			"style": {
-				"navigationBarTitleText": "商品详情"
+				"navigationBarTitleText": "Product Detail"
 			}
 		},
 		{
 			"path": "pages/cart/index",
 			"style": {
-				"navigationBarTitleText": "购物车"
+				"navigationBarTitleText": "Cart"
 			}
 		},
 		{
-			"path": "pages/order/confirm",
+			"path": "pages/order/confirm/index",
 			"style": {
-				"navigationBarTitleText": "确认订单"
+				"navigationBarTitleText": "Confirm Order"
 			}
 		},
 		{
-			"path": "pages/order/list",
+			"path": "pages/order/list/index",
 			"style": {
-				"navigationBarTitleText": "订单列表"
+				"navigationBarTitleText": "My Orders"
 			}
 		},
 		{
-			"path": "pages/order/detail",
+			"path": "pages/order/detail/index",
 			"style": {
-				"navigationBarTitleText": "订单详情"
+				"navigationBarTitleText": "Order Detail"
+			}
+		},
+		{
+			"path": "pages/order/refund/index",
+			"style": {
+				"navigationBarTitleText": "Request Refund"
 			}
 		},
 		{
 			"path": "pages/member/index",
 			"style": {
-				"navigationBarTitleText": "会员中心"
+				"navigationBarTitleText": "Me"
 			}
 		},
 		{
-			"path": "pages/member/balance",
+			"path": "pages/member/balance/index",
 			"style": {
-				"navigationBarTitleText": "余额充值"
+				"navigationBarTitleText": "Recharge"
 			}
 		},
 		{
-			"path": "pages/member/points",
+			"path": "pages/member/points/index",
 			"style": {
-				"navigationBarTitleText": "积分商城"
+				"navigationBarTitleText": "Points Mall"
 			}
 		},
 		{
-			"path": "pages/address/list",
+			"path": "pages/address/list/index",
 			"style": {
-				"navigationBarTitleText": "地址管理"
+				"navigationBarTitleText": "Shipping Address"
 			}
 		},
 		{
-			"path": "pages/address/form",
+			"path": "pages/address/form/index",
 			"style": {
-				"navigationBarTitleText": "编辑地址"
+				"navigationBarTitleText": "Edit Address"
 			}
 		},
 		{
-			"path": "pages/user/profile",
+			"path": "pages/user/profile/index",
 			"style": {
-				"navigationBarTitleText": "个人资料"
+				"navigationBarTitleText": "Profile"
+			}
+		},
+		{
+			"path": "pages/auth/login/index",
+			"style": {
+				"navigationBarTitleText": "Login"
 			}
 		}
 	],
@@ -93,19 +105,19 @@
 		"list": [
 			{
 				"pagePath": "pages/index/index",
-				"text": "首页"
+				"text": "Home"
 			},
 			{
-				"pagePath": "pages/goods/list",
-				"text": "商品"
+				"pagePath": "pages/goods/list/index",
+				"text": "Goods"
 			},
 			{
 				"pagePath": "pages/cart/index",
-				"text": "购物车"
+				"text": "Cart"
 			},
 			{
 				"pagePath": "pages/member/index",
-				"text": "我的"
+				"text": "Me"
 			}
 		]
 	},

@@ -1,26 +1,41 @@
 export default {
     'zh-CN': {
-        common: { confirm: '确认', cancel: '取消', loading: '加载中...', empty: '暂无数据' },
-        home: { title: '首页', banner: '轮播图', categories: '商品分类', recommend: '推荐商品' },
-        goods: { search: '搜索商品...', addToCart: '加入购物车', buyNow: '立即购买', specification: '规格选择' },
-        cart: { title: '购物车', empty: '购物车是空的', settle: '结算' },
-        order: { pending: '待付款', paid: '已付款', completed: '已完成', canceled: '已取消' },
-        member: { balance: '余额', points: '积分', level: '会员等级', orders: '我的订单', address: '收货地址', profile: '个人资料', language: '语言' }
+        common: { confirm: '确认', cancel: '取消', loading: '加载中...', empty: '暂无数据', submit: '提交', save: '保存', edit: '编辑', delete: '删除', back: '返回', success: '成功', failed: '失败', retry: '重试', more: '更多', yuan: '¥' },
+        nav: { home: '首页', goods: '商品', cart: '购物车', mine: '我的' },
+        home: { title: '首页', bannerTip: '欢迎使用 SaleManager 演示版', quickEntries: '快捷入口', scanCode: '扫码查SN', allGoods: '全部商品', categories: '商品分类', recommend: '推荐商品', categoryFallback: '暂无分类', goodsFallback: '暂无商品' },
+        goods: { title: '商品列表', search: '搜索商品...', detailTitle: '商品详情', addToCart: '加入购物车', buyNow: '立即购买', spec: '已选规格', price: '价格', sales: '已售', stock: '库存', desc: '商品介绍', noDesc: '暂无介绍', qty: '数量', placeholder: '暂无数据' },
+        cart: { title: '购物车', empty: '购物车是空的，去逛逛吧', settle: '去结算', selected: '已选', total: '合计', checkedHint: '点击勾选', removed: '已移除' },
+        order: { listTitle: '我的订单', detailTitle: '订单详情', tabs: { all: '全部', pending: '待支付', shipping: '运输中', done: '已完成' }, noOrder: '暂无订单', orderNo: '订单号', totalAmount: '合计', logistics: '物流信息', logisticsEmpty: '暂无物流', pay: '去支付', cancel: '取消订单', receive: '确认收货', refund: '申请退款', refundTitle: '申请退款', refundReason: '退款原因', refundReasonPlaceholder: '请说明退款原因...', refundAmount: '退款金额', refundSubmit: '提交申请', refunded: '已退款', refunding: '退款中', address: '收货地址', placedAt: '下单时间' },
+        member: { title: '我的', loggedIn: '已登录', notLoggedIn: '点击登录', balance: '余额', points: '积分', level: '会员等级', orders: '我的订单', address: '收货地址', profile: '个人资料', logout: '退出登录', language: '语言设置', currentLang: '当前语言', changeLang: '切换语言', demoAccount: '演示账号 demo / 123456' },
+        auth: { loginTitle: '登录', registerTitle: '注册', phone: '手机号', phonePlaceholder: '请输入手机号', password: '密码', passwordPlaceholder: '请输入密码（至少6位）', nickname: '昵称', nicknamePlaceholder: '可选', goRegister: '去注册', goLogin: '已有账号？去登录', submitLogin: '登录', submitRegister: '注册并登录', fillAll: '请填写完整信息', loginSuccess: '登录成功', registerSuccess: '注册成功', demoHint: '使用 demo / 123456 一键演示登录' },
+        status: { 0: '待支付', 1: '已支付', 2: '运输中', 3: '已签收', 4: '已完成', 5: '已取消', 6: '退款中', 7: '已退款' },
+        logistics: { pending: '待发货', picked: '已揽收', transit: '运输中', dispatch: '派送中', signed: '已签收', exception: '运输异常', estimatedArrival: '预计 {time} 送达' },
+        toast: { needLogin: '请先登录', addedToCart: '已加入购物车', opFailed: '操作失败', networkError: '网络异常，请稍后重试', refundSubmitted: '退款申请已提交', refundFail: '退款失败', languageChanged: '已切换语言' }
     },
     'en-US': {
-        common: { confirm: 'Confirm', cancel: 'Cancel', loading: 'Loading...', empty: 'No data' },
-        home: { title: 'Home', banner: 'Banner', categories: 'Categories', recommend: 'Recommended' },
-        goods: { search: 'Search...', addToCart: 'Add to Cart', buyNow: 'Buy Now', specification: 'Specifications' },
-        cart: { title: 'Cart', empty: 'Cart is empty', settle: 'Checkout' },
-        order: { pending: 'Pending', paid: 'Paid', completed: 'Completed', canceled: 'Canceled' },
-        member: { balance: 'Balance', points: 'Points', level: 'Level', orders: 'My Orders', address: 'Address', profile: 'Profile', language: 'Language' }
+        common: { confirm: 'Confirm', cancel: 'Cancel', loading: 'Loading...', empty: 'No data', submit: 'Submit', save: 'Save', edit: 'Edit', delete: 'Delete', back: 'Back', success: 'Success', failed: 'Failed', retry: 'Retry', more: 'More', yuan: '$' },
+        nav: { home: 'Home', goods: 'Goods', cart: 'Cart', mine: 'Me' },
+        home: { title: 'Home', bannerTip: 'Welcome to SaleManager Demo', quickEntries: 'Quick Access', scanCode: 'Scan SN', allGoods: 'All Goods', categories: 'Categories', recommend: 'Recommended', categoryFallback: 'No categories', goodsFallback: 'No products' },
+        goods: { title: 'Goods', search: 'Search products...', detailTitle: 'Product Detail', addToCart: 'Add to Cart', buyNow: 'Buy Now', spec: 'Specification', price: 'Price', sales: 'Sold', stock: 'Stock', desc: 'Description', noDesc: 'No description', qty: 'Qty', placeholder: 'No data' },
+        cart: { title: 'Cart', empty: 'Your cart is empty', settle: 'Checkout', selected: 'Selected', total: 'Total', checkedHint: 'Tap to select', removed: 'Removed' },
+        order: { listTitle: 'My Orders', detailTitle: 'Order Detail', tabs: { all: 'All', pending: 'Pending', shipping: 'Shipping', done: 'Done' }, noOrder: 'No orders yet', orderNo: 'Order No.', totalAmount: 'Total', logistics: 'Logistics', logisticsEmpty: 'No logistics info', pay: 'Pay Now', cancel: 'Cancel', receive: 'Confirm Receipt', refund: 'Request Refund', refundTitle: 'Refund Request', refundReason: 'Refund Reason', refundReasonPlaceholder: 'Please enter the refund reason...', refundAmount: 'Refund Amount', refundSubmit: 'Submit', refunded: 'Refunded', refunding: 'Refunding', address: 'Shipping Address', placedAt: 'Placed At' },
+        member: { title: 'Me', loggedIn: 'Logged in', notLoggedIn: 'Tap to log in', balance: 'Balance', points: 'Points', level: 'Member Level', orders: 'My Orders', address: 'Shipping Address', profile: 'Profile', logout: 'Log Out', language: 'Language', currentLang: 'Current Language', changeLang: 'Switch Language', demoAccount: 'Demo: demo / 123456' },
+        auth: { loginTitle: 'Login', registerTitle: 'Register', phone: 'Phone', phonePlaceholder: 'Enter your phone number', password: 'Password', passwordPlaceholder: 'At least 6 characters', nickname: 'Nickname', nicknamePlaceholder: 'Optional', goRegister: 'Create account', goLogin: 'Already have an account? Log in', submitLogin: 'Log In', submitRegister: 'Register & Log In', fillAll: 'Please fill in all fields', loginSuccess: 'Logged in', registerSuccess: 'Registered', demoHint: 'Use demo / 123456 for one-tap demo login' },
+        status: { 0: 'Pending Payment', 1: 'Paid', 2: 'Shipping', 3: 'Delivered', 4: 'Completed', 5: 'Cancelled', 6: 'Refunding', 7: 'Refunded' },
+        logistics: { pending: 'Pending Pickup', picked: 'Picked Up', transit: 'In Transit', dispatch: 'Out for Delivery', signed: 'Signed', exception: 'Exception', estimatedArrival: 'Estimated arrival {time}' },
+        toast: { needLogin: 'Please log in first', addedToCart: 'Added to cart', opFailed: 'Operation failed', networkError: 'Network error', refundSubmitted: 'Refund request submitted', refundFail: 'Refund failed', languageChanged: 'Language switched' }
     },
     'ja-JP': {
-        common: { confirm: '確認', cancel: 'キャンセル', loading: '読み込み中...', empty: 'データなし' },
-        home: { title: 'ホーム', banner: 'バナー', categories: 'カテゴリ', recommend: 'おすすめ' },
-        goods: { search: '検索...', addToCart: 'カートに入れる', buyNow: '今すぐ購入', specification: '仕様' },
-        cart: { title: 'カート', empty: 'カートは空です', settle: '決済' },
-        order: { pending: '未払い', paid: '支払済み', completed: '完了', canceled: 'キャンセル' },
-        member: { balance: '残高', points: 'ポイント', level: 'レベル', orders: '注文履歴', address: '住所', profile: 'プロフィール', language: '言語' }
+        common: { confirm: '確認', cancel: 'キャンセル', loading: '読み込み中...', empty: 'データなし', submit: '送信', save: '保存', edit: '編集', delete: '削除', back: '戻る', success: '成功', failed: '失敗', retry: '再試行', more: '詳細', yuan: '¥' },
+        nav: { home: 'ホーム', goods: '商品', cart: 'カート', mine: 'マイページ' },
+        home: { title: 'ホーム', bannerTip: 'SaleManager デモへようこそ', quickEntries: 'クイックアクセス', scanCode: 'SNスキャン', allGoods: 'すべての商品', categories: 'カテゴリ', recommend: 'おすすめ', categoryFallback: 'カテゴリなし', goodsFallback: '商品なし' },
+        goods: { title: '商品', search: '検索...', detailTitle: '商品詳細', addToCart: 'カートに入れる', buyNow: '今すぐ購入', spec: '仕様', price: '価格', sales: '販売数', stock: '在庫', desc: '紹介', noDesc: '紹介なし', qty: '数量', placeholder: 'なし' },
+        cart: { title: 'カート', empty: 'カートは空です', settle: '購入手続き', selected: '選択済み', total: '合計', checkedHint: 'タップで選択', removed: '削除済み' },
+        order: { listTitle: '注文履歴', detailTitle: '注文詳細', tabs: { all: '全部', pending: '未払い', shipping: '配送中', done: '完了' }, noOrder: '注文なし', orderNo: '注文番号', totalAmount: '合計', logistics: '配送情報', logisticsEmpty: '配送情報なし', pay: '支払う', cancel: 'キャンセル', receive: '受領確認', refund: '返金申請', refundTitle: '返金申請', refundReason: '返金理由', refundReasonPlaceholder: '返金理由を入力...', refundAmount: '返金額', refundSubmit: '申請を送信', refunded: '返金済み', refunding: '返金中', address: 'お届け先', placedAt: '注文日時' },
+        member: { title: 'マイページ', loggedIn: 'ログイン中', notLoggedIn: 'ログイン', balance: '残高', points: 'ポイント', level: '会員レベル', orders: '注文履歴', address: '住所', profile: 'プロフィール', logout: 'ログアウト', language: '言語設定', currentLang: '現在の言語', changeLang: '言語切替', demoAccount: 'デモ：demo / 123456' },
+        auth: { loginTitle: 'ログイン', registerTitle: '登録', phone: '電話番号', phonePlaceholder: '電話番号を入力', password: 'パスワード', passwordPlaceholder: '6文字以上', nickname: 'ニックネーム', nicknamePlaceholder: '任意', goRegister: '新規登録', goLogin: 'アカウントをお持ちですか？ログイン', submitLogin: 'ログイン', submitRegister: '登録してログイン', fillAll: 'すべての項目を入力してください', loginSuccess: 'ログイン成功', registerSuccess: '登録成功', demoHint: 'demo / 123456 でワンタップログイン' },
+        status: { 0: '未払い', 1: '支払済み', 2: '配送中', 3: '受領済み', 4: '完了', 5: 'キャンセル', 6: '返金中', 7: '返金済み' },
+        logistics: { pending: '集荷待ち', picked: '集荷済み', transit: '輸送中', dispatch: '配達中', signed: '配達完了', exception: '異常', estimatedArrival: '到着予定 {time}' },
+        toast: { needLogin: 'ログインしてください', addedToCart: 'カートに追加しました', opFailed: '操作に失敗しました', networkError: 'ネットワークエラー', refundSubmitted: '返金申請を送信しました', refundFail: '返金に失敗しました', languageChanged: '言語が切り替わりました' }
     }
 }
