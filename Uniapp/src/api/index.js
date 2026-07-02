@@ -1,78 +1,196 @@
-import { http } from '@/utils/request.js'
+// API 聚合，所有调用都走 ./utils/request.js，token 自动注入
+import request from '@/utils/request'
 
-// 认证
+// ========== 认证 ==========
 export const authApi = {
-    /** 微信登录（保留） */
-    login(code) { return http.post('/auth/login', { code }) },
-    /** 演示版：手机号 + 密码登录 */
-    loginByPhone(phone, password) { return http.post('/auth/login-by-phone', { phone, password }) },
-    /** 演示版：手机号 + 密码注册 */
-    register(phone, password, nickname) { return http.post('/auth/register', { phone, password, nickname }) }
+  loginByPhone(phone, password) {
+    return request({
+      url: '/api/auth/login-by-phone',
+      method: 'POST',
+      data: { phone, password }
+    })
+  },
+  login() {
+    return request({
+      url: '/api/auth/login',
+      method: 'POST',
+      data: {}
+    })
+  },
+  register(phone, password, nickname) {
+    return request({
+      url: '/api/auth/register',
+      method: 'POST',
+      data: { phone, password, nickname }
+    })
+  }
 }
 
-// 分类（公开）
-export const categoryApi = {
-    list(parentId) { return http.get('/category', { parentId }) }
-}
-
-// SPU商品（公开）
-export const spuApi = {
-    list(params) { return http.get('/spu', params) },
-    detail(id) { return http.get(`/spu/${id}`) }
-}
-
-// 购物车
-export const cartApi = {
-    list() { return http.get('/cart') },
-    add(data) { return http.post('/cart', data) },
-    updateQty(id, quantity) { return http.put(`/cart/${id}`, { quantity }) },
-    select(id, selected) { return http.put(`/cart/${id}`, { selected }) },
-    remove(id) { return http.delete(`/cart/${id}`) },
-    clear() { return http.delete('/cart') }
-}
-
-// 订单
-export const orderApi = {
-    create(data) { return http.post('/order', data) },
-    list(params) { return http.get('/order', params) },
-    detail(id) { return http.get(`/order/${id}`) },
-    pay(id, data) { return http.post(`/order/${id}/pay`, data) },
-    cancel(id) { return http.post(`/order/${id}/cancel`) },
-    receive(id) { return http.post(`/order/${id}/receive`) },
-    refund(id, data) { return http.post(`/order/${id}/refund`, data) }
-}
-
-// 会员
-export const memberApi = {
-    info() { return http.get('/member/info') },
-    updateProfile(data) { return http.put('/member/info', data) },
-    balance() { return http.get('/member/balance') },
-    recharge(data) { return http.post('/member/recharge', data) },
-    points() { return http.get('/member/points') },
-    pointsHistory(params) { return http.get('/member/points/history', params) }
-}
-
-// 收货地址
-export const addressApi = {
-    list() { return http.get('/address') },
-    detail(id) { return http.get(`/address/${id}`) },
-    create(data) { return http.post('/address', data) },
-    update(id, data) { return http.put(`/address/${id}`, data) },
-    remove(id) { return http.delete(`/address/${id}`) },
-    setDefault(id) { return http.put(`/address/${id}/default`) }
-}
-
-// 行为埋点
-export const behaviorApi = {
-    log(events) { return http.post('/behavior/log', { events }) }
-}
-
-// SN码（扫码用）
-export const snApi = {
-    query(snCode) { return http.get(`/sn/${snCode}`) }
-}
-
-// 国际化（后端公开端点）
+// ========== 多语言 ==========
 export const i18nApi = {
-    getLocales() { return http.get('/i18n/locales') }
+  list() {
+    return request({
+      url: '/api/i18n/locales',
+      method: 'GET'
+    })
+  }
+}
+
+// ========== 分类 / 商品 ==========
+export const categoryApi = {
+  tree() {
+    return request({ url: '/category/tree', method: 'GET' })
+  },
+  list() {
+    return request({ url: '/category/list', method: 'GET' })
+  }
+}
+
+export const spuApi = {
+  list({ keyword, categoryId, page = 1, pageSize = 20 } = {}) {
+    return request({
+      url: '/spu/list',
+      method: 'GET',
+      data: { keyword, categoryId, page, pageSize }
+    })
+  },
+  detail(id) {
+    return request({ url: '/spu/detail/' + id, method: 'GET' })
+  }
+}
+
+export const skuApi = {
+  list(spuId) {
+    return request({ url: '/sku/list', method: 'GET', data: { spuId } })
+  },
+  detail(id) {
+    return request({ url: '/sku/detail/' + id, method: 'GET' })
+  }
+}
+
+// ========== 购物车 ==========
+export const cartApi = {
+  list() {
+    return request({ url: '/cart/list', method: 'GET' })
+  },
+  add({ spuId, skuId, quantity }) {
+    return request({
+      url: '/cart/add',
+      method: 'POST',
+      data: { spuId, skuId, quantity }
+    })
+  },
+  update({ id, quantity, selected }) {
+    return request({
+      url: '/cart/update',
+      method: 'POST',
+      data: { id, quantity, selected }
+    })
+  },
+  remove(id) {
+    return request({ url: '/cart/remove/' + id, method: 'DELETE' })
+  },
+  selectAll(selected) {
+    return request({
+      url: '/cart/select-all',
+      method: 'POST',
+      data: { selected }
+    })
+  }
+}
+
+// ========== 订单 ==========
+export const orderApi = {
+  list({ status, page = 1, pageSize = 20 } = {}) {
+    return request({
+      url: '/order/list',
+      method: 'GET',
+      data: { status, page, pageSize }
+    })
+  },
+  detail(id) {
+    return request({ url: '/order/detail/' + id, method: 'GET' })
+  },
+  create({ addressId, items }) {
+    return request({
+      url: '/order/create',
+      method: 'POST',
+      data: { addressId, items }
+    })
+  },
+  pay(orderId, payType) {
+    return request({
+      url: '/order/pay',
+      method: 'POST',
+      data: { orderId, payType }
+    })
+  },
+  cancel(orderId) {
+    return request({
+      url: '/order/cancel',
+      method: 'POST',
+      data: { orderId }
+    })
+  },
+  confirmReceive(orderId) {
+    return request({
+      url: '/order/confirm-receive',
+      method: 'POST',
+      data: { orderId }
+    })
+  },
+  ship(orderId) {
+    return request({
+      url: '/order/ship',
+      method: 'POST',
+      data: { orderId }
+    })
+  },
+  refundComplete(orderId) {
+    return request({
+      url: '/order/refund-complete',
+      method: 'POST',
+      data: { orderId }
+    })
+  },
+  refund(orderId, reason) {
+    return request({
+      url: '/order/refund',
+      method: 'POST',
+      data: { orderId, reason }
+    })
+  }
+}
+
+// ========== 地址 ==========
+export const addressApi = {
+  list() {
+    return request({ url: '/address/list', method: 'GET' })
+  },
+  create(payload) {
+    return request({ url: '/address/create', method: 'POST', data: payload })
+  },
+  update(id, payload) {
+    return request({ url: '/address/update/' + id, method: 'POST', data: payload })
+  },
+  remove(id) {
+    return request({ url: '/address/remove/' + id, method: 'DELETE' })
+  },
+  setDefault(id) {
+    return request({ url: '/address/default/' + id, method: 'POST' })
+  }
+}
+
+// ========== 会员 ==========
+export const memberApi = {
+  info() {
+    return request({ url: '/member/info', method: 'GET' })
+  }
+}
+
+// ========== SN 公开查询 ==========
+export const snApi = {
+  query({ sn, skuId } = {}) {
+    return request({ url: '/sn/query', method: 'GET', data: { sn, skuId } })
+  }
 }

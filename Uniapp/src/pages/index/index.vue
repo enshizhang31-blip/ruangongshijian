@@ -85,7 +85,10 @@ export default {
                 ])
                 this.categories = Array.isArray(categories) ? categories : (categories?.list || [])
                 const list = goods?.list || goods || []
-                this.goods = Array.isArray(list) ? list : []
+                this.goods = Array.isArray(list) ? list.map(g => ({
+                    ...g,
+                    price: g.price || g.minPrice || 0
+                })) : []
             } catch (e) {
                 uni.showToast({ title: e.message || this.$t('toast.networkError'), icon: 'none' })
             } finally { this.loading = false }

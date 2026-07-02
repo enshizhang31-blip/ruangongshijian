@@ -63,11 +63,17 @@
             <view v-if="order.status === 0" class="op-btn ghost" @click="onCancel">
                 <text>{{ $t('order.cancel') }}</text>
             </view>
-            <view v-if="order.status === 2 || order.status === 3" class="op-btn ghost" @click="onRefund">
+            <view v-if="order.status === 1" class="op-btn primary" @click="onShip">
+                <text>{{ $t('order.ship') || '模拟发货' }}</text>
+            </view>
+            <view v-if="order.status === 2" class="op-btn primary" @click="onReceive">
+                <text>{{ $t('order.receive') }}</text>
+            </view>
+            <view v-if="order.status === 1 || order.status === 2 || order.status === 3" class="op-btn ghost" @click="onRefund">
                 <text>{{ $t('order.refund') }}</text>
             </view>
-            <view v-if="order.status === 3" class="op-btn primary" @click="onReceive">
-                <text>{{ $t('order.receive') }}</text>
+            <view v-if="order.status === 6" class="op-btn primary" @click="onRefundComplete">
+                <text>{{ $t('order.refundComplete') || '退款完成' }}</text>
             </view>
         </view>
     </view>
@@ -103,8 +109,11 @@ export default {
     onLoad(options) {
         this.orderId = options.id
         const cached = uni.getStorageSync(`demo-order-${options.id}`)
-        if (cached) { this.order = cached; this.buildLogistics(cached) }
-        else this.loadFromBackend(options.id)
+        if (cached && cached.items && cached.items.length) {
+            // 仅在缓存与后端字段都齐全时短暂展示，立即用后端数据覆盖
+            this.order = cached
+        }
+        this.loadFromBackend(options.id)
     },
     methods: {
         async loadFromBackend(id) {
@@ -133,22 +142,66 @@ export default {
         },
         formatPrice(p) { return Number(p || 0).toFixed(2) },
         async onPay() {
-            try { await orderApi.pay(this.orderId, { method: 'wechat' }) } catch (_) {}
-            this.order.status = 2
-            this.buildLogistics(this.order)
+            try { await orderApi.pay(this.orderId, 1) }
+            catch (_) {}
+            try {
+                const data = await orderApi.detail(this.orderId)
+                if (data) { this.order = data; this.buildLogistics(data) }
+                else this.order.status = 1
+            } catch (_) { this.order.status = 1 }
             uni.showToast({ title: this.$t('common.success'), icon: 'success' })
         },
         async onCancel() {
-            try { await orderApi.cancel(this.orderId) } catch (_) {}
-            this.order.status = 5
+            try { await orderApi.cancel(this.orderId) }
+            catch (_) {}
+            try {
+                const data = await orderApi.detail(this.orderId)
+                if (data) { this.order = data; this.buildLogistics(data) }
+                else this.order.status = 5
+            } catch (_) { this.order.status = 5 }
             uni.showToast({ title: this.$t('common.success'), icon: 'success' })
         },
         async onReceive() {
-            try { await orderApi.receive(this.orderId) } catch (_) {}
-            this.order.status = 4
+            try { await orderApi.confirmReceive(this.orderId) }
+            catch (_) {}
+            try {
+                const data = await orderApi.detail(this.orderId)
+                if (data) { this.order = data; this.buildLogistics(data) }
+                else this.order.status = 3
+            } catch (_) { this.order.status = 3 }
             uni.showToast({ title: this.$t('common.success'), icon: 'success' })
         },
-        onRefund() { uni.navigateTo({ url: `/pages/order/refund/index?id=${this.orderId}` }) }
+        async onShip() {
+            try { await orderApi.ship(this.orderId) }
+            catch (e) { return uni.showToast({ title: e.message || '发货失败', icon: 'none' }) }
+            try {
+                const data = await orderApi.detail(this.orderId)
+                if (data) { this.order = data; this.buildLogistics(data) }
+                else this.order.status = 2
+            } catch (_) { this.order.status = 2 }
+            uni.showToast({ title: this.$t('common.success'), icon: 'success' })
+        },
+        async onRefundComplete() {
+            try { await orderApi.refundComplete(this.orderId) }
+            catch (e) { return uni.showToast({ title: e.message || '操作失败', icon: 'none' }) }
+            try {
+                const data = await orderApi.detail(this.orderId)
+                if (data) { this.order = data; this.buildLogistics(data) }
+                else this.order.status = 7
+            } catch (_) { this.order.status = 7 }
+            uni.showToast({ title: this.$t('common.success'), icon: 'success' })
+        },
+        async onRefund() {
+            try {
+                await orderApi.refund(this.orderId, 'demo')
+            } catch (_) {}
+            try {
+                const data = await orderApi.detail(this.orderId)
+                if (data) { this.order = data; this.buildLogistics(data) }
+                else this.order.status = 6
+            } catch (_) { this.order.status = 6 }
+            uni.showToast({ title: this.$t('common.success'), icon: 'success' })
+        }
     }
 }
 </script>

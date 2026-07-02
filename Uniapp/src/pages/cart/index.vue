@@ -42,6 +42,16 @@
 import { cartApi } from '@/api/index.js'
 import { useCartStore } from '@/stores/index.js'
 
+function parseSpec(specJson) {
+    if (!specJson) return ''
+    try {
+        const obj = typeof specJson === 'string' ? JSON.parse(specJson) : specJson
+        if (Array.isArray(obj)) return obj.map(x => x.value || x.name).filter(Boolean).join(' / ')
+        if (obj && typeof obj === 'object') return Object.values(obj).filter(Boolean).join(' / ')
+    } catch (e) {}
+    return ''
+}
+
 export default {
     data() { return { items: [], loading: false } },
     computed: {
@@ -53,18 +63,31 @@ export default {
     onShow() { this.loadCart() },
     methods: {
         async loadCart() {
-            const local = this.cart.state.items
-            if (local && local.length) {
-                this.items = local.map(i => ({ ...i, checked: i.checked !== false }))
-                return
-            }
             this.loading = true
             try {
                 const res = await cartApi.list()
                 const list = (res?.list || res || [])
-                this.items = list.map(item => ({ ...item, checked: item.selected || item.checked || false }))
-            } catch (e) { this.items = [] }
-            finally { this.loading = false }
+                if (Array.isArray(list) && list.length) {
+                    this.items = list.map(item => ({
+                        id: item.id,
+                        spuId: item.spuId,
+                        skuId: item.skuId,
+                        goodsName: item.spuName || item.goodsName || '',
+                        price: Number(item.price || 0),
+                        quantity: item.quantity || 1,
+                        imageUrl: item.imageUrl || '/static/logo.png',
+                        spec: parseSpec(item.specJson),
+                        checked: item.selected === 1 || item.selected === true || item.checked === true,
+                        stock: item.stock || 0
+                    }))
+                    return
+                }
+            } catch (e) {
+                // 走离线演示数据兜底
+            }
+            const local = this.cart.state.items
+            this.items = local.map(i => ({ ...i, checked: i.checked !== false }))
+            this.loading = false
         },
         formatPrice(p) { return Number(p || 0).toFixed(2) },
         toggleCheck(item) { item.checked = !item.checked; this.cart.save() },
@@ -73,22 +96,27 @@ export default {
             this.items.forEach(i => i.checked = target)
             this.cart.save()
         },
-        changeQty(item, delta) {
+        async changeQty(item, delta) {
             const newQty = Math.max(1, item.quantity + delta)
             if (newQty === item.quantity) return
             item.quantity = newQty
+            try {
+                await cartApi.update({ id: item.id, quantity: newQty })
+            } catch (e) {}
             this.cart.updateQty(item.id, newQty)
         },
-        del(item) {
+        async del(item) {
             uni.showModal({
                 title: this.$t('common.confirm'),
                 content: this.$t('cart.removed'),
-                success: r => {
-                    if (r.confirm) {
-                        this.cart.remove(item.id)
-                        const idx = this.items.findIndex(i => i.id === item.id)
-                        if (idx >= 0) this.items.splice(idx, 1)
-                    }
+                success: async r => {
+                    if (!r.confirm) return
+                    const idx = this.items.findIndex(i => i.id === item.id)
+                    if (idx >= 0) this.items.splice(idx, 1)
+                    try {
+                        await cartApi.remove(item.id)
+                    } catch (e) {}
+                    this.cart.remove(item.id)
                 }
             })
         },

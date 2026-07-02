@@ -45,8 +45,10 @@ export default {
         filtered() {
             if (this.tab === 'all') return this.orders
             if (this.tab === 'pending') return this.orders.filter(o => o.status === 0)
-            if (this.tab === 'shipping') return this.orders.filter(o => o.status === 2 || o.status === 3)
-            if (this.tab === 'done') return this.orders.filter(o => o.status >= 3 && o.status < 6)
+            // 待发货 + 运输中
+            if (this.tab === 'shipping') return this.orders.filter(o => o.status === 1 || o.status === 2 || o.status === 3)
+            // 已完成 + 已退款
+            if (this.tab === 'done') return this.orders.filter(o => o.status >= 4 || o.status === 7)
             return this.orders
         }
     },
@@ -54,13 +56,26 @@ export default {
     methods: {
         async loadOrders() {
             this.loading = true
-            const local = uni.getStorageSync('demo-orders')
-            if (Array.isArray(local) && local.length) { this.orders = local; this.loading = false; return }
             try {
                 const res = await orderApi.list({ page: 1, pageSize: 20 })
-                this.orders = (res?.list || res || []).filter(o => true)
-            } catch (e) { this.orders = [] }
-            finally { this.loading = false }
+                const list = (res?.list || res || [])
+                if (Array.isArray(list) && list.length) {
+                    // 把后端订单与本地 demo 订单合并：本地在前
+                    const local = uni.getStorageSync('demo-orders') || []
+                    this.orders = [...local, ...list]
+                    this.loading = false
+                    return
+                }
+            } catch (e) {
+                // 走离线
+            }
+            const local = uni.getStorageSync('demo-orders')
+            if (Array.isArray(local) && local.length) {
+                this.orders = local
+            } else {
+                this.orders = []
+            }
+            this.loading = false
         },
         seedDemoOrders() {
             const now = Date.now()

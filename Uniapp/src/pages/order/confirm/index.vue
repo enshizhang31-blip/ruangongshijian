@@ -62,11 +62,23 @@ export default {
         selectAddress() { uni.navigateTo({ url: '/pages/address/list/index' }) },
         async submit() {
             if (!this.goods.length) { uni.showToast({ title: this.$t('cart.empty'), icon: 'none' }); return }
+            if (!this.address || !this.address.id) {
+                uni.showToast({ title: this.$t('order.address'), icon: 'none' })
+                return
+            }
             this.submitting = true
             try {
-                if (this.address) {
-                    await orderApi.create({ addressId: this.address.id, items: this.goods.map(g => ({ skuId: g.skuId, spuId: g.spuId, quantity: g.quantity })) }).catch(() => null)
-                }
+                const res = await orderApi.create({
+                    addressId: this.address.id,
+                    items: this.goods.map(g => ({ skuId: g.skuId, spuId: g.spuId, quantity: g.quantity }))
+                })
+                const orderId = (res && (res.orderId || res.id)) || 0
+                if (!orderId) throw new Error('创建订单失败')
+                this.cart.clear()
+                uni.showToast({ title: this.$t('common.success'), icon: 'success' })
+                setTimeout(() => uni.redirectTo({ url: '/pages/order/detail/index?id=' + orderId }), 600)
+            } catch (e) {
+                // 兜底：写入本地 demo 订单以防后端不可用
                 const orderId = Date.now()
                 const order = {
                     id: orderId, orderNo: 'D' + orderId, status: 2, totalAmount: this.totalPrice,
@@ -80,10 +92,8 @@ export default {
                 list.unshift(order)
                 uni.setStorageSync('demo-orders', list)
                 this.cart.clear()
-                uni.showToast({ title: this.$t('common.success'), icon: 'success' })
+                uni.showToast({ title: '已写入离线订单', icon: 'none' })
                 setTimeout(() => uni.redirectTo({ url: '/pages/order/detail/index?id=' + orderId }), 600)
-            } catch (e) {
-                uni.showToast({ title: e.message || this.$t('toast.opFailed'), icon: 'none' })
             } finally { this.submitting = false }
         },
         formatTime(d) {

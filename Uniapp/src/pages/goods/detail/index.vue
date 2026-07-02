@@ -9,7 +9,7 @@
         <view class="info-card">
             <view class="price-row">
                 <text class="price-symbol">{{ $t('common.yuan') }}</text>
-                <text class="price-num">{{ formatPrice(goods.price) }}</text>
+                <text class="price-num">{{ formatPrice(goodsPrice()) }}</text>
             </view>
             <view class="goods-name">{{ goods.name }}</view>
             <view class="meta-row">
@@ -68,14 +68,26 @@ export default {
                 const detail = await spuApi.detail(id)
                 this.goods = detail || {}
                 this.images = []
+                if (this.goods.imageUrl) this.images.push(this.goods.imageUrl)
                 if (this.goods.mainImage) this.images.push(this.goods.mainImage)
-                if (Array.isArray(this.goods.images)) this.images.push(...this.goods.images)
+                if (this.goods.images) {
+                    if (typeof this.goods.images === 'string') {
+                        this.goods.images.split(',').map(s => s.trim()).filter(Boolean).forEach(x => this.images.push(x))
+                    } else if (Array.isArray(this.goods.images)) {
+                        this.images.push(...this.goods.images)
+                    }
+                }
                 if (!this.images.length) this.images = ['/static/logo.png']
             } catch (e) {
                 uni.showToast({ title: e.message || this.$t('toast.networkError'), icon: 'none' })
             }
         },
         formatPrice(p) { return Number(p || 0).toFixed(2) },
+        goodsPrice() {
+            const skus = this.goods && this.goods.skus
+            if (Array.isArray(skus) && skus.length) return Math.min(...skus.map(s => Number(s.price || 0)))
+            return Number((this.goods && this.goods.price) || 0)
+        },
         incQty() { this.quantity++ },
         decQty() { if (this.quantity > 1) this.quantity-- },
         ensureLogin() {
@@ -83,26 +95,55 @@ export default {
             if (!user.isLoggedIn.value) { uni.navigateTo({ url: '/pages/auth/login/index' }); return false }
             return true
         },
-        addToCart() {
-            if (!this.ensureLogin()) return
-            const cart = useCartStore()
-            cart.addItem({
-                spuId: this.goods.id, skuId: this.goods.id,
-                name: this.goods.name, price: this.goods.price,
-                quantity: this.quantity, imageUrl: (this.images && this.images[0]) || ''
-            })
-            cartApi.add({ spuId: this.goods.id, quantity: this.quantity }).catch(() => {})
-            uni.showToast({ title: this.$t('toast.addedToCart'), icon: 'success' })
+        firstSku() {
+            const skus = this.goods && this.goods.skus
+            return Array.isArray(skus) && skus.length ? skus[0] : null
         },
-        buyNow() {
+        async addToCart() {
             if (!this.ensureLogin()) return
+            const sku = this.firstSku()
+            if (!sku) {
+                uni.showToast({ title: '该商品暂无可售 SKU', icon: 'none' })
+                return
+            }
+            if ((sku.stock || 0) <= 0) {
+                uni.showToast({ title: '库存不足', icon: 'none' })
+                return
+            }
             const cart = useCartStore()
             cart.addItem({
-                spuId: this.goods.id, skuId: this.goods.id,
-                name: this.goods.name, price: this.goods.price,
-                quantity: this.quantity, imageUrl: (this.images && this.images[0]) || '',
-                spec: this.goods.spec || '', checked: true
+                spuId: this.goods.id, skuId: sku.id,
+                name: this.goods.name, price: Number(sku.price || 0),
+                quantity: this.quantity, imageUrl: sku.imageUrl || (this.images && this.images[0]) || ''
             })
+            try {
+                await cartApi.add({ spuId: this.goods.id, skuId: sku.id, quantity: this.quantity })
+                uni.showToast({ title: this.$t('toast.addedToCart'), icon: 'success' })
+            } catch (e) {
+                uni.showToast({ title: '已加入本地购物车', icon: 'none' })
+            }
+        },
+        async buyNow() {
+            if (!this.ensureLogin()) return
+            const sku = this.firstSku()
+            if (!sku) {
+                uni.showToast({ title: '该商品暂无可售 SKU', icon: 'none' })
+                return
+            }
+            if ((sku.stock || 0) <= 0) {
+                uni.showToast({ title: '库存不足', icon: 'none' })
+                return
+            }
+            const cart = useCartStore()
+            // 清理旧临时项
+            cart.clear()
+            cart.addItem({
+                spuId: this.goods.id, skuId: sku.id,
+                name: this.goods.name, price: Number(sku.price || 0),
+                quantity: this.quantity, imageUrl: sku.imageUrl || (this.images && this.images[0]) || '',
+                spec: sku.specJson || '', checked: true
+            })
+            try { await cartApi.add({ spuId: this.goods.id, skuId: sku.id, quantity: this.quantity }) } catch (_) {}
             uni.navigateTo({ url: '/pages/order/confirm/index' })
         }
     }

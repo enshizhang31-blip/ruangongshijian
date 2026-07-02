@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -75,6 +76,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/i18n/**").permitAll()
                         // 国际化公开端点（小程序端拉语言列表）
                         .requestMatchers("/api/i18n/**").permitAll()
+                        // 小程序端公开接口（登录、注册、查询 SN 公开信息）
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/app/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/app/category/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/app/spu/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/app/goods/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/app/i18n/**").permitAll()
                         // 其他接口需要认证
                         .anyRequest().authenticated())
                 // 认证失败返回401

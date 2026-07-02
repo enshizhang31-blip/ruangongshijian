@@ -85,12 +85,21 @@ export default {
             }
             this.loading = true
             try {
-                const result = this.mode === 'login'
+                const res = this.mode === 'login'
                     ? await authApi.loginByPhone(this.phone, this.password)
                     : await authApi.register(this.phone, this.password, this.nickname)
-                useUserStore().login(result)
+                const data = res && (res.token ? res : res.data) ? (res.token ? res : res.data) : res
+                 const token = data.token || (data.data && data.data.token)
+                 const member = data.member || (data.data && data.data.member)
+                 if (token) {
+                     useUserStore().login({ token, member })
+                     uni.setStorageSync('token', token)
+                     uni.setStorageSync('member', member || null)
+                     uni.setStorageSync('demo-token', token)
+                     uni.setStorageSync('demo-member', member || null)
+                 }
                 uni.showToast({ title: this.$t(this.mode === 'login' ? 'auth.loginSuccess' : 'auth.registerSuccess'), icon: 'success' })
-                setTimeout(() => uni.navigateBack({ delta: 1 }), 600)
+                setTimeout(() => uni.reLaunch({ url: '/pages/index/index' }), 600)
             } catch (e) {
                 uni.showToast({ title: e.message || this.$t('toast.networkError'), icon: 'none' })
             } finally {

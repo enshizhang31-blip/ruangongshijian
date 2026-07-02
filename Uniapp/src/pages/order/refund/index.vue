@@ -37,15 +37,30 @@ export default {
         this.orderId = options.id
         const order = uni.getStorageSync(`demo-order-${options.id}`)
         if (order) this.amount = Number(order.totalAmount || 0).toFixed(2)
+        this.loadAmount()
     },
     methods: {
+        async loadAmount() {
+            try {
+                const detail = await orderApi.detail(this.orderId)
+                if (detail && detail.payAmount != null) {
+                    this.amount = Number(detail.payAmount).toFixed(2)
+                }
+            } catch (e) {}
+        },
         async submit() {
             if (!this.reason.trim()) {
                 uni.showToast({ title: this.$t('auth.fillAll'), icon: 'none' })
                 return
             }
             this.loading = true
-            try { await orderApi.refund(this.orderId, { reason: this.reason, amount: this.amount }) } catch (_) {}
+            try {
+                await orderApi.refund(this.orderId, this.reason)
+            } catch (e) {
+                uni.showToast({ title: e.message || this.$t('toast.refundFail'), icon: 'none' })
+                this.loading = false
+                return
+            }
             uni.showToast({ title: this.$t('toast.refundSubmitted'), icon: 'success' })
             setTimeout(() => uni.navigateBack({ delta: 1 }), 600)
             this.loading = false
