@@ -73,6 +73,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/system/data/**").permitAll()
                         // 国际化管理接口（开发调试用）
                         .requestMatchers("/api/admin/i18n/**").permitAll()
+                        // 国际化公开端点（小程序端拉语言列表）
+                        .requestMatchers("/api/i18n/**").permitAll()
                         // 其他接口需要认证
                         .anyRequest().authenticated())
                 // 认证失败返回401
