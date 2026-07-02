@@ -240,44 +240,97 @@ async function confirmExport() {
 }
 
 // 批量导出二维码（在新窗口打开打印页面）
-function batchExportBarcode(rows: SnCode[]) {
+async function batchExportBarcode(rows: SnCode[]) {
     if (!rows || rows.length === 0) {
         Message.warning('没有可导出的数据')
         return
     }
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) {
-        Message.error('请允许弹窗以打开打印页面')
-        return
-    }
-    Message.info('正在打开打印窗口...')
+    Message.info('正在生成二维码...')
+
+    // 1. 先在主线程用 Vite 已打包的 qrcode 模块生成所有二维码
+    // 避免 document.write + CDN 被 Chrome 拦截
+    const QRCode = (await import('qrcode')).default
     const exportItems = rows.map((item: any) => ({
         sn: item.snCode || item.sn || '',
         name: item.spuName || '',
         code: item.skuCode || '',
         status: item.status ?? 0,
     }))
-    writePrintPage(printWindow, exportItems)
+
+    // 2. 用 OffscreenCanvas/隐藏 canvas 生成 dataURL，避开新窗口的脚本依赖
+    const itemsWithQr = await Promise.all(exportItems.map(async (it) => {
+        let qrDataUrl = ''
+        if (it.sn) {
+            try {
+                qrDataUrl = await QRCode.toDataURL(it.sn, {
+                    width: 240,
+                    margin: 1,
+                    errorCorrectionLevel: 'M',
+                    color: { dark: '#000000', light: '#ffffff' },
+                })
+            } catch {
+                qrDataUrl = ''
+            }
+        }
+        return { ...it, qrDataUrl }
+    }))
+
+    // 3. 打开打印窗口（数据通过 window.name 传递，避开 URL 长度限制）
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+        Message.error('请允许弹窗以打开打印页面')
+        return
+    }
+    // 先把数据写入 window.name
+    printWindow.name = 'sn_print_' + JSON.stringify({ items: itemsWithQr, ts: Date.now() })
+    // 然后跳转到一个静态 HTML（用 srcdoc 方式，避免 document.write 警告）
+    writePrintPage(printWindow, itemsWithQr)
 }
 
-function writePrintPage(printWindow: Window, exportItems: any[]) {
-    const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>SN码二维码打印</title>
-      <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"
-              onerror="window.__qrcodeLoadFailed=true"><\/script>
-      <style>
+function writePrintPage(printWindow: Window, items: any[]) {
+    // 把二维码数据直接渲染到新窗口里（不再依赖 CDN 或外链脚本）
+    // 通过 window.name 取回数据，再用 location.replace 加载 about:srcdoc
+    // 这样既不触发 document.write 警告，也不依赖任何外部脚本
+    const html = buildPrintHtml(items)
+    // 用 data URL 加载页面（避免 document.write）
+    // 对于超大列表，data URL 可能超长，我们采用另一种策略：
+    //   - 把 html 直接赋给 document.documentElement.innerHTML
+    //   - 即先打开一个空窗口，然后逐段写入 DOM
+    // 这里采用最稳的方案：把 html 转成 Blob URL，赋给 location
+    try {
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+        const blobUrl = URL.createObjectURL(blob)
+        // 延迟一点让 name 设置生效
+        setTimeout(() => {
+            printWindow.location.replace(blobUrl)
+            // 释放 blob URL（新窗口已加载）
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
+        }, 50)
+    } catch (e) {
+        // 极少数浏览器不支持 Blob URL，回退到 srcdoc
+        printWindow.document.open()
+        printWindow.document.write(html)
+        printWindow.document.close()
+    }
+    Message.success(`已生成 ${items.length} 个二维码`)
+}
+
+/**
+ * 构造打印页 HTML，所有二维码以 <img> 形式内联 dataURL。
+ * 完全自包含，不依赖任何外部脚本 / CDN。
+ */
+function buildPrintHtml(items: any[]): string {
+    const itemsJson = JSON.stringify(items)
+    const statusNameMap: Record<number, string> = { 0: '在库', 1: '已售', 2: '已作废', 3: '退货中', 4: '已退货' }
+    const statusNameMapJson = JSON.stringify(statusNameMap)
+    const css = `
         body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #fafafa; }
         .toolbar { margin-bottom: 16px; padding: 12px; background: #fff; border-radius: 6px;
-                   box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+                   box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 8px; }
         .toolbar button { padding: 8px 18px; font-size: 14px; background: #165dff; color: #fff;
-                          border: none; border-radius: 4px; cursor: pointer; margin-right: 8px; }
+                          border: none; border-radius: 4px; cursor: pointer; }
         .toolbar button.secondary { background: #fff; color: #165dff; border: 1px solid #165dff; }
         .toolbar .info { color: #666; font-size: 13px; margin-left: 8px; }
-        .toolbar .warn { color: #f5222d; font-size: 13px; margin-top: 8px; display: none; }
         .qrcode-grid { display: flex; flex-wrap: wrap; gap: 12px; }
         .qrcode-item {
           display: inline-block;
@@ -292,25 +345,15 @@ function writePrintPage(printWindow: Window, exportItems: any[]) {
           box-sizing: border-box;
         }
         .qrcode-item .name {
-          font-size: 12px;
-          color: #333;
-          margin-bottom: 4px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-weight: 600;
+          font-size: 12px; color: #333; margin-bottom: 4px;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600;
         }
         .qrcode-item .code {
-          font-size: 11px;
-          color: #999;
-          margin-bottom: 6px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          font-size: 11px; color: #999; margin-bottom: 6px;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
-        .qrcode-item canvas {
-          display: block;
-          margin: 0 auto;
+        .qrcode-item img {
+          display: block; margin: 0 auto; width: 160px; height: 160px;
         }
         .qrcode-item .placeholder {
           width: 160px; height: 160px; line-height: 160px;
@@ -318,21 +361,12 @@ function writePrintPage(printWindow: Window, exportItems: any[]) {
           border: 1px dashed #ccc;
         }
         .qrcode-item .sn {
-          font-size: 11px;
-          color: #666;
-          margin-top: 6px;
-          font-family: 'Courier New', monospace;
-          word-break: break-all;
-          max-width: 180px;
+          font-size: 11px; color: #666; margin-top: 6px;
+          font-family: 'Courier New', monospace; word-break: break-all; max-width: 180px;
         }
         .qrcode-item .status {
-          display: inline-block;
-          font-size: 10px;
-          padding: 2px 8px;
-          border-radius: 10px;
-          background: #52c41a;
-          color: #fff;
-          margin-top: 6px;
+          display: inline-block; font-size: 10px; padding: 2px 8px;
+          border-radius: 10px; color: #fff; margin-top: 6px;
         }
         .qrcode-item .status.s0 { background: #faad14; }
         .qrcode-item .status.s1 { background: #165dff; }
@@ -343,106 +377,53 @@ function writePrintPage(printWindow: Window, exportItems: any[]) {
           .toolbar { display: none; }
           body { padding: 0; background: #fff; }
           .qrcode-item { page-break-inside: avoid; box-shadow: none; }
+        }`.trim()
+
+    // 构造每个 item 的 DOM 字符串（避免运行期脚本，纯服务端渲染）
+    const itemsHtml = items.map((it, idx) => {
+        const safeName = escapeHtml(it.name || '未命名商品')
+        const safeCode = escapeHtml(it.code || '')
+        const safeSn = escapeHtml(it.sn || '')
+        const status = it.status ?? 0
+        const statusLabel = statusNameMap[status] || '在库'
+        const qrImg = it.qrDataUrl
+            ? `<img src="${it.qrDataUrl}" alt="${safeSn}" />`
+            : `<div class="placeholder">${it.sn ? '生成失败' : 'SN 为空'}</div>`
+        return `
+        <div class="qrcode-item">
+          <div class="name" title="${safeName}">${safeName}</div>
+          ${safeCode ? `<div class="code">${safeCode}</div>` : ''}
+          ${qrImg}
+          <div class="sn">${safeSn || '(空 SN)'}</div>
+          <div class="status s${status}">${statusLabel}</div>
+        </div>`.trim()
+    }).join('\n')
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SN码二维码打印</title>
+  <style>${css}</style>
+</head>
+<body>
+  <div class="toolbar">
+    <button onclick="window.print()">🖨️ 打印二维码</button>
+    <button class="secondary" onclick="window.close()">关闭</button>
+    <span class="info">共 ${items.length} 个 SN 码 · 标签尺寸建议: 50mm × 30mm</span>
+  </div>
+  <div class="qrcode-grid">${itemsHtml}</div>
+</body>
+</html>`
+}
+
+function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => {
+        const map: Record<string, string> = {
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         }
-      </style>
-    </head>
-    <body>
-      <div class="toolbar">
-        <button onclick="window.print()">🖨️ 打印二维码</button>
-        <button class="secondary" onclick="window.close()">关闭</button>
-        <span class="info">共 ${exportItems.length} 个 SN 码 · 标签尺寸建议: 50mm × 30mm</span>
-        <div class="warn" id="warn">⚠️ 二维码库加载失败，请检查网络。可截屏保存下方 SN 码文本。</div>
-      </div>
-      <div class="qrcode-grid" id="container"></div>
-      <script>
-        const statusNameMap = { 0: '在库', 1: '已售', 2: '已作废', 3: '退货中', 4: '已退货' };
-        const items = ${JSON.stringify(exportItems)};
-        const container = document.getElementById('container');
-        const warnEl = document.getElementById('warn');
-
-        function renderOne(item, idx) {
-          const div = document.createElement('div');
-          div.className = 'qrcode-item';
-
-          const nameDiv = document.createElement('div');
-          nameDiv.className = 'name';
-          nameDiv.textContent = item.name || '未命名商品';
-          div.appendChild(nameDiv);
-
-          if (item.code) {
-            const codeDiv = document.createElement('div');
-            codeDiv.className = 'code';
-            codeDiv.textContent = item.code;
-            div.appendChild(codeDiv);
-          }
-
-          const canvas = document.createElement('canvas');
-          canvas.id = 'qr' + idx;
-          canvas.width = 160;
-          canvas.height = 160;
-          div.appendChild(canvas);
-
-          const snDiv = document.createElement('div');
-          snDiv.className = 'sn';
-          snDiv.textContent = item.sn || '(空 SN)';
-          div.appendChild(snDiv);
-
-          const statusDiv = document.createElement('div');
-          statusDiv.className = 'status s' + (item.status ?? 0);
-          statusDiv.textContent = statusNameMap[item.status] || '在库';
-          div.appendChild(statusDiv);
-
-          container.appendChild(div);
-
-          if (!item.sn) {
-            canvas.outerHTML = '<div class="placeholder">SN 为空</div>';
-            return;
-          }
-          if (typeof QRCode === 'undefined') {
-            canvas.outerHTML = '<div class="placeholder">二维码库未加载</div>';
-            return;
-          }
-          try {
-            QRCode.toCanvas(canvas, item.sn, {
-              width: 160,
-              margin: 1,
-              errorCorrectionLevel: 'M',
-              color: { dark: '#000000', light: '#ffffff' }
-            }, function (err) {
-              if (err) {
-                console.error('生成失败', item.sn, err);
-                canvas.outerHTML = '<div class="placeholder">生成失败</div>';
-              }
-            });
-          } catch (e) {
-            console.error(e);
-            canvas.outerHTML = '<div class="placeholder">生成失败</div>';
-          }
-        }
-
-        setTimeout(function() {
-          if (typeof QRCode === 'undefined' || window.__qrcodeLoadFailed) {
-            warnEl.style.display = 'block';
-          }
-        }, 2000);
-
-        const BATCH = 50;
-        let i = 0;
-        function next() {
-          const end = Math.min(i + BATCH, items.length);
-          for (; i < end; i++) renderOne(items[i], i);
-          if (i < items.length) {
-            requestAnimationFrame(next);
-          }
-        }
-        next();
-      <\/script>
-    </body>
-    </html>
-    `
-    printWindow.document.write(html)
-    printWindow.document.close()
-    Message.success(`已生成 ${exportItems.length} 个二维码`)
+        return map[c]
+    })
 }
 
 const columns = [
