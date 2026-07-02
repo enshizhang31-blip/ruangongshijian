@@ -156,6 +156,7 @@ CREATE TABLE IF NOT EXISTS customer (
     nickname VARCHAR(64) COMMENT '昵称',
     avatar VARCHAR(255) COMMENT '头像URL',
     phone VARCHAR(20) COMMENT '手机号',
+    password VARCHAR(128) COMMENT '登录密码(SHA-256 + 盐，演示版)',
     member_level TINYINT DEFAULT 1 COMMENT '会员等级：1普通 2银卡 3金卡 4钻石',
     balance DECIMAL(12,2) DEFAULT 0 COMMENT '账户余额',
     points INT DEFAULT 0 COMMENT '积分余额',
