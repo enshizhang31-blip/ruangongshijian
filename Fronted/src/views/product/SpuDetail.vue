@@ -44,194 +44,195 @@ async function getSpecValues(specId: number): Promise<SpecValue[]> {
     } catch { return [] }
 }
 
+// 解析 specJson 为可读标签（兼容新旧格式）
+function renderSpecTags(specJson?: string): { name: string; value: string }[] {
+    if (!specJson) return []
+    try {
+        const obj = JSON.parse(specJson)
+        return Object.entries(obj).map(([k, v]) => {
+            const specId = Number(k); const valId = Number(v)
+            if (!isNaN(specId) && !isNaN(valId) && valueMap.value[valId]) {
+                return { name: specMap.value[specId]?.name || k, value: valueMap.value[valId].value }
+            }
+            return { name: k, value: String(v) }
+        })
+    } catch { return [] }
+}
+
 // 选中规格名时异步加载值
 function onSpecSelected(row: SpecRow) {
     if (row.specId) getSpecValues(row.specId)
     row.valueId = undefined
-    buildSpecJson()
-    // 解析 specJson 为可读标签（兼容新旧格式）
-    function renderSpecTags(specJson?: string): { name: string; value: string }[] {
-        if (!specJson) return []
-        try {
-            const obj = JSON.parse(specJson)
-            return Object.entries(obj).map(([k, v]) => {
-                const specId = Number(k); const valId = Number(v)
-                if (!isNaN(specId) && !isNaN(valId) && valueMap.value[valId]) {
-                    return { name: specMap.value[specId]?.name || k, value: valueMap.value[valId].value }
-                }
-                return { name: k, value: String(v) }
-            })
-        } catch { return [] }
-    }
+}
 
-    // ====== 新增/编辑 SKU 表单 ======
-    const showFormModal = ref(false)
-    const isEdit = ref(false)
-    const editingId = ref<number>()
+// ====== 新增/编辑 SKU 表单 ======
+const showFormModal = ref(false)
+const isEdit = ref(false)
+const editingId = ref<number>()
 
-    interface SpecRow { specId: number | undefined; valueId: number | undefined }
-    const formModel = reactive({
-        skuCode: '',
-        specs: [{ specId: undefined, valueId: undefined }] as SpecRow[],
-        price: 0,
-        costPrice: undefined as number | undefined,
-        unit: '件',
-        imageUrl: '',
-        status: 1,
-    })
+interface SpecRow { specId: number | undefined; valueId: number | undefined }
+const formModel = reactive({
+    skuCode: '',
+    specs: [{ specId: undefined, valueId: undefined }] as SpecRow[],
+    price: 0,
+    costPrice: undefined as number | undefined,
+    unit: '件',
+    imageUrl: '',
+    status: 1,
+})
 
     function handleAdd() {
-        isEdit.value = false; editingId.value = undefined
-        formModel.skuCode = ''
-        formModel.specs = [{ specId: undefined, valueId: undefined }]
-        formModel.price = 0
-        formModel.costPrice = undefined
-        formModel.unit = '件'
-        formModel.imageUrl = ''
-        formModel.status = 1
-        showFormModal.value = true
+    isEdit.value = false; editingId.value = undefined
+    formModel.skuCode = ''
+    formModel.specs = [{ specId: undefined, valueId: undefined }]
+    formModel.price = 0
+    formModel.costPrice = undefined
+    formModel.unit = '件'
+    formModel.imageUrl = ''
+    formModel.status = 1
+    showFormModal.value = true
+}
+
+function handleEdit(record: Sku) {
+    isEdit.value = true; editingId.value = record.id
+    formModel.skuCode = record.skuCode
+    formModel.specs = []
+    formModel.price = record.price
+    formModel.costPrice = record.costPrice
+    formModel.unit = record.unit || '件'
+    formModel.imageUrl = record.imageUrl || ''
+    formModel.status = record.status
+    try {
+        const obj = JSON.parse(record.specJson || '{}')
+        for (const [k, v] of Object.entries(obj)) {
+            const specId = Number(k); const valId = Number(v)
+            if (specId && valId) formModel.specs.push({ specId, valueId: valId })
+        }
+    } catch { /* ignore */ }
+    if (formModel.specs.length === 0) formModel.specs.push({ specId: undefined, valueId: undefined })
+    showFormModal.value = true
+}
+
+const availableSpecs = computed(() => {
+    const used = new Set(formModel.specs.map(r => r.specId).filter((id): id is number => !!id))
+    return allSpecs.value.filter(s => !used.has(s.id))
+})
+
+function addSpecRow() {
+    formModel.specs.push({ specId: undefined, valueId: undefined })
+}
+
+function removeSpecRow(index: number) {
+    formModel.specs.splice(index, 1)
+}
+
+watch(() => formModel.specs.map(r => `${r.specId}-${r.valueId}`).join(','), () => {
+    const obj: Record<string, string> = {}
+    for (const row of formModel.specs) {
+        if (row.specId && row.valueId) obj[String(row.specId)] = String(row.valueId)
     }
-
-    function handleEdit(record: Sku) {
-        isEdit.value = true; editingId.value = record.id
-        formModel.skuCode = record.skuCode
-        formModel.specs = []
-        formModel.price = record.price
-        formModel.costPrice = record.costPrice
-        formModel.unit = record.unit || '件'
-        formModel.imageUrl = record.imageUrl || ''
-        formModel.status = record.status
-        try {
-            const obj = JSON.parse(record.specJson || '{}')
-            for (const [k, v] of Object.entries(obj)) {
-                const specId = Number(k); const valId = Number(v)
-                if (specId && valId) formModel.specs.push({ specId, valueId: valId })
-            }
-        } catch { /* ignore */ }
-        if (formModel.specs.length === 0) formModel.specs.push({ specId: undefined, valueId: undefined })
-        showFormModal.value = true
+    if (!isEdit.value && !formModel.skuCode) {
+        formModel.skuCode = autoGenerateSkuCode(obj)
     }
+})
 
-    const availableSpecs = computed(() => {
-        const used = new Set(formModel.specs.map(r => r.specId).filter((id): id is number => !!id))
-        return allSpecs.value.filter(s => !used.has(s.id))
-    })
+function autoGenerateSkuCode(_specIdObj: Record<string, string>): string {
+    const abbr = spu.value?.name
+        ? spu.value.name.replace(/[\u4e00-\u9fa5]/g, '').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6) || 'SPU'
+        : 'SPU'
+    const id = editingId.value || Date.now() % 10000
+    return `SKU-${abbr}-${id}-SPU${spuId}`
+}
 
-    function addSpecRow() {
-        formModel.specs.push({ specId: undefined, valueId: undefined })
-    }
-
-    function removeSpecRow(index: number) {
-        formModel.specs.splice(index, 1)
-    }
-
-    watch(() => formModel.specs.map(r => `${r.specId}-${r.valueId}`).join(','), () => {
+async function handleSubmit() {
+    if (!spuId) { Message.warning('SPU不存在'); return false }
+    if (!formModel.price || formModel.price <= 0) { Message.warning('请填写有效的价格'); return false }
+    try {
         const obj: Record<string, string> = {}
         for (const row of formModel.specs) {
             if (row.specId && row.valueId) obj[String(row.specId)] = String(row.valueId)
         }
-        if (!isEdit.value && !formModel.skuCode) {
-            formModel.skuCode = autoGenerateSkuCode(obj)
+        const data: Partial<Sku> = {
+            spuId,
+            skuCode: formModel.skuCode,
+            specJson: JSON.stringify(obj),
+            price: formModel.price,
+            costPrice: formModel.costPrice,
+            unit: formModel.unit,
+            imageUrl: formModel.imageUrl,
+            status: formModel.status,
         }
-    })
-
-    function autoGenerateSkuCode(_specIdObj: Record<string, string>): string {
-        const abbr = spu.value?.name
-            ? spu.value.name.replace(/[\u4e00-\u9fa5]/g, '').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6) || 'SPU'
-            : 'SPU'
-        const id = editingId.value || Date.now() % 10000
-        return `SKU-${abbr}-${id}-SPU${spuId}`
-    }
-
-    async function handleSubmit() {
-        if (!spuId) { Message.warning('SPU不存在'); return false }
-        if (!formModel.price || formModel.price <= 0) { Message.warning('请填写有效的价格'); return false }
-        try {
-            const obj: Record<string, string> = {}
-            for (const row of formModel.specs) {
-                if (row.specId && row.valueId) obj[String(row.specId)] = String(row.valueId)
-            }
-            const data: Partial<Sku> = {
-                spuId,
-                skuCode: formModel.skuCode,
-                specJson: JSON.stringify(obj),
-                price: formModel.price,
-                costPrice: formModel.costPrice,
-                unit: formModel.unit,
-                imageUrl: formModel.imageUrl,
-                status: formModel.status,
-            }
-            if (isEdit.value && editingId.value) {
-                await productApi.updateSku({ ...data, id: editingId.value } as Sku)
-                Message.success('更新成功')
-            } else {
-                await productApi.createSku(data as Sku)
-                Message.success('创建成功')
-            }
-            loadSkus()
-            return true
-        } catch (e: any) { Message.error(e?.message || '操作失败'); return false }
-    }
-
-    async function handleDelete(id: number) {
-        try { await productApi.deleteSku(id); Message.success('删除成功'); loadSkus() }
-        catch (e: any) { Message.error(e?.message || '删除失败') }
-    }
-
-    async function handleToggleSkuStatus(record: Sku) {
-        const newStatus = record.status === 1 ? 0 : 1
-        try { await productApi.updateSku({ ...record, status: newStatus } as Sku); Message.success('状态更新成功'); loadSkus() }
-        catch (e: any) { Message.error(e?.message || '操作失败') }
-    }
-
-    async function loadSkus() {
-        skuLoading.value = true
-        try { skuList.value = await productApi.getSkus(spuId) }
-        catch { Message.error('加载SKU失败') }
-        finally { skuLoading.value = false }
-    }
-
-    // ====== 批量生成 SKU ======
-    const showBatchSkuModal = ref(false)
-    const batchSkuPrefix = ref('')
-    const batchSkuPrice = ref<number>(0)
-    const batchSkuCostPrice = ref<number>(0)
-    const selectedBatchSpecIds = ref<number[]>([])
-
-    async function handleOpenBatchSku() {
-        batchSkuPrefix.value = ''
-        batchSkuPrice.value = 0
-        batchSkuCostPrice.value = 0
-        selectedBatchSpecIds.value = []
-        try { allSpecs.value = await productApi.getSpecs(); buildSpecMaps(allSpecs.value) } catch { allSpecs.value = [] }
-        showBatchSkuModal.value = true
-    }
-
-    async function handleBatchGenerateSku() {
-        if (selectedBatchSpecIds.value.length === 0) { Message.warning('请至少选择一个规格'); return false }
-        try {
-            await productApi.batchGenerateSkus({
-                spuId, specIds: selectedBatchSpecIds.value,
-                codePrefix: batchSkuPrefix.value || undefined,
-                defaultPrice: batchSkuPrice.value || undefined,
-                defaultCostPrice: batchSkuCostPrice.value || undefined,
-            } as any)
-            Message.success('批量生成SKU成功')
-            showBatchSkuModal.value = false
-            loadSkus()
-            return true
-        } catch (e: any) { Message.error(e?.message || '操作失败'); return false }
-    }
-
-    onMounted(async () => {
-        loading.value = true
-        try { spu.value = await productApi.getById(spuId) }
-        catch { Message.error('加载SPU失败') }
-        finally { loading.value = false }
+        if (isEdit.value && editingId.value) {
+            await productApi.updateSku({ ...data, id: editingId.value } as Sku)
+            Message.success('更新成功')
+        } else {
+            await productApi.createSku(data as Sku)
+            Message.success('创建成功')
+        }
         loadSkus()
-        try { const specs = await productApi.getSpecs(); allSpecs.value = specs; buildSpecMaps(specs) }
-        catch { /* ignore */ }
-    })
+        return true
+    } catch (e: any) { Message.error(e?.message || '操作失败'); return false }
+}
+
+async function handleDelete(id: number) {
+    try { await productApi.deleteSku(id); Message.success('删除成功'); loadSkus() }
+    catch (e: any) { Message.error(e?.message || '删除失败') }
+}
+
+async function handleToggleSkuStatus(record: Sku) {
+    const newStatus = record.status === 1 ? 0 : 1
+    try { await productApi.updateSku({ ...record, status: newStatus } as Sku); Message.success('状态更新成功'); loadSkus() }
+    catch (e: any) { Message.error(e?.message || '操作失败') }
+}
+
+async function loadSkus() {
+    skuLoading.value = true
+    try { skuList.value = await productApi.getSkus(spuId) }
+    catch { Message.error('加载SKU失败') }
+    finally { skuLoading.value = false }
+}
+
+// ====== 批量生成 SKU ======
+const showBatchSkuModal = ref(false)
+const batchSkuPrefix = ref('')
+const batchSkuPrice = ref<number>(0)
+const batchSkuCostPrice = ref<number>(0)
+const selectedBatchSpecIds = ref<number[]>([])
+
+async function handleOpenBatchSku() {
+    batchSkuPrefix.value = ''
+    batchSkuPrice.value = 0
+    batchSkuCostPrice.value = 0
+    selectedBatchSpecIds.value = []
+    try { allSpecs.value = await productApi.getSpecs(); buildSpecMaps(allSpecs.value) } catch { allSpecs.value = [] }
+    showBatchSkuModal.value = true
+}
+
+async function handleBatchGenerateSku() {
+    if (selectedBatchSpecIds.value.length === 0) { Message.warning('请至少选择一个规格'); return false }
+    try {
+        await productApi.batchGenerateSkus({
+            spuId, specIds: selectedBatchSpecIds.value,
+            codePrefix: batchSkuPrefix.value || undefined,
+            defaultPrice: batchSkuPrice.value || undefined,
+            defaultCostPrice: batchSkuCostPrice.value || undefined,
+        } as any)
+        Message.success('批量生成SKU成功')
+        showBatchSkuModal.value = false
+        loadSkus()
+        return true
+    } catch (e: any) { Message.error(e?.message || '操作失败'); return false }
+}
+
+onMounted(async () => {
+    loading.value = true
+    try { spu.value = await productApi.getById(spuId) }
+    catch { Message.error('加载SPU失败') }
+    finally { loading.value = false }
+    loadSkus()
+    try { const specs = await productApi.getSpecs(); allSpecs.value = specs; buildSpecMaps(specs) }
+    catch { /* ignore */ }
+})
 </script>
 
 <template>
