@@ -134,6 +134,66 @@ public class SpecServiceImpl implements SpecService {
 
     @Override
     @Transactional
+    public List<SpecValue> batchCreateSpecValues(Long specId, List<String> values) {
+        log.info("batchCreateSpecValues specId={}, values={}", specId, values);
+        getSpecById(specId);
+
+        if (values == null || values.isEmpty()) {
+            throw new BusinessException(400, "规格值列表不能为空");
+        }
+
+        // 1. 过滤空值和重复值, 保持顺序
+        java.util.LinkedHashSet<String> uniqueValues = new java.util.LinkedHashSet<>();
+        for (String v : values) {
+            if (StringUtils.hasText(v)) {
+                uniqueValues.add(v.trim());
+            }
+        }
+        if (uniqueValues.isEmpty()) {
+            throw new BusinessException(400, "规格值列表不能为空");
+        }
+
+        // 2. 查询已存在的值, 用于去重提示
+        List<SpecValue> existing = specValueMapper.selectList(
+                new LambdaQueryWrapper<SpecValue>().eq(SpecValue::getSpecId, specId));
+        java.util.Set<String> existingValues = new java.util.HashSet<>();
+        for (SpecValue ev : existing) {
+            existingValues.add(ev.getValue());
+        }
+
+        // 3. 获取当前最大 sort, 后续按顺序累加
+        int baseSort = existing.stream()
+                .mapToInt(s -> s.getSort() != null ? s.getSort() : 0)
+                .max()
+                .orElse(0);
+
+        // 4. 逐个创建 (跳过已存在)
+        List<SpecValue> created = new java.util.ArrayList<>();
+        List<String> skipped = new java.util.ArrayList<>();
+        int order = 0;
+        for (String value : uniqueValues) {
+            if (existingValues.contains(value)) {
+                skipped.add(value);
+                continue;
+            }
+            SpecValue specValue = new SpecValue();
+            specValue.setSpecId(specId);
+            specValue.setValue(value);
+            specValue.setSort(baseSort + order + 1);
+            specValue.setCreatedAt(LocalDateTime.now());
+            specValue.setUpdatedAt(LocalDateTime.now());
+            specValueMapper.insert(specValue);
+            i18nSyncService.syncSpecValueCreated(specId, specValue.getId(), specValue.getValue());
+            created.add(specValue);
+            order++;
+        }
+        log.info("批量创建规格值完成 specId={}, 新增={}, 跳过={}",
+                specId, created.size(), skipped.size());
+        return created;
+    }
+
+    @Override
+    @Transactional
     public void updateSpecValue(Long id, SpecValueParam param) {
         log.info("updateSpecValue id={}", id);
         SpecValue specValue = getSpecValueById(id);

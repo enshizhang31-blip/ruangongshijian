@@ -56,6 +56,75 @@ public class I18nSyncService {
         log.info("syncGoodsDeleted goodsId={}", goodsId);
     }
 
+    // ==================== SKU (类似 SPU 的多语言支持) ====================
+
+    /**
+     * SKU 创建时同步翻译单元
+     * @param skuId SKU ID
+     * @param skuCode SKU 编码 (作为唯一标识, 通常不需要翻译)
+     * @param specJson 规格组合 JSON, 例如 {"颜色":"红色","尺码":"XL"}
+     * @param unit 计量单位 (例如: 件, kg, 米)
+     * @param spuName 所属 SPU 名称 (作为 SKU 显示名默认值)
+     */
+    public void syncSkuCreated(Long skuId, String skuCode, String specJson, String unit, String spuName) {
+        // SKU 显示名: 默认用 SPU 名 + 规格
+        String skuDisplayName = buildSkuDisplayName(spuName, specJson);
+        upsertUnit("sku", skuId, "name", "text", "SKU名称", "SKU显示名称", skuDisplayName, 0);
+        // 规格描述: 直接存储 specJson
+        if (specJson != null && !specJson.trim().isEmpty()) {
+            upsertUnit("sku", skuId, "spec", "text", "规格", "规格组合", specJson, 1);
+        }
+        // 单位
+        if (unit != null && !unit.trim().isEmpty()) {
+            upsertUnit("sku", skuId, "unit", "text", "单位", "计量单位", unit, 2);
+        }
+        cache.evictEntity("sku", skuId);
+    }
+
+    /**
+     * SKU 更新时同步翻译单元
+     */
+    public void syncSkuUpdated(Long skuId, String specJson, String unit, String spuName) {
+        if (specJson != null) {
+            String skuDisplayName = buildSkuDisplayName(spuName, specJson);
+            // SKU name 字段同步更新
+            updateBaseValue("sku", skuId, "name", skuDisplayName);
+            updateBaseValue("sku", skuId, "spec", specJson);
+        }
+        if (unit != null) {
+            updateBaseValue("sku", skuId, "unit", unit);
+        }
+        cache.evictEntity("sku", skuId);
+    }
+
+    /**
+     * SKU 删除时清理翻译单元
+     */
+    public void syncSkuDeleted(Long skuId) {
+        repo.deleteByEntityTypeAndEntityId("sku", skuId);
+        cache.evictEntity("sku", skuId);
+        log.info("syncSkuDeleted skuId={}", skuId);
+    }
+
+    /**
+     * 构建 SKU 显示名: SPU名 + 规格组合
+     */
+    private String buildSkuDisplayName(String spuName, String specJson) {
+        StringBuilder sb = new StringBuilder();
+        if (spuName != null && !spuName.isEmpty()) {
+            sb.append(spuName);
+        }
+        if (specJson != null && !specJson.trim().isEmpty()) {
+            // 简单解析 {"颜色":"红色","尺码":"XL"} → 红色/XL
+            String spec = specJson.replaceAll("[{}\"\\s]", "")
+                                  .replace(",", "/")
+                                  .replace(":", "/");
+            if (sb.length() > 0) sb.append(" ");
+            sb.append(spec);
+        }
+        return sb.toString();
+    }
+
     // ==================== 分类 ====================
 
     public void syncCategoryCreated(Long categoryId, String name, String description) {

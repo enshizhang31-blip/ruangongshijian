@@ -10,6 +10,7 @@ import com.salemanager.modules.product.model.Goods;
 import com.salemanager.modules.product.model.Sku;
 import com.salemanager.modules.product.param.ProductParam;
 import com.salemanager.modules.product.service.ProductService;
+import com.salemanager.modules.i18n.service.I18nSyncService;
 import com.salemanager.modules.sn.mapper.SnCodeLogMapper;
 import com.salemanager.modules.sn.mapper.SnCodeMapper;
 import com.salemanager.modules.sn.model.SnCode;
@@ -44,6 +45,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private SnCodeLogMapper snCodeLogMapper;
+
+    @Autowired
+    private I18nSyncService i18nSyncService;
 
     @Override
     public List<Goods> getProductList(String keyword, Long categoryId, Integer status, Integer page, Integer pageSize) {
@@ -143,6 +147,15 @@ public class ProductServiceImpl implements ProductService {
         goods.setUpdatedAt(LocalDateTime.now());
 
         goodsMapper.insert(goods);
+
+        // 同步 SPU 翻译 (类似 SKU 的多语言支持)
+        i18nSyncService.syncGoodsCreated(
+                goods.getId(),
+                goods.getName(),
+                goods.getShortDesc(),
+                goods.getDescription()
+        );
+
         log.info("商品创建成功 id={}", goods.getId());
     }
 
@@ -184,6 +197,15 @@ public class ProductServiceImpl implements ProductService {
         goods.setUpdatedAt(LocalDateTime.now());
 
         goodsMapper.updateById(goods);
+
+        // 同步 SPU 翻译
+        i18nSyncService.syncGoodsUpdated(
+                goods.getId(),
+                goods.getName(),
+                goods.getShortDesc(),
+                goods.getDescription()
+        );
+
         log.info("商品更新成功 id={}", id);
     }
 
@@ -225,6 +247,10 @@ public class ProductServiceImpl implements ProductService {
         }
 
         goodsMapper.deleteById(id);
+
+        // 同步 SPU 翻译清理
+        i18nSyncService.syncGoodsDeleted(id);
+
         log.info("商品删除成功 id={}", id);
     }
 

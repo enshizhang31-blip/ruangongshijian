@@ -119,4 +119,51 @@ public interface SnCodeService {
      * 更新SN码状态
      */
     void updateSnCodeStatus(Long id, Integer status);
+
+    // ====================== 扫码全流程接口 ======================
+
+    /**
+     * 扫码入库（状态机：任意非已作废/退货中/已退货 → 0在库）
+     */
+    SnCode scanInbound(String sn, Long userId, String userName);
+
+    /**
+     * 扫码发货（状态机：0在库/1锁定 → 3已发货）
+     */
+    SnCode scanDeliver(String sn, String logisticsNo, Long userId, String userName);
+
+    /**
+     * 扫码签收（状态机：3已发货 → 4已签收）
+     */
+    SnCode scanReceive(String sn, Long userId, String userName);
+
+    /**
+     * 扫码退货（状态机：2已售/3已发货/4已签收 → 7退货中）
+     */
+    SnCode scanReturn(String sn, String reason);
+
+    /**
+     * 扫码退货完成（状态机：7退货中 → 0在库，重新入库）
+     */
+    SnCode scanReturnComplete(String sn, Long userId, String userName);
+
+    /**
+     * 扫码作废（状态机：非已售/已发货/已签收 → 6已作废）
+     */
+    SnCode scanVoid(String sn, String reason);
+
+    /**
+     * 通用扫码动作分发
+     */
+    SnCode scanAction(String sn, String action, Map<String, Object> params);
+
+    /**
+     * 批量扫码入库
+     */
+    Map<String, Object> batchScanInbound(List<String> sns, Long userId, String userName);
+
+    /**
+     * 根据用户ID获取用户姓名
+     */
+    String getUserNameById(Long userId);
 }

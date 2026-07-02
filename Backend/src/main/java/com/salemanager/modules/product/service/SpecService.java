@@ -43,6 +43,14 @@ public interface SpecService {
     void createSpecValue(Long specId, SpecValueParam param);
 
     /**
+     * 批量添加规格值 (供"添加值"窗口批量录入使用)
+     * @param specId 规格ID
+     * @param values 值列表, 例如 ["黑色", "白色", "红色"]
+     * @return 新创建的规格值列表
+     */
+    List<SpecValue> batchCreateSpecValues(Long specId, List<String> values);
+
+    /**
      * 更新规格值
      */
     void updateSpecValue(Long id, SpecValueParam param);

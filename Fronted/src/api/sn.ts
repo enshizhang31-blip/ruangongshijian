@@ -57,4 +57,41 @@ export const snApi = {
     updateStatus(id: number, status: number) {
         return api.put<void>(`/admin/sn/code/${id}/status`, { status })
     },
+
+    // ============ 扫码驱动状态流转接口 ============
+    // 通用扫码操作
+    scanAction(action: string, data: { sn: string; logisticsNo?: string; reason?: string; userId?: number; userName?: string }) {
+        return api.post<SnCode>(`/admin/sn/scan?action=${action}`, data)
+    },
+    // 扫码入库
+    scanInbound(data: { sn: string; userId?: number; userName?: string }) {
+        return api.post<SnCode>('/admin/sn/scan/inbound', data)
+    },
+    // 扫码发货
+    scanDeliver(data: { sn: string; logisticsNo?: string; userId?: number; userName?: string }) {
+        return api.post<SnCode>('/admin/sn/scan/deliver', data)
+    },
+    // 扫码签收
+    scanReceive(data: { sn: string; userId?: number; userName?: string }) {
+        return api.post<SnCode>('/admin/sn/scan/receive', data)
+    },
+    // 扫码退货
+    scanReturn(data: { sn: string; reason?: string }) {
+        return api.post<SnCode>('/admin/sn/scan/return', data)
+    },
+    // 扫码完成退货入库
+    scanReturnComplete(data: { sn: string; userId?: number; userName?: string }) {
+        return api.post<SnCode>('/admin/sn/scan/return-complete', data)
+    },
+    // 扫码作废
+    scanVoid(data: { sn: string; reason?: string }) {
+        return api.post<SnCode>('/admin/sn/scan/void', data)
+    },
+    // 批量扫码入库
+    batchScanInbound(data: { sns: string[]; userId?: number; userName?: string }) {
+        return api.post<{ success: number; failed: number; failures: any[] }>(
+            '/admin/sn/scan/batch-inbound',
+            data
+        )
+    },
 }

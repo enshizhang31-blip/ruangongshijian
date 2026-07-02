@@ -45,14 +45,19 @@ const router = createRouter({
           component: () => import('@/views/product/SpecList.vue'),
         },
         {
-          path: '/sn',
-          name: 'Sn',
-          component: () => import('@/views/sn/SnList.vue'),
+            path: '/sn',
+            name: 'Sn',
+            component: () => import('@/views/sn/SnList.vue'),
         },
         {
-          path: '/sn/sku/:skuId',
-          name: 'SkuSnCode',
-          component: () => import('@/views/sn/SkuSnCodeView.vue'),
+            path: '/sn/scan',
+            name: 'SnScan',
+            component: () => import('@/views/sn/SnScan.vue'),
+        },
+        {
+            path: '/sn/sku/:skuId',
+            name: 'SkuSnCode',
+            component: () => import('@/views/sn/SkuSnCodeView.vue'),
         },
         {
           path: '/customer',

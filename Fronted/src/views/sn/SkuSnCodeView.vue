@@ -97,7 +97,7 @@ function handlePageChange(p: number) {
 async function handleCreateSn() {
   if (!snForm.value.sn.trim()) { Message.warning('请输入SN码'); return }
   try {
-    await snApi.create({ sn: snForm.value.sn, goodsId: sku.value?.spuId || 0, remark: remark.value })
+    await snApi.create({ sn: snForm.value.sn, skuId: sku.value?.id, goodsId: sku.value?.spuId, remark: remark.value })
     Message.success('录入成功')
     showFormModal.value = false
     snForm.value.sn = ''
@@ -111,7 +111,7 @@ async function handleBatchCreate() {
   const sns = batchSnText.value.split('\n').map(s => s.trim()).filter(Boolean)
   if (sns.length === 0) { Message.warning('请输入SN码'); return }
   try {
-    const res = await snApi.batchCreate({ sns, goodsId: sku.value?.spuId || 0, remark: remark.value })
+    const res = await snApi.batchCreate({ sns, skuId: sku.value?.id, goodsId: sku.value?.spuId, remark: remark.value })
     Message.success(`批量录入完成：成功 ${res.success}，失败 ${res.failed}`)
     showBatchModal.value = false
     batchSnText.value = ''
@@ -157,7 +157,6 @@ function goBack() {
 const columns = [
   { title: 'SN码', dataIndex: 'snCode', width: 220 },
   { title: '状态', dataIndex: 'status', width: 100 },
-  { title: '来源', dataIndex: 'source', width: 80 },
   { title: '价格', dataIndex: 'price', width: 100 },
   { title: '录入时间', dataIndex: 'createdAt', width: 160 },
   { title: '操作', slotName: 'actions', align: 'right', width: 200, fixed: 'right' },
@@ -234,9 +233,6 @@ const columns = [
         <Table v-else :columns="columns" :data="list" :pagination="false" :scroll="{ x: 900 }">
           <template #status="{ record }">
             <Tag :color="getStatusInfo(record.status).color">{{ getStatusInfo(record.status).label }}</Tag>
-          </template>
-          <template #source="{ record }">
-            {{ record.source === 1 ? '手动' : record.source === 2 ? 'CSV' : record.source === 3 ? '自动' : '-' }}
           </template>
           <template #price="{ record }">{{ record.price ? formatMoney(record.price) : '-' }}</template>
           <template #createdAt="{ record }">{{ record.createdAt ? formatDate(record.createdAt) : '-' }}</template>

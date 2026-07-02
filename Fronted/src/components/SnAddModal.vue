@@ -23,9 +23,9 @@ interface SkuWithSpu extends Sku {
 
 const skuList = ref<SkuWithSpu[]>([])
 const loadingSkus = ref(false)
-const selectedSkuId = ref<number>()
+const selectedSkuId = ref<string>()
 const selectedSku = computed<SkuWithSpu | undefined>(() =>
-    skuList.value.find((s) => s.id === selectedSkuId.value)
+    skuList.value.find((s) => String(s.id) === selectedSkuId.value)
 )
 const generateCount = ref<number>(1)
 
@@ -106,7 +106,8 @@ async function handleSave() {
         return false
     }
     try {
-        const result = await snApi.generate(selectedSkuId.value, generateCount.value)
+        const skuId = Number(selectedSkuId.value)
+        const result = await snApi.generate(skuId, generateCount.value)
         Message.success(
             `【${previewInfo.value?.spuName}】生成成功，共 ${result.length} 个 SN 码`
         )
@@ -128,7 +129,7 @@ async function handleSave() {
                 </div>
                 <Select v-model="selectedSkuId" placeholder="搜索商品名称或 SKU 编码" class="w-full"
                     :loading="loadingSkus" filterable show-search>
-                    <Select.Option v-for="s in skuList" :key="s.id" :value="s.id">
+                    <Select.Option v-for="s in skuList" :key="s.id" :value="String(s.id)">
                         <div class="flex items-center gap-2">
                             <img v-if="s.imageUrl || s.spuImage"
                                 :src="s.imageUrl || s.spuImage"

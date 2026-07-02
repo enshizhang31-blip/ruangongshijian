@@ -15,6 +15,7 @@ import com.salemanager.modules.product.param.SkuParam;
 import com.salemanager.modules.product.service.SkuService;
 import com.salemanager.modules.sn.mapper.SnCodeMapper;
 import com.salemanager.modules.sn.model.SnCode;
+import com.salemanager.modules.i18n.service.I18nSyncService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,9 @@ public class SkuServiceImpl implements SkuService {
 
     @Autowired
     private SnCodeMapper snCodeMapper;
+
+    @Autowired
+    private I18nSyncService i18nSyncService;
 
     @Override
     public List<Sku> getSkuListBySpuId(Long spuId) {
@@ -95,6 +99,17 @@ public class SkuServiceImpl implements SkuService {
         sku.setUpdatedAt(LocalDateTime.now());
 
         skuMapper.insert(sku);
+
+        // 同步 SKU 翻译 (类似 SPU 的多语言支持)
+        Goods spu = goodsMapper.selectById(sku.getSpuId());
+        i18nSyncService.syncSkuCreated(
+                sku.getId(),
+                sku.getSkuCode(),
+                sku.getSpecJson(),
+                sku.getUnit(),
+                spu != null ? spu.getName() : null
+        );
+
         log.info("SKU创建成功 id={}, skuCode={}", sku.getId(), sku.getSkuCode());
     }
 
@@ -117,6 +132,16 @@ public class SkuServiceImpl implements SkuService {
         copySkuParam(sku, param);
         sku.setUpdatedAt(LocalDateTime.now());
         skuMapper.updateById(sku);
+
+        // 同步 SKU 翻译
+        Goods spu = goodsMapper.selectById(sku.getSpuId());
+        i18nSyncService.syncSkuUpdated(
+                sku.getId(),
+                sku.getSpecJson(),
+                sku.getUnit(),
+                spu != null ? spu.getName() : null
+        );
+
         log.info("SKU更新成功 id={}", param.getId());
     }
 
@@ -154,6 +179,10 @@ public class SkuServiceImpl implements SkuService {
         }
 
         skuMapper.deleteById(id);
+
+        // 同步 SKU 翻译清理
+        i18nSyncService.syncSkuDeleted(id);
+
         log.info("SKU删除成功 id={}", id);
     }
 
@@ -223,6 +252,14 @@ public class SkuServiceImpl implements SkuService {
                 continue;
             }
             skuMapper.insert(sku);
+            // 同步 SKU 翻译
+            i18nSyncService.syncSkuCreated(
+                    sku.getId(),
+                    sku.getSkuCode(),
+                    sku.getSpecJson(),
+                    sku.getUnit(),
+                    goods != null ? goods.getName() : null
+            );
         }
 
         log.info("批量生成SKU完成，共创建 {} 个", skus.size());

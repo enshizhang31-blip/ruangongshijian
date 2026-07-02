@@ -156,6 +156,7 @@ CREATE TABLE IF NOT EXISTS customer (
     nickname VARCHAR(64) COMMENT '昵称',
     avatar VARCHAR(255) COMMENT '头像URL',
     phone VARCHAR(20) COMMENT '手机号',
+    password VARCHAR(128) COMMENT '密码（演示版 SHA-256(原始密码+盐)）',
     member_level TINYINT DEFAULT 1 COMMENT '会员等级：1普通 2银卡 3金卡 4钻石',
     balance DECIMAL(12,2) DEFAULT 0 COMMENT '账户余额',
     points INT DEFAULT 0 COMMENT '积分余额',
@@ -169,6 +170,9 @@ CREATE TABLE IF NOT EXISTS customer (
     INDEX idx_member_level (member_level),
     INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户表';
+
+-- 兼容旧库：customer 表缺少 password 列时补齐
+ALTER TABLE customer ADD COLUMN IF NOT EXISTS password VARCHAR(128) COMMENT '密码（演示版 SHA-256(原始密码+盐)）';
 
 CREATE TABLE IF NOT EXISTS address (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',

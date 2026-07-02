@@ -3,6 +3,7 @@ package com.salemanager.modules.customer.model;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -18,6 +19,7 @@ public class Customer {
     private String avatar;
     private String phone;
     /** 演示版手机号密码登录用 SHA-256(原始密码+盐) */
+    @JsonIgnore
     private String password;
     private Integer memberLevel;
     private BigDecimal balance;

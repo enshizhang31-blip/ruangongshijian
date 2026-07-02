@@ -41,12 +41,18 @@ const specForm = reactive({
   name: '',
 })
 
-// 规格值弹窗（编辑单个值）
+// 规格值弹窗（多值批量录入, 实时显示已添加列表）
 const showValueModal = ref(false)
 const isValueEdit = ref(false)
 const editingValueId = ref<number>()
 const editingSpecIdForValue = ref<number>()
 const valueForm = ref<{ value: string; sort?: number }>({ value: '', sort: 0 })
+// 批量添加模式: 暂存待添加的值列表
+const pendingValues = ref<string[]>([])
+// 当前规格的所有已存在值（用于去重判断）
+const existingValues = ref<string[]>([])
+const batchInput = ref('')
+const batchSaving = ref(false)
 
 onMounted(() => { load() })
 
@@ -120,6 +126,11 @@ function handleAddValue(specId: number) {
   editingValueId.value = undefined
   editingSpecIdForValue.value = specId
   valueForm.value = { value: '', sort: 0 }
+  // 初始化批量模式: 加载已有值列表
+  const existing = allSpecValues.value[specId] || []
+  existingValues.value = existing.map(v => v.value)
+  pendingValues.value = []
+  batchInput.value = ''
   showValueModal.value = true
 }
 
@@ -129,6 +140,75 @@ function handleEditValue(value: SpecValue) {
   editingSpecIdForValue.value = (value as any)._specId
   valueForm.value = { value: value.value, sort: value.sort }
   showValueModal.value = true
+}
+
+// 解析批量输入: 支持逗号/换行/空格/分号分隔
+function parseBatchInput(text: string): string[] {
+  if (!text) return []
+  return text.split(/[,\n\s;；，\t]+/)
+    .map(s => s.trim())
+    .filter(Boolean)
+}
+
+// 添加到待提交列表
+function addToPending() {
+  const items = parseBatchInput(batchInput.value)
+  if (items.length === 0) {
+    Message.warning('请输入规格值')
+    return
+  }
+  let added = 0
+  let skipped = 0
+  for (const v of items) {
+    if (pendingValues.value.includes(v) || existingValues.value.includes(v)) {
+      skipped++
+      continue
+    }
+    pendingValues.value.push(v)
+    added++
+  }
+  batchInput.value = ''
+  if (added > 0) {
+    Message.success(`已添加 ${added} 个${skipped > 0 ? `, 跳过 ${skipped} 个重复` : ''}`)
+  } else if (skipped > 0) {
+    Message.warning(`全部 ${skipped} 个已存在或重复`)
+  }
+}
+
+// 从待提交列表移除
+function removeFromPending(idx: number) {
+  pendingValues.value.splice(idx, 1)
+}
+
+// 清空待提交列表
+function clearPending() {
+  if (pendingValues.value.length === 0) return
+  pendingValues.value = []
+}
+
+// 一键提交批量
+async function handleSubmitBatch() {
+  if (pendingValues.value.length === 0) {
+    Message.warning('请先添加规格值')
+    return
+  }
+  if (!editingSpecIdForValue.value) return
+  batchSaving.value = true
+  try {
+    const res = await productApi.batchCreateSpecValues(
+      editingSpecIdForValue.value,
+      [...pendingValues.value]
+    )
+    Message.success(`批量添加成功, 共 ${res.length} 个`)
+    showValueModal.value = false
+    pendingValues.value = []
+    batchInput.value = ''
+    loadSpecValues(editingSpecIdForValue.value)
+  } catch (e: any) {
+    Message.error(e?.message || '批量添加失败')
+  } finally {
+    batchSaving.value = false
+  }
 }
 
 async function handleSubmitValue() {
@@ -231,12 +311,111 @@ function handleTranslate(type: string, id: number, name: string) {
   </Modal>
 
   <!-- 规格值弹窗 -->
-  <Modal v-model:visible="showValueModal" :title="isValueEdit ? '编辑规格值' : '新增规格值'" :width="400"
-    :on-before-ok="handleSubmitValue">
-    <div class="flex items-center gap-4">
+  <Modal v-model:visible="showValueModal"
+    :title="isValueEdit ? '编辑规格值' : `添加规格值 (${pendingValues.length} 个待提交)`"
+    :width="560"
+    :footer="isValueEdit ? undefined : false"
+    :on-before-ok="isValueEdit ? handleSubmitValue : () => false">
+    <!-- 编辑模式 -->
+    <div v-if="isValueEdit" class="flex items-center gap-4">
       <div class="w-20 text-sm text-gray-500">规格值</div>
       <Input v-model="valueForm.value" placeholder="如：黑色、白色、红色" class="flex-1" />
     </div>
+
+    <!-- 批量添加模式 -->
+    <div v-else class="flex flex-col gap-4">
+      <Alert type="info" :show-icon="true">
+        <div class="text-sm">
+          一次性输入多个规格值, 已添加的会显示在下方列表中, 确认后一键提交。
+          <br />支持<b>空格</b>、<b>逗号</b>、<b>分号</b>、<b>换行</b>分隔。
+        </div>
+      </Alert>
+
+      <!-- 输入区 -->
+      <div>
+        <div class="text-sm text-gray-600 mb-1.5">输入规格值</div>
+        <div class="flex gap-2">
+          <Input v-model="batchInput" placeholder="如：黑色 白色 红色 或 黑色,白色,红色" class="flex-1"
+            allow-clear @press-enter="addToPending" size="large">
+            <template #prefix>
+              <PlusIcon class="w-4 h-4 text-gray-400" />
+            </template>
+          </Input>
+          <Button type="primary" size="large" @click="addToPending" :disabled="!batchInput.trim()">
+            <template #icon><PlusIcon class="w-4 h-4" /></template>
+            添加到列表
+          </Button>
+        </div>
+        <div class="text-xs text-gray-400 mt-1">
+          💡 提示: 按回车或点击"添加到列表"按钮即可加入下方列表
+        </div>
+      </div>
+
+      <!-- 待提交列表 -->
+      <div v-if="pendingValues.length > 0" class="border border-blue-200 rounded-lg bg-blue-50/30">
+        <div class="flex items-center justify-between px-3 py-2 border-b border-blue-200 bg-blue-50 rounded-t-lg">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium text-blue-700">待提交列表</span>
+            <Tag color="arcoblue" size="small">{{ pendingValues.length }} 个</Tag>
+          </div>
+          <Button type="text" size="mini" status="danger" @click="clearPending">
+            <template #icon><TrashIcon class="w-3.5 h-3.5" /></template>
+            清空
+          </Button>
+        </div>
+        <div class="max-h-48 overflow-y-auto p-2">
+          <div v-for="(v, idx) in pendingValues" :key="`${v}-${idx}`"
+            class="flex items-center justify-between px-3 py-1.5 mb-1 bg-white rounded border border-gray-200 hover:border-blue-300 group">
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-400 w-6 text-right">{{ idx + 1 }}.</span>
+              <span class="text-sm text-gray-800">{{ v }}</span>
+            </div>
+            <Button type="text" size="mini" status="danger"
+              class="opacity-0 group-hover:opacity-100 transition-opacity"
+              @click="removeFromPending(idx)">
+              <template #icon>
+                <TrashIcon class="w-3.5 h-3.5" />
+              </template>
+            </Button>
+          </div>
+        </div>
+      </div>
+      <div v-else class="text-center py-6 text-gray-400 text-sm border border-dashed rounded-lg">
+        📋 暂未添加规格值
+      </div>
+
+      <!-- 已存在值提示 (折叠) -->
+      <details v-if="existingValues.length > 0" class="text-xs">
+        <summary class="cursor-pointer text-gray-500 hover:text-gray-700">
+          已存在 {{ existingValues.length }} 个值 (点击展开)
+        </summary>
+        <div class="mt-2 flex flex-wrap gap-1.5">
+          <Tag v-for="v in existingValues" :key="v" color="gray" size="small">{{ v }}</Tag>
+        </div>
+      </details>
+    </div>
+
+    <!-- 批量模式底部操作栏 -->
+    <template v-if="!isValueEdit" #footer>
+      <div class="flex items-center justify-between w-full">
+        <div class="text-xs text-gray-500">
+          共 <b class="text-blue-600">{{ pendingValues.length }}</b> 个待提交
+          <span v-if="existingValues.length > 0" class="ml-2">
+            (已存在 {{ existingValues.length }} 个)
+          </span>
+        </div>
+        <Space>
+          <Button @click="showValueModal = false">取消</Button>
+          <Button type="primary" :loading="batchSaving" :disabled="pendingValues.length === 0"
+            @click="handleSubmitBatch">
+            <template #icon>
+              <PlusIcon class="w-4 h-4" />
+            </template>
+            确认添加 {{ pendingValues.length > 0 ? `${pendingValues.length} 个` : '' }}
+          </Button>
+        </Space>
+      </div>
+    </template>
   </Modal>
 
   <TranslationModal v-model:visible="showTranslateModal" :entity-type="translateTarget?.type || ''"

@@ -90,6 +90,39 @@ public class SpecController {
     }
 
     /**
+     * 批量添加规格值 (供"添加值"窗口批量录入使用)
+     * POST /api/admin/spec/{specId}/values  body: { "values": ["黑色", "白色", "红色"] }
+     */
+    @PostMapping("/{specId}/values")
+    public Result<List<SpecValue>> batchCreateSpecValues(
+            @PathVariable Long specId,
+            @RequestBody Map<String, Object> body) {
+        Object valuesObj = body.get("values");
+        List<String> values = new java.util.ArrayList<>();
+        if (valuesObj instanceof List) {
+            for (Object o : (List<?>) valuesObj) {
+                if (o != null) {
+                    String v = String.valueOf(o).trim();
+                    if (!v.isEmpty()) values.add(v);
+                }
+            }
+        } else if (valuesObj instanceof String) {
+            // 兼容逗号/换行分隔的字符串
+            String s = (String) valuesObj;
+            for (String line : s.split("[,\n]")) {
+                String t = line.trim();
+                if (!t.isEmpty()) values.add(t);
+            }
+        }
+        if (values.isEmpty()) {
+            return Result.fail(400, "规格值列表不能为空");
+        }
+        log.info("batchCreateSpecValues specId={}, count={}", specId, values.size());
+        List<SpecValue> list = specService.batchCreateSpecValues(specId, values);
+        return Result.success(list);
+    }
+
+    /**
      * 更新规格值
      */
     @PutMapping("/value/{id}")

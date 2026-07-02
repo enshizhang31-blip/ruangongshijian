@@ -72,6 +72,10 @@ export const productApi = {
   createSpecValue(specId: number, data: { value: string; sort?: number }) {
     return api.post<void>(`/admin/spec/${specId}/value`, data)
   },
+  // 批量添加规格值
+  batchCreateSpecValues(specId: number, values: string[]) {
+    return api.post<SpecValue[]>(`/admin/spec/${specId}/values`, { values })
+  },
   updateSpecValue(id: number, data: { value?: string; sort?: number }) {
     return api.put<void>(`/admin/spec/value/${id}`, data)
   },
