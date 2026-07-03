@@ -1,0 +1,35 @@
+{
+    "description": "项目私有配置文件。此文件中的内容将覆盖 project.config.json 中的相同字段。",
+    "projectname": "sale-manager-sys",
+    "setting": {
+        "compileHotReLoad": true,
+        "urlCheck": false,
+        "es6": true,
+        "enhance": true,
+        "postcss": true,
+        "minified": true,
+        "newFeature": true,
+        "autoAudits": false,
+        "showShadowRootInWxmlPanel": true,
+        "scopeDataCheck": false,
+        "uglifyFileName": false,
+        "checkInvalidKey": true,
+        "checkSiteMap": true,
+        "uploadWithSourceMap": true,
+        "babelSetting": {
+            "ignore": [],
+            "disablePlugins": [],
+            "outputPath": ""
+        }
+    },
+    "compileType": "miniprogram",
+    "libVersion": "2.30.4",
+    "appid": "wx311765e51ce48c17",
+    "projectname": "sale-manager-sys",
+    "condition": {},
+    "editorSetting": {
+        "tabIndent": "auto",
+        "tabSize": 4
+    },
+    "miniprogramRoot": "./"
+}

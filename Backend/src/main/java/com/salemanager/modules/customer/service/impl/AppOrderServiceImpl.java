@@ -326,6 +326,7 @@ public class AppOrderServiceImpl implements AppOrderService {
         saleOrderMapper.update(null, new LambdaUpdateWrapper<SaleOrder>()
                 .eq(SaleOrder::getId, orderId)
                 .set(SaleOrder::getStatus, 2)                       // 已发货
+                .set(SaleOrder::getShippedAt, LocalDateTime.now())
                 .set(SaleOrder::getUpdatedAt, LocalDateTime.now()));
         log.info("订单发货 orderId={}, customerId={}", orderId, customerId);
     }
@@ -355,6 +356,7 @@ public class AppOrderServiceImpl implements AppOrderService {
         saleOrderMapper.update(null, new LambdaUpdateWrapper<SaleOrder>()
                 .eq(SaleOrder::getId, orderId)
                 .set(SaleOrder::getStatus, 7)                       // 已退款
+                .set(SaleOrder::getRefundCompleteAt, LocalDateTime.now())
                 .set(SaleOrder::getUpdatedAt, LocalDateTime.now()));
         log.info("退款完成 orderId={}, customerId={}", orderId, customerId);
     }
@@ -420,6 +422,10 @@ public class AppOrderServiceImpl implements AppOrderService {
         vo.put("remark", o.getRemark());
         vo.put("createdAt", o.getCreatedAt());
         vo.put("payTime", o.getPaidAt());
+        vo.put("shipTime", o.getShippedAt());
+        vo.put("receiveTime", o.getReceivedAt());
+        vo.put("refundTime", o.getRefundAt());
+        vo.put("refundCompleteTime", o.getRefundCompleteAt());
         vo.put("cancelTime", o.getCancelledAt());
 
         if (withItems) {
@@ -439,6 +445,8 @@ public class AppOrderServiceImpl implements AppOrderService {
                 m.put("quantity", it.getQuantity());
                 m.put("subtotal", it.getSubtotal());
                 m.put("snCodes", it.getSnCodeIds());
+                // 解析 SN 码列表（id, code, status, statusName, updatedAt）
+                m.put("snList", resolveSnList(it.getSnCodeIds()));
                 items.add(m);
             }
             vo.put("items", items);
@@ -450,6 +458,57 @@ public class AppOrderServiceImpl implements AppOrderService {
         if (skuId == null) return null;
         Sku s = skuMapper.selectById(skuId);
         return s == null ? null : s.getSpuId();
+    }
+
+    /** SN 状态码 → 中文名 */
+    private String snStatusName(Integer status) {
+        if (status == null) return "未知";
+        switch (status) {
+            case 0: return "在库";
+            case 1: return "已锁定";
+            case 2: return "已售";
+            case 3: return "已发货";
+            case 4: return "已签收";
+            case 5: return "已取消";
+            case 6: return "已退款";
+            case 7: return "退货中";
+            case 8: return "已退货";
+            default: return "未知(" + status + ")";
+        }
+    }
+
+    /**
+     * 解析订单明细中的 snCodeIds 字段，查询并返回每条 SN 的详情
+     */
+    private List<Map<String, Object>> resolveSnList(String snCodeIdsJson) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        if (snCodeIdsJson == null || snCodeIdsJson.isEmpty()) return out;
+        List<Long> snIds;
+        try {
+            snIds = objectMapper.readValue(snCodeIdsJson, List.class);
+        } catch (Exception e) {
+            return out;
+        }
+        if (snIds == null || snIds.isEmpty()) return out;
+        List<SnCode> sns = snCodeMapper.selectBatchIds(snIds);
+        for (SnCode sn : sns) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", sn.getId());
+            m.put("snCode", sn.getSnCode());
+            m.put("status", sn.getStatus());
+            m.put("statusName", snStatusName(sn.getStatus()));
+            // 流转时间：按 status 选择最相关的时间
+            switch (sn.getStatus() == null ? -1 : sn.getStatus()) {
+                case 1: m.put("time", sn.getUpdatedAt()); break;
+                case 2: m.put("time", sn.getSoldAt()); break;
+                case 3: m.put("time", sn.getDeliveredAt()); break;
+                case 4: m.put("time", sn.getReceivedAt()); break;
+                case 7: m.put("time", sn.getReturnAt()); break;
+                default: m.put("time", sn.getUpdatedAt()); break;
+            }
+            out.add(m);
+        }
+        return out;
     }
 
     private List<Long> parseSnIds(String jsonStr) {

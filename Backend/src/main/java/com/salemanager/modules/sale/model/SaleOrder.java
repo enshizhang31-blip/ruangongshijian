@@ -41,6 +41,14 @@ public class SaleOrder {
     private String remark;
     @TableField("cancel_time")
     private LocalDateTime cancelledAt;
+    @TableField("ship_time")
+    private LocalDateTime shippedAt;
+    @TableField("receive_time")
+    private LocalDateTime receivedAt;
+    @TableField("refund_time")
+    private LocalDateTime refundAt;
+    @TableField("refund_complete_time")
+    private LocalDateTime refundCompleteAt;
     @TableField("finish_time")
     private LocalDateTime completedAt;
     private LocalDateTime createdAt;

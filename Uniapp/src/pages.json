@@ -95,6 +95,12 @@
 			"style": {
 				"navigationBarTitleText": "Login"
 			}
+		},
+		{
+			"path": "pages/debug/index",
+			"style": {
+				"navigationBarTitleText": "API 调用日志"
+			}
 		}
 	],
 	"tabBar": {

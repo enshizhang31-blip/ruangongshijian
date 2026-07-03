@@ -11,9 +11,13 @@ import com.salemanager.modules.customer.service.AppCartService;
 import com.salemanager.modules.customer.service.AppOrderService;
 import com.salemanager.modules.product.mapper.GoodsCategoryMapper;
 import com.salemanager.modules.product.mapper.SkuMapper;
+import com.salemanager.modules.product.mapper.SpecNameMapper;
+import com.salemanager.modules.product.mapper.SpecValueMapper;
 import com.salemanager.modules.product.model.Goods;
 import com.salemanager.modules.product.model.GoodsCategory;
 import com.salemanager.modules.product.model.Sku;
+import com.salemanager.modules.product.model.SpecName;
+import com.salemanager.modules.product.model.SpecValue;
 import com.salemanager.modules.product.service.ProductService;
 import com.salemanager.modules.product.service.SkuService;
 import com.salemanager.modules.sn.mapper.SnCodeMapper;
@@ -60,6 +64,8 @@ public class AppMallController {
     @Autowired private CustomerMapper customerMapper;
     @Autowired private SkuMapper skuMapper;
     @Autowired private SnCodeMapper snCodeMapper;
+    @Autowired private SpecNameMapper specNameMapper;
+    @Autowired private SpecValueMapper specValueMapper;
 
     // ======================= 分类 / 商品 =======================
 
@@ -117,9 +123,19 @@ public class AppMallController {
             // 小程序允许查看下架（demo）但 status 显式返回
         }
         List<Sku> skus = skuService.getSkuListBySpuId(id);
+        // 加载规格名 / 规格值映射
+        java.util.Map<Long, String> nameMap = null;
+        java.util.Map<Long, String> valueMap = null;
+        try {
+            java.util.Map<String, java.util.Map<Long, String>> specMaps = loadSpecMaps(skus);
+            nameMap = specMaps.get("names");
+            valueMap = specMaps.get("values");
+        } catch (Exception ex) {
+            log.warn("loadSpecMaps failed: {}", ex.getMessage());
+        }
         List<Map<String, Object>> skuVos = new ArrayList<>();
         for (Sku s : skus) {
-            skuVos.add(toSkuVO(s));
+            skuVos.add(toSkuVO(s, nameMap, valueMap));
         }
         Map<String, Object> vo = new HashMap<>();
         vo.put("id", g.getId());
@@ -131,6 +147,93 @@ public class AppMallController {
         vo.put("shortDesc", g.getShortDesc());
         vo.put("description", g.getDescription());
         vo.put("status", g.getStatus());
+        // 补齐库存 / 销量 / 价格 / skuCount，便于前端展示
+        vo.put("stock", g.getStockCount() == null ? 0 : g.getStockCount());
+        vo.put("stockCount", g.getStockCount() == null ? 0 : g.getStockCount());
+        vo.put("salesCount", g.getSalesCount() == null ? 0 : g.getSalesCount());
+        vo.put("skuCount", g.getSkuCount() == null ? 0 : g.getSkuCount());
+        if (skus.size() > 0) {
+            vo.put("price", skus.get(0).getPrice());
+            vo.put("minPrice", skus.stream().map(s -> s.getPrice() == null ? 0.0 : s.getPrice().doubleValue())
+                    .min(Double::compare).orElse(0.0));
+        } else {
+            vo.put("price", 0.0);
+            vo.put("minPrice", 0.0);
+        }
+        // 拼装 specs: [{id, name, values: [{id, value}]}]
+        // 顺序按 spec_name.sort 升序
+        List<Map<String, Object>> specs = new ArrayList<>();
+        if (nameMap != null && valueMap != null) {
+            try {
+                // 收集该 SPU 实际用到的 specIds
+                java.util.Set<Long> usedSpecIds = new java.util.HashSet<>();
+                com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+                for (Sku s : skus) {
+                    String sj = s.getSpecJson();
+                    if (sj == null || sj.isEmpty()) continue;
+                    try {
+                        java.util.Map<String, String> m = om.readValue(sj, java.util.Map.class);
+                        if (m != null) for (String k : m.keySet()) {
+                            try { usedSpecIds.add(Long.valueOf(k)); } catch (Exception ignore) {}
+                        }
+                    } catch (Exception ignore) {}
+                }
+                if (!usedSpecIds.isEmpty()) {
+                    List<SpecName> specNames = specNameMapper.selectBatchIds(usedSpecIds);
+                    // 按 sort 升序、id 升序
+                    specNames.sort((a, b) -> {
+                        Integer sa = a.getSort() == null ? 0 : a.getSort();
+                        Integer sb = b.getSort() == null ? 0 : b.getSort();
+                        int c = Integer.compare(sa, sb);
+                        if (c != 0) return c;
+                        return Long.compare(a.getId() == null ? 0L : a.getId(), b.getId() == null ? 0L : b.getId());
+                    });
+                    for (SpecName sn : specNames) {
+                        Map<String, Object> sVo = new HashMap<>();
+                        sVo.put("id", sn.getId());
+                        sVo.put("name", sn.getName());
+                        // 收集这个 specName 下被 SKU 用到的 valueIds
+                        java.util.Set<Long> usedValueIds = new java.util.HashSet<>();
+                        for (Sku s : skus) {
+                            String sj = s.getSpecJson();
+                            if (sj == null || sj.isEmpty()) continue;
+                            try {
+                                java.util.Map<String, String> m = om.readValue(sj, java.util.Map.class);
+                                if (m != null) {
+                                    String v = m.get(String.valueOf(sn.getId()));
+                                    if (v != null) {
+                                        try { usedValueIds.add(Long.valueOf(v)); } catch (Exception ignore) {}
+                                    }
+                                }
+                            } catch (Exception ignore) {}
+                        }
+                        List<Map<String, Object>> values = new ArrayList<>();
+                        if (!usedValueIds.isEmpty()) {
+                            List<SpecValue> specValues = specValueMapper.selectBatchIds(usedValueIds);
+                            // 按 sort 升序、id 升序
+                            specValues.sort((a, b) -> {
+                                Integer sa = a.getSort() == null ? 0 : a.getSort();
+                                Integer sb = b.getSort() == null ? 0 : b.getSort();
+                                int c = Integer.compare(sa, sb);
+                                if (c != 0) return c;
+                                return Long.compare(a.getId() == null ? 0L : a.getId(), b.getId() == null ? 0L : b.getId());
+                            });
+                            for (SpecValue sv : specValues) {
+                                Map<String, Object> vVo = new HashMap<>();
+                                vVo.put("id", sv.getId());
+                                vVo.put("value", sv.getValue());
+                                values.add(vVo);
+                            }
+                        }
+                        sVo.put("values", values);
+                        specs.add(sVo);
+                    }
+                }
+            } catch (Exception ex) {
+                log.warn("build specs failed: {}", ex.getMessage());
+            }
+        }
+        vo.put("specs", specs);
         vo.put("skus", skuVos);
         return Result.success(vo);
     }
@@ -372,6 +475,10 @@ public class AppMallController {
     }
 
     private Map<String, Object> toSkuVO(Sku s) {
+        return toSkuVO(s, null, null);
+    }
+
+    private Map<String, Object> toSkuVO(Sku s, java.util.Map<Long, String> specNameMap, java.util.Map<Long, String> specValueMap) {
         Map<String, Object> m = new HashMap<>();
         m.put("id", s.getId());
         m.put("spuId", s.getSpuId());
@@ -383,7 +490,81 @@ public class AppMallController {
         m.put("imageUrl", s.getImageUrl());
         m.put("status", s.getStatus());
         m.put("stock", s.getStock());
+        m.put("specText", buildSpecText(s.getSpecJson(), specNameMap, specValueMap));
         return m;
+    }
+
+    /**
+     * 将 specJson（如 {"1":"1","2":"3"}）解析成"颜色:红色 / 尺码:XL"
+     */
+    private String buildSpecText(String specJson, java.util.Map<Long, String> specNameMap, java.util.Map<Long, String> specValueMap) {
+        if (specJson == null || specJson.isEmpty() || "null".equalsIgnoreCase(specJson.trim())) return "";
+        if (specNameMap == null || specValueMap == null) return "";
+        // 使用 Jackson 解析
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+            java.util.Map<String, String> map = om.readValue(specJson, java.util.Map.class);
+            if (map == null || map.isEmpty()) return "";
+            java.util.List<String> parts = new java.util.ArrayList<>();
+            for (java.util.Map.Entry<String, String> e : map.entrySet()) {
+                Long specId = Long.valueOf(e.getKey());
+                Long valueId = Long.valueOf(e.getValue());
+                String specName = specNameMap.getOrDefault(specId, "");
+                String specValue = specValueMap.getOrDefault(valueId, "");
+                if (specName == null) specName = "";
+                if (specValue == null) specValue = "";
+                if (specName.isEmpty() && specValue.isEmpty()) continue;
+                if (specName.isEmpty()) {
+                    parts.add(specValue);
+                } else if (specValue.isEmpty()) {
+                    parts.add(specName);
+                } else {
+                    parts.add(specName + ":" + specValue);
+                }
+            }
+            return String.join(" / ", parts);
+        } catch (Exception ex) {
+            log.warn("parse specJson failed: {}", ex.getMessage());
+            return specJson;
+        }
+    }
+
+    /**
+     * 从一批 SKU 提取出用到的所有 specId / valueId，并查库得到名/值映射
+     */
+    private java.util.Map<String, java.util.Map<Long, String>> loadSpecMaps(List<Sku> skus) {
+        java.util.Set<Long> specIds = new java.util.HashSet<>();
+        java.util.Set<Long> valueIds = new java.util.HashSet<>();
+        com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+        for (Sku s : skus) {
+            String specJson = s.getSpecJson();
+            if (specJson == null || specJson.isEmpty() || "null".equalsIgnoreCase(specJson.trim())) continue;
+            try {
+                java.util.Map<String, String> map = om.readValue(specJson, java.util.Map.class);
+                if (map != null) {
+                    for (java.util.Map.Entry<String, String> e : map.entrySet()) {
+                        try {
+                            specIds.add(Long.valueOf(e.getKey()));
+                            valueIds.add(Long.valueOf(e.getValue()));
+                        } catch (Exception ignore) {}
+                    }
+                }
+            } catch (Exception ignore) {}
+        }
+        java.util.Map<Long, String> nameMap = new java.util.HashMap<>();
+        if (!specIds.isEmpty()) {
+            List<SpecName> names = specNameMapper.selectBatchIds(specIds);
+            for (SpecName n : names) nameMap.put(n.getId(), n.getName());
+        }
+        java.util.Map<Long, String> valueMap = new java.util.HashMap<>();
+        if (!valueIds.isEmpty()) {
+            List<SpecValue> values = specValueMapper.selectBatchIds(valueIds);
+            for (SpecValue v : values) valueMap.put(v.getId(), v.getValue());
+        }
+        java.util.Map<String, java.util.Map<Long, String>> out = new java.util.HashMap<>();
+        out.put("names", nameMap);
+        out.put("values", valueMap);
+        return out;
     }
 
     private BigDecimal minPriceOfSku(Long spuId) {

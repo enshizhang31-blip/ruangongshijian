@@ -1,6 +1,6 @@
 import { reactive, computed } from 'vue'
 import builtinLocales from '@/locales/index.js'
-import { http } from '@/utils/request.js'
+import { http, I18N_BASE } from '@/utils/request.js'
 
 function readStoredLocale() {
     try { return uni.getStorageSync('app-locale') || 'zh-CN' } catch { return 'zh-CN' }
@@ -61,7 +61,7 @@ function getLocale() { return state.currentLocale }
 async function initFromBackend() {
     if (state.initialized) return
     try {
-        const res = await http.get('/i18n/locales')
+        const res = await http.get('/locales', { baseURL: I18N_BASE })
         if (res && res.default && Array.isArray(res.locales)) {
             state.defaultLocale = res.default
             state.available = res.locales.filter(l => l.enabled)

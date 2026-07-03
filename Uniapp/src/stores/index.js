@@ -51,12 +51,23 @@ export function useUserStore() {
         uni.removeStorageSync('token')
     }
 
-    function requireLogin() {
-        if (!isLoggedIn.value) {
-            uni.navigateTo({ url: '/pages/auth/login/index' })
-            return false
-        }
-        return true
+    function requireLogin(redirect) {
+        if (isLoggedIn.value) return true
+        const pages = (typeof getCurrentPages === 'function' ? getCurrentPages() : [])
+        const cur = pages[pages.length - 1]
+        const curPath = cur && (cur.route || (cur.$page && cur.$page.fullPath)) || ''
+        // 默认行为：跳登录页 + toast 提示
+        uni.showToast({ title: '请先登录', icon: 'none' })
+        // 若传 redirect = false，则不跳（只提示）
+        if (redirect === false) return false
+        const target = redirect || curPath
+        const url = target
+            ? '/pages/auth/login/index?redirect=' + encodeURIComponent('/' + target.replace(/^\//, ''))
+            : '/pages/auth/login/index'
+        // 已在登录页就不再跳
+        if (cur && cur.route === 'pages/auth/login/index') return false
+        setTimeout(() => uni.navigateTo({ url }), 200)
+        return false
     }
 
     return { state, isLoggedIn, isMember, memberLevelName, login, setMember, logout, requireLogin }

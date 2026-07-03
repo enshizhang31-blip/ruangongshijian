@@ -72,7 +72,7 @@ import { categoryApi, spuApi } from '@/api/index.js'
 import { useUserStore } from '@/stores/index.js'
 
 export default {
-    data() { return { categories: [], goods: [], loading: true } },
+    data() { return { categories: [], goods: [], loading: true, __requireLogin: false } },
     computed: { user() { return useUserStore() } },
     onShow() { this.loadData() },
     methods: {
@@ -95,10 +95,12 @@ export default {
         },
         formatPrice(p) { return Number(p || 0).toFixed(2) },
         goGoodsList(id) {
-            uni.navigateTo({ url: '/pages/goods/list/index' + (id ? '?categoryId=' + id : '') })
+            // goods/list 是 tabBar 页面，必须用 switchTab（switchTab 不支持 query 传参，用 storage 中转）
+            try { uni.setStorageSync('__goodsListFilter', { categoryId: id || null, ts: Date.now() }) } catch (_) {}
+            uni.switchTab({ url: '/pages/goods/list/index' })
         },
         goDetail(id) { uni.navigateTo({ url: '/pages/goods/detail/index?id=' + id }) },
-        goScan() { uni.navigateTo({ url: '/pages/scan/index' }) },
+        goScan() { uni.switchTab({ url: '/pages/goods/list/index' }) },
         goOrders() {
             if (this.user.requireLogin()) uni.navigateTo({ url: '/pages/order/list/index' })
         }

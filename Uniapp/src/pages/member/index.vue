@@ -31,6 +31,10 @@
                 <text>📍 {{ $t('member.address') }}</text>
                 <text class="arrow">›</text>
             </view>
+            <view class="menu-item" @click="goDebug">
+                <text>🛠 API 调用日志</text>
+                <text class="arrow">›</text>
+            </view>
         </view>
 
         <view class="menu-list">
@@ -65,7 +69,7 @@ import { memberApi } from '@/api/index.js'
 import { useUserStore } from '@/stores/index.js'
 
 export default {
-    data() { return { currentLang: 'zh-CN', availableLocales: [] } },
+    data() { return { currentLang: 'zh-CN', availableLocales: [], __requireLogin: false } },
     computed: { user() { return useUserStore() } },
     onShow() {
         if (this.user.isLoggedIn.value) this.refreshMember()

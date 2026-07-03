@@ -99,7 +99,27 @@ export default {
                      uni.setStorageSync('demo-member', member || null)
                  }
                 uni.showToast({ title: this.$t(this.mode === 'login' ? 'auth.loginSuccess' : 'auth.registerSuccess'), icon: 'success' })
-                setTimeout(() => uni.reLaunch({ url: '/pages/index/index' }), 600)
+                setTimeout(() => {
+                    if (this.redirectTarget) {
+                        // tabBar 页面必须 switchTab，其它用 redirectTo
+                        const tabBarPages = [
+                            'pages/index/index',
+                            'pages/goods/list/index',
+                            'pages/cart/index',
+                            'pages/member/index'
+                        ]
+                        const pathNoQuery = this.redirectTarget.split('?')[0].replace(/^\//, '')
+                        if (tabBarPages.indexOf(pathNoQuery) >= 0) {
+                            uni.switchTab({ url: this.redirectTarget })
+                        } else if (this.redirectTarget !== '/pages/index/index') {
+                            uni.redirectTo({ url: this.redirectTarget })
+                        } else {
+                            uni.reLaunch({ url: '/pages/index/index' })
+                        }
+                    } else {
+                        uni.reLaunch({ url: '/pages/index/index' })
+                    }
+                }, 600)
             } catch (e) {
                 uni.showToast({ title: e.message || this.$t('toast.networkError'), icon: 'none' })
             } finally {

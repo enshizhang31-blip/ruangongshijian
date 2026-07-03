@@ -36,4 +36,8 @@ public class Goods {
     /** 动态填充：总库存（在库SN码数量） */
     @TableField(exist = false)
     private Integer stockCount;
+
+    /** 动态填充：销量（已售+已发货+已签收的SN数） */
+    @TableField(exist = false)
+    private Integer salesCount;
 }

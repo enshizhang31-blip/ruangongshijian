@@ -123,9 +123,31 @@ public class ProductServiceImpl implements ProductService {
             log.warn("商品不存在 id={}", id);
             throw new BusinessException("商品不存在");
         }
-        // 填充SKU数
-        Long skuCount = skuMapper.selectCount(new LambdaQueryWrapper<Sku>().eq(Sku::getSpuId, id));
-        goods.setSkuCount(skuCount.intValue());
+        // 填充SKU数 + 库存总数 + 销量
+        List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>().eq(Sku::getSpuId, id));
+        goods.setSkuCount(skus.size());
+        int stock = 0;
+        for (Sku s : skus) {
+            if (s.getStock() != null) stock += s.getStock();
+        }
+        goods.setStockCount(stock);
+
+        // 销量：SN 状态 2/3/4 (已售/已发货/已签收) 都算销售
+        try {
+            java.util.List<Long> skuIds = new java.util.ArrayList<>();
+            for (Sku s : skus) skuIds.add(s.getId());
+            int sales = 0;
+            if (!skuIds.isEmpty()) {
+                Long c = snCodeMapper.selectCount(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.salemanager.modules.sn.model.SnCode>()
+                        .in(com.salemanager.modules.sn.model.SnCode::getSkuId, skuIds)
+                        .in(com.salemanager.modules.sn.model.SnCode::getStatus, java.util.Arrays.asList(2, 3, 4)));
+                sales = c == null ? 0 : c.intValue();
+            }
+            goods.setSalesCount(sales);
+        } catch (Exception e) {
+            log.warn("计算销量失败: {}", e.getMessage());
+            goods.setSalesCount(0);
+        }
         return goods;
     }
 

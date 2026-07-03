@@ -31,6 +31,17 @@ export default {
         if (options.categoryId) this.categoryId = options.categoryId
         this.loadGoods()
     },
+    onShow() {
+        // 从首页/我的页通过 switchTab 跳过来时，categoryId 存在 storage
+        try {
+            const f = uni.getStorageSync('__goodsListFilter')
+            if (f && f.ts && (Date.now() - f.ts < 3000)) {
+                this.categoryId = f.categoryId || null
+                uni.removeStorageSync('__goodsListFilter')
+                this.loadGoods()
+            }
+        } catch (_) {}
+    },
     methods: {
         async loadGoods() {
             try {
@@ -54,7 +65,7 @@ export default {
         },
         formatPrice(p) { return Number(p || 0).toFixed(2) },
         goDetail(goodsId) {
-            uni.navigateTo({ url: `/pages/goods/detail?id=${goodsId}` })
+            uni.navigateTo({ url: `/pages/goods/detail/index?id=${goodsId}` })
         }
     }
 }

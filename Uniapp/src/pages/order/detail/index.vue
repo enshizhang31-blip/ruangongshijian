@@ -43,6 +43,18 @@
             </view>
         </view>
 
+        <!-- SN 码状态展示 -->
+        <view v-if="snItems.length" class="card sn-card">
+            <view class="card-title">SN 码状态</view>
+            <view v-for="row in snItems" :key="row.id" class="sn-row">
+                <view class="sn-left">
+                    <text class="sn-code">{{ row.snCode }}</text>
+                    <text class="sn-time">{{ formatSnTime(row.time) }}</text>
+                </view>
+                <view class="sn-status" :class="'sn-st-' + row.status">{{ row.statusName }}</view>
+            </view>
+        </view>
+
         <view class="card">
             <view class="row">
                 <text>{{ $t('order.totalAmount') }}</text>
@@ -127,20 +139,59 @@ export default {
         },
         buildLogistics(order) {
             const status = order.status
-            if (status < 2) { this.logisticsList = []; return }
-            const now = new Date()
-            const fmt = d => `${d.getMonth() + 1}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-            const back = h => new Date(now.getTime() - h * 60 * 60 * 1000)
-            const items = []
-            if (status >= 3) items.push({ title: this.$t('logistics.signed'), time: fmt(back(0)) })
-            if (status >= 2) {
-                items.push({ title: this.$t('logistics.dispatch'), time: fmt(back(2)) })
-                items.push({ title: this.$t('logistics.transit'), time: fmt(back(6)) })
-                items.push({ title: this.$t('logistics.picked'), time: fmt(back(12)) })
+            // 格式化后端时间字符串
+            const fmt = t => {
+                if (!t) return ''
+                const d = new Date(t)
+                if (isNaN(d.getTime())) return ''
+                return `${d.getMonth() + 1}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
             }
-            this.logisticsList = items
+            const items = []
+            // 状态 0 待支付 / 1 已支付 / 2 已发货 / 3 已签收 / 6 退款中 / 7 已退款
+            if (status >= 3) {
+                items.push({
+                    title: this.$t('logistics.signed') || '已签收',
+                    time: fmt(order.receiveTime) || ''
+                })
+            }
+            if (status >= 2) {
+                items.push({
+                    title: this.$t('logistics.dispatch') || '已发货',
+                    time: fmt(order.shipTime) || ''
+                })
+                items.push({
+                    title: this.$t('logistics.picked') || '已支付',
+                    time: fmt(order.payTime) || ''
+                })
+                items.push({
+                    title: this.$t('logistics.placed') || '已下单',
+                    time: fmt(order.createdAt) || ''
+                })
+            }
+            // 退款时间线
+            if (status === 6 || status === 7) {
+                items.push({
+                    title: this.$t('logistics.refund') || '申请退款',
+                    time: fmt(order.refundTime) || ''
+                })
+            }
+            if (status === 7) {
+                items.push({
+                    title: this.$t('logistics.refundDone') || '退款完成',
+                    time: fmt(order.refundCompleteTime) || ''
+                })
+            }
+            // 过滤掉没有时间的项（兜底）
+            this.logisticsList = items.filter(x => x.time)
         },
         formatPrice(p) { return Number(p || 0).toFixed(2) },
+        formatSnTime(t) {
+            if (!t) return '-'
+            const d = new Date(t)
+            if (isNaN(d.getTime())) return '-'
+            const p = n => String(n).padStart(2, '0')
+            return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+        },
         async onPay() {
             try { await orderApi.pay(this.orderId, 1) }
             catch (_) {}
@@ -237,6 +288,21 @@ export default {
 .g-bottom { display: flex; justify-content: space-between; margin-top: 8rpx; }
 .g-price { font-size: 28rpx; color: #f53f2c; font-weight: bold; }
 .g-qty { font-size: 26rpx; color: #999; }
+.sn-card .sn-row { display: flex; justify-content: space-between; align-items: center; padding: 16rpx 0; border-bottom: 1rpx solid #f0f0f0; }
+.sn-card .sn-row:last-child { border-bottom: none; }
+.sn-left { display: flex; flex-direction: column; }
+.sn-code { font-family: monospace; font-size: 26rpx; color: #333; }
+.sn-time { font-size: 22rpx; color: #999; margin-top: 4rpx; }
+.sn-status { padding: 6rpx 16rpx; border-radius: 20rpx; font-size: 22rpx; }
+.sn-st-0 { background: #f0f0f0; color: #666; }
+.sn-st-1 { background: #fff7e6; color: #fa8c16; }
+.sn-st-2 { background: #e6f7ff; color: #1890ff; }
+.sn-st-3 { background: #e6fffb; color: #13c2c2; }
+.sn-st-4 { background: #f6ffed; color: #52c41a; }
+.sn-st-5 { background: #f5f5f5; color: #999; }
+.sn-st-6 { background: #fff1f0; color: #f5222d; }
+.sn-st-7 { background: #fff1f0; color: #f5222d; }
+.sn-st-8 { background: #f5f5f5; color: #999; }
 .row { display: flex; justify-content: space-between; padding: 12rpx 0; font-size: 28rpx; }
 .amount { color: #f53f2c; font-weight: bold; }
 .muted { color: #999; }

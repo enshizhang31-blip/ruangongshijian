@@ -34,8 +34,8 @@ export default {
                 this.addresses = []
             }
         },
-        goAdd() { uni.navigateTo({ url: '/pages/address/form' }) },
-        goEdit(id) { uni.navigateTo({ url: '/pages/address/form?id=' + id }) },
+        goAdd() { uni.navigateTo({ url: '/pages/address/form/index' }) },
+        goEdit(id) { uni.navigateTo({ url: '/pages/address/form/index?id=' + id }) },
         async setDefault(a) {
             try { await addressApi.setDefault(a.id) } catch (e) {}
             this.loadAddresses()

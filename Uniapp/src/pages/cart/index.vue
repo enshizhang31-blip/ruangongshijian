@@ -1,6 +1,11 @@
 <template>
     <view class="page">
-        <view v-if="items.length > 0">
+        <view v-if="!user.isLoggedIn.value" class="empty">
+            <text class="empty-icon">🔐</text>
+            <text class="empty-text">请先登录后查看购物车</text>
+            <button class="btn-primary" @click="user.requireLogin('/pages/cart/index')">去登录</button>
+        </view>
+        <view v-else-if="items.length > 0">
             <view class="cart-list">
                 <view class="cart-item" v-for="item in items" :key="item.id">
                     <view class="check" @click="toggleCheck(item)">{{ item.checked ? '✓' : '○' }}</view>
@@ -40,7 +45,7 @@
 
 <script>
 import { cartApi } from '@/api/index.js'
-import { useCartStore } from '@/stores/index.js'
+import { useCartStore, useUserStore } from '@/stores/index.js'
 
 function parseSpec(specJson) {
     if (!specJson) return ''
@@ -56,11 +61,18 @@ export default {
     data() { return { items: [], loading: false } },
     computed: {
         cart() { return useCartStore() },
+        user() { return useUserStore() },
         allChecked() { return this.items.length > 0 && this.items.every(i => i.checked) },
         totalPrice() { return this.items.filter(i => i.checked).reduce((s, i) => s + i.price * i.quantity, 0) },
         checkedItems() { return this.items.filter(i => i.checked) }
     },
-    onShow() { this.loadCart() },
+    onShow() {
+        if (!this.user.isLoggedIn.value) {
+            this.user.requireLogin('/pages/cart/index')
+            return
+        }
+        this.loadCart()
+    },
     methods: {
         async loadCart() {
             this.loading = true
@@ -132,6 +144,10 @@ export default {
 
 <style scoped>
 .page { padding-bottom: 140rpx; }
+.empty { padding: 200rpx 40rpx; text-align: center; }
+.empty-icon { display: block; font-size: 100rpx; margin-bottom: 30rpx; }
+.empty-text { display: block; font-size: 30rpx; color: #999; margin-bottom: 40rpx; }
+.btn-primary { background: #0f62fe; color: #fff; border-radius: 50rpx; padding: 20rpx 80rpx; font-size: 28rpx; }
 .cart-item { display: flex; align-items: center; padding: 20rpx; background: #fff; margin: 10rpx 20rpx; border-radius: 12rpx; }
 .check { width: 48rpx; height: 48rpx; line-height: 48rpx; text-align: center; font-size: 32rpx; color: #0f62fe; }
 .cart-img { width: 140rpx; height: 140rpx; border-radius: 12rpx; background: #f5f5f5; margin: 0 16rpx; }
